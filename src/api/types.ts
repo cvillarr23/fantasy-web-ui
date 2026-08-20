@@ -59,6 +59,9 @@ export interface PlayerSearchResult {
   name: string
   position: string
   team: string
+  injury_status: string | null
+  vorp_score: number | null
+  projected_points: number | null
 }
 
 export interface DraftConfig {

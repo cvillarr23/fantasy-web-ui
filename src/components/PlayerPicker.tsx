@@ -10,6 +10,16 @@ interface Props {
 
 const DEBOUNCE_MS = 250
 
+function PlayerStats({ player }: { player: PlayerSearchResult }) {
+  return (
+    <span className="player-picker-stats">
+      {player.vorp_score !== null && <span className="candidate-score">VORP {player.vorp_score.toFixed(1)}</span>}
+      {player.projected_points !== null && <span className="candidate-score">Proj {player.projected_points.toFixed(1)}</span>}
+      {player.injury_status && <span className="injury-tag">{player.injury_status}</span>}
+    </span>
+  )
+}
+
 export function PlayerPicker({ onSelect, selected, onClear }: Props) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<PlayerSearchResult[]>([])
@@ -44,6 +54,7 @@ export function PlayerPicker({ onSelect, selected, onClear }: Props) {
         <span className="candidate-name">{selected.name}</span>
         <span className="candidate-position">{selected.position}</span>
         <span className="pick-team">{selected.team}</span>
+        <PlayerStats player={selected} />
         <button type="button" onClick={onClear}>Change</button>
       </div>
     )
@@ -76,6 +87,7 @@ export function PlayerPicker({ onSelect, selected, onClear }: Props) {
               <span className="candidate-name">{p.name}</span>
               <span className="candidate-position">{p.position}</span>
               <span className="pick-team">{p.team}</span>
+              <PlayerStats player={p} />
             </li>
           ))}
         </ul>
