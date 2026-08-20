@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { pauseDraft, resumeDraft, triggerDraftPick } from '../api/client'
+import { PlayerPicker } from './PlayerPicker'
+import type { PlayerSearchResult } from '../api/types'
 
 interface Props {
   leagueId: string
@@ -13,10 +15,7 @@ interface Props {
 export function InterventionControls({ leagueId, teamId, pickNumber }: Props) {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
-  const [manualPlayerId, setManualPlayerId] = useState('')
-  const [manualName, setManualName] = useState('')
-  const [manualPosition, setManualPosition] = useState('')
-  const [manualProTeam, setManualProTeam] = useState('')
+  const [manualPlayer, setManualPlayer] = useState<PlayerSearchResult | null>(null)
 
   async function run(action: () => Promise<unknown>, label: string) {
     setBusy(true)
@@ -47,10 +46,11 @@ export function InterventionControls({ leagueId, teamId, pickNumber }: Props) {
         className="manual-pick-form"
         onSubmit={(e) => {
           e.preventDefault()
+          if (!manualPlayer) return
           run(
-            () => triggerDraftPick(teamId, manualPlayerId, manualName, manualPosition, manualProTeam),
+            () => triggerDraftPick(teamId, manualPlayer.player_id, manualPlayer.name, manualPlayer.position, manualPlayer.team),
             'Manual draft-pick publish',
-          )
+          ).then(() => setManualPlayer(null))
         }}
       >
         <p className="muted">
@@ -58,11 +58,8 @@ export function InterventionControls({ leagueId, teamId, pickNumber }: Props) {
           you (that automation is a follow-up). Use this to hand off a target once that
           piece ships, or to log what you're about to do manually in ESPN.
         </p>
-        <input placeholder="player_id" value={manualPlayerId} onChange={(e) => setManualPlayerId(e.target.value)} required />
-        <input placeholder="name" value={manualName} onChange={(e) => setManualName(e.target.value)} required />
-        <input placeholder="position" value={manualPosition} onChange={(e) => setManualPosition(e.target.value)} required />
-        <input placeholder="pro team" value={manualProTeam} onChange={(e) => setManualProTeam(e.target.value)} required />
-        <button type="submit" disabled={busy}>Publish manual pick</button>
+        <PlayerPicker selected={manualPlayer} onSelect={setManualPlayer} onClear={() => setManualPlayer(null)} />
+        <button type="submit" disabled={busy || !manualPlayer}>Publish manual pick</button>
       </form>
 
       {message && <p className="status-message">{message}</p>}

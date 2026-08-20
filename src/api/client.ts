@@ -1,4 +1,4 @@
-import type { DraftConfig, DraftStatusResponse, PlayerSummary } from './types'
+import type { DraftConfig, DraftStatusResponse, PlayerSearchResult, PlayerSummary } from './types'
 
 class ApiError extends Error {
   status: number
@@ -59,4 +59,9 @@ export function triggerDraftPick(teamId: string, playerId: string, name: string,
 
 export function getPlayerSummary(playerId: string): Promise<PlayerSummary> {
   return request(`/v1/players/${encodeURIComponent(playerId)}/summary`)
+}
+
+export function searchPlayers(query: string): Promise<PlayerSearchResult[]> {
+  const params = new URLSearchParams({ q: query })
+  return request(`/v1/players/search?${params}`)
 }
