@@ -35,10 +35,19 @@ export function InterventionControls({ leagueId, teamId, pickNumber }: Props) {
       <h2>Intervene</h2>
       <div className="button-row">
         <button disabled={busy} onClick={() => run(() => pauseDraft(leagueId, pickNumber), 'Pause')}>
-          Pause auto-draft
+          Hold our next auto-pick
         </button>
         <button disabled={busy} onClick={() => run(() => resumeDraft(leagueId, pickNumber), 'Resume')}>
-          Resume auto-draft
+          Release our next auto-pick
+        </button>
+      </div>
+      <p className="muted">
+        Pauses/resumes only <em>our own</em> system's auto-publish for the upcoming pick —
+        not ESPN's own native autodraft setting for this league.
+      </p>
+      <div className="button-row">
+        <button disabled title="Not available yet — pending fantasy-browser-worker#32">
+          Toggle ESPN autodraft (not available yet)
         </button>
       </div>
 
