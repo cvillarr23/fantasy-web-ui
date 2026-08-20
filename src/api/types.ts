@@ -54,6 +54,13 @@ export interface PlayerSummary {
   recent_news: RecentNewsItem[]
 }
 
+export interface PlayerSearchResult {
+  player_id: string
+  name: string
+  position: string
+  team: string
+}
+
 export interface DraftConfig {
   league_id: string
   team_id: string
