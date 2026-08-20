@@ -49,7 +49,8 @@ export function resumeDraft(leagueId: string, pickNumber?: number): Promise<unkn
 }
 
 // Publishes to the draft_targets queue (see fantasy-core-pipeline's /v1/trigger/draft-pick).
-// This does NOT yet click ESPN's UI - that's fantasy-browser-worker's WORKER-06, unshipped.
+// fantasy-browser-worker's draft_clicker.js (WORKER-06) consumes this and actually clicks
+// the pick in ESPN's UI - this is a real, live action, not a log-only publish.
 export function triggerDraftPick(teamId: string, playerId: string, name: string, position: string, proTeam: string): Promise<unknown> {
   return request('/v1/trigger/draft-pick', {
     method: 'POST',

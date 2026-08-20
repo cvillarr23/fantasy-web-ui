@@ -9,9 +9,9 @@ interface Props {
   pickNumber?: number
 }
 
-// UI copy is deliberate: /v1/trigger/draft-pick publishes to the draft_targets queue,
-// but nothing consumes that queue to actually click ESPN's UI yet (fantasy-browser-worker's
-// WORKER-06 is unbuilt) - don't let the button imply it does more than it does.
+// UI copy is deliberate: fantasy-browser-worker's draft_clicker.js (WORKER-06) now consumes
+// draft_targets and fires a real click in ESPN's UI, so this button is a live action, not a
+// dry-run log - the copy must say so clearly since it's used mid-draft under time pressure.
 export function InterventionControls({ leagueId, teamId, pickNumber }: Props) {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
@@ -54,9 +54,8 @@ export function InterventionControls({ leagueId, teamId, pickNumber }: Props) {
         }}
       >
         <p className="muted">
-          Publishes to the draft_targets queue only — it does not yet click ESPN's UI for
-          you (that automation is a follow-up). Use this to hand off a target once that
-          piece ships, or to log what you're about to do manually in ESPN.
+          This actually drafts the selected player in ESPN — the browser worker consumes
+          this and clicks it for you. Only use this if you actually want it locked in now.
         </p>
         <PlayerPicker selected={manualPlayer} onSelect={setManualPlayer} onClear={() => setManualPlayer(null)} />
         <button type="submit" disabled={busy || !manualPlayer}>Publish manual pick</button>
