@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ConfigScreen } from './components/ConfigScreen'
 import { InterventionControls } from './components/InterventionControls'
 import { PickFeed } from './components/PickFeed'
+import { PracticeDraftScreen } from './components/PracticeDraftScreen'
 import { RecommendationPanel } from './components/RecommendationPanel'
 import { StatusHeader } from './components/StatusHeader'
 import { useDraftStream } from './hooks/useDraftStream'
@@ -50,6 +51,7 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
 }
 
 function App() {
+  const [view, setView] = useState<'live' | 'practice'>('live')
   const [config, setConfig] = useState<DraftConfig | null>(() => {
     const stored = loadStoredConfig()
     return stored.league_id && stored.team_id ? stored : null
@@ -62,11 +64,25 @@ function App() {
     setConfiguring(false)
   }
 
-  if (configuring || !config) {
-    return <ConfigScreen initial={config ?? loadStoredConfig()} onConfigured={handleConfigured} />
-  }
-
-  return <Dashboard config={config} onReconfigure={() => setConfiguring(true)} />
+  return (
+    <>
+      <nav className="app-nav">
+        <button className={view === 'live' ? 'active' : ''} onClick={() => setView('live')}>
+          Draft Day
+        </button>
+        <button className={view === 'practice' ? 'active' : ''} onClick={() => setView('practice')}>
+          Practice Draft
+        </button>
+      </nav>
+      {view === 'practice' ? (
+        <PracticeDraftScreen />
+      ) : configuring || !config ? (
+        <ConfigScreen initial={config ?? loadStoredConfig()} onConfigured={handleConfigured} />
+      ) : (
+        <Dashboard config={config} onReconfigure={() => setConfiguring(true)} />
+      )}
+    </>
+  )
 }
 
 export default App
