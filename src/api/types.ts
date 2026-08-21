@@ -69,3 +69,7 @@ export interface DraftConfig {
   team_id: string
   season: number
 }
+
+export interface PracticeSyncJobStatus {
+  job_state: 'Active' | 'Succeeded' | 'Failed' | 'Unknown'
+}

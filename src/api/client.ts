@@ -1,4 +1,4 @@
-import type { DraftConfig, DraftStatusResponse, PlayerSearchResult, PlayerSummary } from './types'
+import type { DraftConfig, DraftStatusResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus } from './types'
 
 class ApiError extends Error {
   status: number
@@ -65,4 +65,21 @@ export function getPlayerSummary(playerId: string): Promise<PlayerSummary> {
 export function searchPlayers(query: string): Promise<PlayerSearchResult[]> {
   const params = new URLSearchParams({ q: query })
   return request(`/v1/players/search?${params}`)
+}
+
+// Creates fantasy-browser-worker's draft_sync.js Job pointed at a manually-joined ESPN
+// mock/practice draft room - see fantasy-core-pipeline's /v1/draft/practice/sync-job.
+export function startPracticeSyncJob(roomUrl: string): Promise<{ status: string; job_name: string }> {
+  return request('/v1/draft/practice/sync-job', {
+    method: 'POST',
+    body: JSON.stringify({ room_url: roomUrl }),
+  })
+}
+
+export function getPracticeSyncJobStatus(): Promise<PracticeSyncJobStatus> {
+  return request('/v1/draft/practice/sync-job/status')
+}
+
+export function endPracticeSyncJob(): Promise<{ status: string; job_name: string }> {
+  return request('/v1/draft/practice/sync-job', { method: 'DELETE' })
 }

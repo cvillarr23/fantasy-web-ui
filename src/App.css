@@ -268,3 +268,59 @@
   background: var(--bg);
   color: var(--text-h);
 }
+
+.app-nav {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.app-nav button {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 16px;
+  cursor: pointer;
+  color: var(--text);
+}
+.app-nav button.active {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+.practice-draft-screen {
+  max-width: 480px;
+  margin: 60px auto;
+  padding: 0 20px;
+  text-align: left;
+}
+.practice-draft-screen form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.practice-draft-screen label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+}
+.practice-draft-screen input {
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-h);
+}
+.practice-status {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.mono {
+  font-family: monospace;
+  font-size: 13px;
+}
