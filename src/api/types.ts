@@ -72,4 +72,5 @@ export interface DraftConfig {
 
 export interface PracticeSyncJobStatus {
   job_state: 'Active' | 'Succeeded' | 'Failed' | 'Unknown'
+  room_connected: boolean
 }
