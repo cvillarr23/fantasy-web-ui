@@ -28,7 +28,6 @@ The dev server proxies `/v1/*` to a locally-running `fantasy-core-pipeline` API
 
 ## Deployment
 
-Not yet wired up - a `fantasy-infra` follow-up covers the Dockerfile, k8s
-Deployment/Service/Ingress, and fronting this (and the API) with OIDC via
-oauth2-proxy so it isn't left open. See `fantasy-core-pipeline`'s draft-day web UI
-plan for the full requirements list.
+This repo publishes container images to GHCR (`latest` and commit-SHA tags).
+Kubernetes image digest pinning and rollout updates are managed in
+`fantasy-infra` by Argo CD Image Updater.
