@@ -18,6 +18,13 @@
 - **Dev server**: `npm run dev`
 - **No test framework exists** — validation is manual + CI checks above
 
+### Image Deployment Automation (Current Direction)
+
+- `fantasy-web-ui` CI (`.github/workflows/ci.yml`) is responsible for build/push to GHCR only.
+- Cross-repo image ref mutation from this repo is deprecated (`.github/workflows/update-infra-image.yml`).
+- Preferred rollout path is Argo CD Image Updater in `fantasy-infra` with git write-back.
+- Default policy target is digest pinning (`image@sha256:...`) for reproducible deploys.
+
 ### Component Hierarchy
 
 ```
@@ -154,6 +161,8 @@ Before merging:
 ## Deployment
 
 Deployed via Vite/Docker → `fantasy-infra` K8s deployment (`base/web-ui/deployment.yaml` or overlays). See `fantasy-infra/.github/copilot-instructions.md` for deployment flow.
+
+During the Argo CD Image Updater migration, do not add new cross-repo tag-bump logic in this repo.
 
 ## Related Repos & Links
 

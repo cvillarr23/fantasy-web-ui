@@ -164,19 +164,28 @@ export function PracticeDraftScreen() {
     if (parsed.season) setSeason(parsed.season)
   }
 
-  async function handleStart(e: React.FormEvent) {
-    e.preventDefault()
-    setBusy(true)
-    setError(null)
-    let practiceJobStarted = false
-    try {
-      const config: DraftConfig = {
-        league_id: leagueId.trim(),
-        team_id: teamId.trim(),
-        season,
-        mode: 'practice',
-      }
-      await startPracticeSyncJob(roomUrl.trim())
+   async function handleStart(e: React.FormEvent) {
+     e.preventDefault()
+     setBusy(true)
+     setError(null)
+     let practiceJobStarted = false
+     try {
+       // Clear any existing job before starting a new one - if there's an active job from a
+       // previous session, this prevents the "already Active" error. If no job exists, this
+       // is a no-op. We ignore any errors here and proceed with starting the new job anyway.
+       try {
+         await endPracticeSyncJob()
+       } catch {
+         // Ignore - could be no existing job, or DELETE already failed once
+       }
+
+       const config: DraftConfig = {
+         league_id: leagueId.trim(),
+         team_id: teamId.trim(),
+         season,
+         mode: 'practice',
+       }
+       await startPracticeSyncJob(roomUrl.trim())
       practiceJobStarted = true
       setTracking(true)
       setJobState('Unknown')

@@ -1,0 +1,14 @@
+name: Update Infra Image (Deprecated)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deprecated:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain deprecation
+        run: |
+          echo "Deprecated workflow: cross-repo image bumps are being migrated to Argo CD Image Updater (git write-back in fantasy-infra)."
+          echo "Keep using CI image publish in this repo; Argo handles digest updates in infra."
+
