@@ -68,6 +68,7 @@ export interface DraftConfig {
   league_id: string
   team_id: string
   season: number
+  mode: 'live' | 'practice'
 }
 
 export interface PracticeSyncJobStatus {

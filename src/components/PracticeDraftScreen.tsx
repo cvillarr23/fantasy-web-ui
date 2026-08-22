@@ -1,11 +1,84 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { endPracticeSyncJob, getPracticeSyncJobStatus, startPracticeSyncJob } from '../api/client'
-import type { PracticeSyncJobStatus } from '../api/types'
+import {
+  endPracticeSyncJob,
+  getPracticeSyncJobStatus,
+  setDraftConfig,
+  startDraftSync,
+  startPracticeSyncJob,
+  triggerDraftPick,
+} from '../api/client'
+import type { DraftConfig, PracticeSyncJobStatus } from '../api/types'
+import { InterventionControls } from './InterventionControls'
+import { PickFeed } from './PickFeed'
+import { RecommendationPanel } from './RecommendationPanel'
+import { StatusHeader } from './StatusHeader'
+import { useDraftStream } from '../hooks/useDraftStream'
 
 const ACTIVE_JOB_STORAGE_KEY = 'fantasy-web-ui.practice-sync-active'
+const PRACTICE_CONFIG_STORAGE_KEY = 'fantasy-web-ui.practice-config'
+const SHOW_INTERVENTIONS_STORAGE_KEY = 'fantasy-web-ui.practice-show-interventions'
 const POLL_INTERVAL_MS = 3000
 const TERMINAL_JOB_STATES: PracticeSyncJobStatus['job_state'][] = ['Succeeded', 'Failed']
 
+interface ParsedPracticeRoom {
+  leagueId: string
+  teamId: string
+  season: number
+}
+
+function getFirstSearchParam(search: URLSearchParams, keys: string[]): string {
+  for (const key of keys) {
+    const value = search.get(key)
+    if (value && value.trim()) return value.trim()
+  }
+  return ''
+}
+
+function parsePracticeRoom(urlString: string): ParsedPracticeRoom | null {
+  try {
+    const url = new URL(urlString)
+    const leagueId = getFirstSearchParam(url.searchParams, ['leagueId', 'league_id'])
+    const teamId = getFirstSearchParam(url.searchParams, ['teamId', 'team_id'])
+    const seasonRaw = getFirstSearchParam(url.searchParams, ['seasonId', 'season', 'season_id'])
+    const season = Number(seasonRaw)
+    return {
+      leagueId,
+      teamId,
+      season: Number.isFinite(season) && season > 0 ? season : new Date().getFullYear(),
+    }
+  } catch {
+    return null
+  }
+}
+
+function loadStoredPracticeConfig(): DraftConfig | null {
+  try {
+    const raw = window.localStorage.getItem(PRACTICE_CONFIG_STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Partial<DraftConfig>
+    if (!parsed.league_id || !parsed.team_id || !parsed.season) return null
+    return {
+      league_id: parsed.league_id,
+      team_id: parsed.team_id,
+      season: parsed.season,
+      mode: 'practice',
+    }
+  } catch {
+    return null
+  }
+}
+
+function loadShowInterventions(): boolean {
+  try {
+    return window.localStorage.getItem(SHOW_INTERVENTIONS_STORAGE_KEY) !== '0'
+  } catch {
+    return true
+  }
+}
+
+// job_state is the k8s Job's own lifecycle, not proof draft_sync.js has actually connected
+// to the ESPN room - "Active" just means the Pod is up/retrying, so label it as such rather
+// than claiming a room connection the backend doesn't actually confirm.
 const JOB_STATE_LABEL: Record<Exclude<PracticeSyncJobStatus['job_state'], 'Active'>, string> = {
   Succeeded: 'Ended',
   Failed: 'Failed - check the Job logs',
@@ -13,16 +86,30 @@ const JOB_STATE_LABEL: Record<Exclude<PracticeSyncJobStatus['job_state'], 'Activ
 }
 
 export function PracticeDraftScreen() {
+  const [initialPracticeConfig] = useState<DraftConfig | null>(() => loadStoredPracticeConfig())
   const [roomUrl, setRoomUrl] = useState('')
+  const [practiceConfig, setPracticeConfig] = useState<DraftConfig | null>(initialPracticeConfig)
+  const [leagueId, setLeagueId] = useState(initialPracticeConfig?.league_id ?? '')
+  const [teamId, setTeamId] = useState(initialPracticeConfig?.team_id ?? '')
+  const [season, setSeason] = useState<number>(initialPracticeConfig?.season ?? new Date().getFullYear())
   const [checking, setChecking] = useState(true)
   const [tracking, setTracking] = useState(false)
   const [jobState, setJobState] = useState<PracticeSyncJobStatus['job_state'] | null>(null)
   const [roomConnected, setRoomConnected] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showInterventions, setShowInterventions] = useState<boolean>(() => loadShowInterventions())
 
   const cancelledRef = useRef(false)
   const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const { status, connected, stale } = useDraftStream(practiceConfig?.league_id ?? '', practiceConfig?.season ?? 0)
+  const streamMatchesPracticeConfig =
+    Boolean(practiceConfig) &&
+    status?.league_id === practiceConfig?.league_id &&
+    status?.season === practiceConfig?.season
+  const activeStatus = streamMatchesPracticeConfig ? status : null
+  const nextPickNumber = activeStatus?.recommendation?.pick_number ? Number(activeStatus.recommendation.pick_number) : undefined
 
   // The Job can outlive this browser's local state (storage cleared, started from another
   // browser, a reload after it finished) - so localStorage is only ever a hint, never the
@@ -64,21 +151,49 @@ export function PracticeDraftScreen() {
     }
   }, [poll])
 
+
   const isValidUrl = /^https:\/\//.test(roomUrl.trim())
+  const hasRequiredConfig = leagueId.trim() && teamId.trim() && season > 0
+
+  function updateRoomUrl(value: string) {
+    setRoomUrl(value)
+    const parsed = parsePracticeRoom(value.trim())
+    if (!parsed) return
+    if (parsed.leagueId) setLeagueId(parsed.leagueId)
+    if (parsed.teamId) setTeamId(parsed.teamId)
+    if (parsed.season) setSeason(parsed.season)
+  }
 
   async function handleStart(e: React.FormEvent) {
     e.preventDefault()
     setBusy(true)
     setError(null)
+    let practiceJobStarted = false
     try {
+      const config: DraftConfig = {
+        league_id: leagueId.trim(),
+        team_id: teamId.trim(),
+        season,
+        mode: 'practice',
+      }
       await startPracticeSyncJob(roomUrl.trim())
-      window.localStorage.setItem(ACTIVE_JOB_STORAGE_KEY, '1')
+      practiceJobStarted = true
       setTracking(true)
       setJobState('Unknown')
       setRoomConnected(false)
+      setPracticeConfig(config)
+      window.localStorage.setItem(ACTIVE_JOB_STORAGE_KEY, '1')
+      window.localStorage.setItem(PRACTICE_CONFIG_STORAGE_KEY, JSON.stringify(config))
+      await setDraftConfig(config)
+      await startDraftSync(config.league_id)
       if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current)
       poll()
     } catch (err) {
+      // If room-sync started, keep tracking visible so the user can end/retry safely.
+      if (practiceJobStarted) {
+        if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current)
+        poll()
+      }
       setError(String(err))
     } finally {
       setBusy(false)
@@ -98,6 +213,8 @@ export function PracticeDraftScreen() {
       setTracking(false)
       setJobState(null)
       setRoomConnected(false)
+      setPracticeConfig(null)
+      window.localStorage.removeItem(PRACTICE_CONFIG_STORAGE_KEY)
       setRoomUrl('')
     } catch (err) {
       setError(String(err))
@@ -106,8 +223,13 @@ export function PracticeDraftScreen() {
     }
   }
 
+  function handleToggleInterventions(enabled: boolean) {
+    setShowInterventions(enabled)
+    window.localStorage.setItem(SHOW_INTERVENTIONS_STORAGE_KEY, enabled ? '1' : '0')
+  }
+
   return (
-    <div className="practice-draft-screen">
+    <div className={`practice-draft-screen ${tracking && practiceConfig ? 'with-dashboard' : ''}`}>
       <h1>Practice draft</h1>
       <p className="subtitle">
         Join or create a mock draft room yourself at{' '}
@@ -123,12 +245,24 @@ export function PracticeDraftScreen() {
             Practice draft room URL
             <input
               value={roomUrl}
-              onChange={(e) => setRoomUrl(e.target.value)}
+              onChange={(e) => updateRoomUrl(e.target.value)}
               placeholder="https://fantasy.espn.com/football/draft?..."
               required
             />
           </label>
-          <button type="submit" disabled={busy || !isValidUrl}>
+          <label>
+            Practice league ID
+            <input value={leagueId} onChange={(e) => setLeagueId(e.target.value)} required />
+          </label>
+          <label>
+            Your practice team ID
+            <input value={teamId} onChange={(e) => setTeamId(e.target.value)} required />
+          </label>
+          <label>
+            Season
+            <input type="number" min="2000" value={season} onChange={(e) => setSeason(Number(e.target.value))} required />
+          </label>
+          <button type="submit" disabled={busy || !isValidUrl || !hasRequiredConfig}>
             Start practice sync
           </button>
         </form>
@@ -154,6 +288,47 @@ export function PracticeDraftScreen() {
           <button disabled={busy} onClick={handleEnd}>
             End practice run
           </button>
+          <label className="practice-toggle">
+            <input
+              type="checkbox"
+              checked={showInterventions}
+              onChange={(e) => handleToggleInterventions(e.target.checked)}
+            />
+            Show intervention controls
+          </label>
+        </div>
+      )}
+
+      {!checking && tracking && !practiceConfig && (
+        <p className="muted">Missing saved practice config. End this run, then restart with league/team/season details.</p>
+      )}
+
+      {!checking && tracking && practiceConfig && (
+        <div className="dashboard">
+          <StatusHeader
+            status={activeStatus}
+            connected={streamMatchesPracticeConfig ? connected : false}
+            stale={streamMatchesPracticeConfig ? stale : false}
+            myTeamId={practiceConfig.team_id}
+          />
+          <div className="dashboard-grid">
+            <PickFeed picks={activeStatus?.recent_picks ?? []} myTeamId={practiceConfig.team_id} />
+            <div className="dashboard-side">
+              <RecommendationPanel
+                recommendation={activeStatus?.recommendation ?? {}}
+                onDraftPlayer={(playerId, name, position, proTeam) =>
+                  triggerDraftPick(practiceConfig.team_id, playerId, name, position, proTeam)
+                }
+              />
+              {showInterventions && (
+                <InterventionControls
+                  leagueId={practiceConfig.league_id}
+                  teamId={practiceConfig.team_id}
+                  pickNumber={nextPickNumber}
+                />
+              )}
+            </div>
+          </div>
         </div>
       )}
 

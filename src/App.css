@@ -296,6 +296,9 @@
   padding: 0 20px;
   text-align: left;
 }
+.practice-draft-screen.with-dashboard {
+  max-width: 1400px;
+}
 .practice-draft-screen form {
   display: flex;
   flex-direction: column;
@@ -318,7 +321,15 @@
 .practice-status {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 16px;
+}
+.practice-draft-screen label.practice-toggle {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
 }
 .mono {
   font-family: monospace;
