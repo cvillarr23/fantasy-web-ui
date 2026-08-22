@@ -30,8 +30,9 @@ export function setDraftConfig(config: DraftConfig): Promise<unknown> {
   return request('/v1/draft/config', { method: 'POST', body: JSON.stringify(config) })
 }
 
-export function startDraftSync(): Promise<unknown> {
-  return request('/v1/draft/start', { method: 'POST' })
+export function startDraftSync(leagueId?: string): Promise<unknown> {
+  const params = leagueId ? `?${new URLSearchParams({ league_id: leagueId }).toString()}` : ''
+  return request(`/v1/draft/start${params}`, { method: 'POST' })
 }
 
 export function pauseDraft(leagueId: string, pickNumber?: number): Promise<unknown> {

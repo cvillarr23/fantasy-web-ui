@@ -20,7 +20,7 @@ export function ConfigScreen({ initial, onConfigured }: Props) {
     setBusy(true)
     setError(null)
     try {
-      const config: DraftConfig = { league_id: leagueId, team_id: teamId, season }
+      const config: DraftConfig = { league_id: leagueId, team_id: teamId, season, mode: 'live' }
       await setDraftConfig(config)
       onConfigured(config)
     } catch (err) {
