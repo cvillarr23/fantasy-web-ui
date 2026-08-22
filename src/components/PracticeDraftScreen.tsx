@@ -20,7 +20,6 @@ const SHOW_INTERVENTIONS_STORAGE_KEY = 'fantasy-web-ui.practice-show-interventio
 const POLL_INTERVAL_MS = 3000
 const TERMINAL_JOB_STATES: PracticeSyncJobStatus['job_state'][] = ['Succeeded', 'Failed']
 
-const JOB_STATE_LABEL: Record<Exclude<PracticeSyncJobStatus['job_state'], 'Active'>, string> = {
 interface ParsedPracticeRoom {
   leagueId: string
   teamId: string
@@ -80,6 +79,7 @@ function loadShowInterventions(): boolean {
 // job_state is the k8s Job's own lifecycle, not proof draft_sync.js has actually connected
 // to the ESPN room - "Active" just means the Pod is up/retrying, so label it as such rather
 // than claiming a room connection the backend doesn't actually confirm.
+const JOB_STATE_LABEL: Record<Exclude<PracticeSyncJobStatus['job_state'], 'Active'>, string> = {
   Succeeded: 'Ended',
   Failed: 'Failed - check the Job logs',
   Unknown: 'Connecting…',
