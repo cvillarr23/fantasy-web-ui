@@ -6,11 +6,7 @@ const ACTIVE_JOB_STORAGE_KEY = 'fantasy-web-ui.practice-sync-active'
 const POLL_INTERVAL_MS = 3000
 const TERMINAL_JOB_STATES: PracticeSyncJobStatus['job_state'][] = ['Succeeded', 'Failed']
 
-// job_state is the k8s Job's own lifecycle, not proof draft_sync.js has actually connected
-// to the ESPN room - "Active" just means the Pod is up/retrying, so label it as such rather
-// than claiming a room connection the backend doesn't actually confirm.
-const JOB_STATE_LABEL: Record<PracticeSyncJobStatus['job_state'], string> = {
-  Active: 'Job running - syncing picks from the room',
+const JOB_STATE_LABEL: Record<Exclude<PracticeSyncJobStatus['job_state'], 'Active'>, string> = {
   Succeeded: 'Ended',
   Failed: 'Failed - check the Job logs',
   Unknown: 'Connecting…',
@@ -21,6 +17,7 @@ export function PracticeDraftScreen() {
   const [checking, setChecking] = useState(true)
   const [tracking, setTracking] = useState(false)
   const [jobState, setJobState] = useState<PracticeSyncJobStatus['job_state'] | null>(null)
+  const [roomConnected, setRoomConnected] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -39,9 +36,11 @@ export function PracticeDraftScreen() {
       const status = await getPracticeSyncJobStatus()
       if (cancelledRef.current) return
       setJobState(status.job_state)
+      setRoomConnected(Boolean(status.room_connected))
       if (status.job_state === 'Unknown') {
         window.localStorage.removeItem(ACTIVE_JOB_STORAGE_KEY)
         setTracking(false)
+        setRoomConnected(false)
       } else {
         window.localStorage.setItem(ACTIVE_JOB_STORAGE_KEY, '1')
         setTracking(true)
@@ -76,6 +75,7 @@ export function PracticeDraftScreen() {
       window.localStorage.setItem(ACTIVE_JOB_STORAGE_KEY, '1')
       setTracking(true)
       setJobState('Unknown')
+      setRoomConnected(false)
       if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current)
       poll()
     } catch (err) {
@@ -97,6 +97,7 @@ export function PracticeDraftScreen() {
       if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current)
       setTracking(false)
       setJobState(null)
+      setRoomConnected(false)
       setRoomUrl('')
     } catch (err) {
       setError(String(err))
@@ -139,9 +140,15 @@ export function PracticeDraftScreen() {
             <span
               role="status"
               aria-live="polite"
-              className={`health-badge health-${jobState === 'Active' ? 'healthy' : jobState === 'Failed' ? 'degraded' : 'stale'}`}
+              className={`health-badge health-${jobState === 'Failed' ? 'degraded' : jobState === 'Active' && roomConnected ? 'healthy' : 'stale'}`}
             >
-              {jobState ? JOB_STATE_LABEL[jobState] : 'Connecting…'}
+              {jobState
+                ? jobState === 'Active'
+                  ? roomConnected
+                    ? 'Connected to draft room - syncing picks'
+                    : 'Job running - connecting to room...'
+                  : JOB_STATE_LABEL[jobState]
+                : 'Connecting…'}
             </span>
           </p>
           <button disabled={busy} onClick={handleEnd}>
