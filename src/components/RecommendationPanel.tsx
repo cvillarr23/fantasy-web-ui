@@ -2,7 +2,7 @@ import type { DraftRecommendation } from '../api/types'
 
 interface Props {
   recommendation: DraftRecommendation
-  onDraftPlayer: (playerId: string, name: string, position: string, proTeam: string) => void
+  onDraftPlayer: (espnPlayerId: string, name: string, position: string, proTeam: string) => void
 }
 
 export function RecommendationPanel({ recommendation, onDraftPlayer }: Props) {
@@ -19,8 +19,16 @@ export function RecommendationPanel({ recommendation, onDraftPlayer }: Props) {
               <span className="candidate-name">{c.name}</span>
               <span className="candidate-position">{c.position}</span>
               <span className="candidate-score">VORP {c.vorp_score.toFixed(1)}</span>
-              <button onClick={() => onDraftPlayer(c.player_id, c.name, c.position, c.team)}>
-                Draft this player
+              {/* The click bot addresses ESPN's DOM by ESPN's own player id, so a player
+                  missing from the crosswalk genuinely cannot be drafted from here. Blocking
+                  is the only safe option: player_id is a different namespace that overlaps
+                  numerically, so falling back to it would draft someone else entirely. */}
+              <button
+                disabled={!c.espn_id}
+                title={c.espn_id ? undefined : `${c.name} has no ESPN id in the crosswalk (this affects all K and D/ST) - draft this one in ESPN directly`}
+                onClick={() => c.espn_id && onDraftPlayer(c.espn_id, c.name, c.position, c.team)}
+              >
+                {c.espn_id ? 'Draft this player' : 'Draft in ESPN directly'}
               </button>
             </li>
           ))}

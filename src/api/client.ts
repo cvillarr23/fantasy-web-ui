@@ -79,10 +79,15 @@ export function resumeDraft(leagueId: string, pickNumber?: number): Promise<unkn
 // Publishes to the draft_targets queue (see fantasy-core-pipeline's /v1/trigger/draft-pick).
 // fantasy-browser-worker's draft_clicker.js (WORKER-06) consumes this and actually clicks
 // the pick in ESPN's UI - this is a real, live action, not a log-only publish.
-export function triggerDraftPick(teamId: string, playerId: string, name: string, position: string, proTeam: string): Promise<unknown> {
+//
+// espnPlayerId must be players.espn_id, NOT the internal Sleeper players.player_id: the
+// worker clicks button.Button--draft[data-player-id=...], which is ESPN's namespace. The two
+// overlap numerically (ESPN 12483 is Matthew Stafford, internal 12483 is Jack Bech), so
+// sending the wrong one drafts a different, real player. The API rejects that case with 422.
+export function triggerDraftPick(teamId: string, espnPlayerId: string, name: string, position: string, proTeam: string): Promise<unknown> {
   return request('/v1/trigger/draft-pick', {
     method: 'POST',
-    body: JSON.stringify({ team_id: teamId, player_id: playerId, name, position, pro_team: proTeam }),
+    body: JSON.stringify({ team_id: teamId, player_id: espnPlayerId, name, position, pro_team: proTeam }),
   })
 }
 

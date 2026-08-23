@@ -19,6 +19,11 @@ export interface DraftPickSummary {
 
 export interface RankedCandidate {
   player_id: string
+  // ESPN's id, from the DynastyProcess crosswalk. Null for the ~18% of players it doesn't
+  // cover (which includes every K and D/ST). trigger-draft-pick requires this one - the
+  // browser worker clicks button.Button--draft[data-player-id=...] in the ESPN room - and
+  // the two id spaces overlap numerically, so player_id must never be substituted.
+  espn_id: string | null
   name: string
   position: string
   vorp_score: number
@@ -71,6 +76,9 @@ export interface PlayerSummary {
 
 export interface PlayerSearchResult {
   player_id: string
+  // See RankedCandidate.espn_id - null means this player cannot be drafted through the
+  // click bot, and the UI must say so rather than fall back to player_id.
+  espn_id: string | null
   name: string
   position: string
   team: string

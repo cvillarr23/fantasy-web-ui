@@ -55,9 +55,12 @@ export function InterventionControls({ leagueId, teamId, pickNumber }: Props) {
         className="manual-pick-form"
         onSubmit={(e) => {
           e.preventDefault()
-          if (!manualPlayer) return
+          // espn_id, never player_id: the worker clicks ESPN's DOM by ESPN's id and the two
+          // namespaces overlap numerically, so the wrong one drafts a different real player.
+          const espnId = manualPlayer?.espn_id
+          if (!espnId) return
           run(
-            () => triggerDraftPick(teamId, manualPlayer.player_id, manualPlayer.name, manualPlayer.position, manualPlayer.team),
+            () => triggerDraftPick(teamId, espnId, manualPlayer.name, manualPlayer.position, manualPlayer.team),
             'Manual draft-pick publish',
           ).then(() => setManualPlayer(null))
         }}
@@ -67,7 +70,14 @@ export function InterventionControls({ leagueId, teamId, pickNumber }: Props) {
           this and clicks it for you. Only use this if you actually want it locked in now.
         </p>
         <PlayerPicker selected={manualPlayer} onSelect={setManualPlayer} onClear={() => setManualPlayer(null)} />
-        <button type="submit" disabled={busy || !manualPlayer}>Publish manual pick</button>
+        {manualPlayer && !manualPlayer.espn_id && (
+          <p className="status-message">
+            {manualPlayer.name} has no ESPN id in our crosswalk, which is true of every K and
+            D/ST. The click bot addresses players by ESPN's id, so this one has to be drafted
+            in ESPN directly.
+          </p>
+        )}
+        <button type="submit" disabled={busy || !manualPlayer?.espn_id}>Publish manual pick</button>
       </form>
 
       {message && <p className="status-message">{message}</p>}
