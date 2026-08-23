@@ -29,16 +29,22 @@
 
 ```
 App.tsx (main router/state manager)
-├── ConfigScreen.tsx (live draft config: league ID, team ID, season)
+├── ConfigScreen.tsx (live draft config form: league ID, team ID, season)
+├── Dashboard (local component in App.tsx — the live draft view)
+│   ├── StatusHeader.tsx (job state, connection health, on-the-clock team)
+│   ├── PickFeed.tsx (recent picks, clickable for player summary)
+│   ├── RecommendationPanel.tsx (top candidates from draft_matrix.py)
+│   └── InterventionControls.tsx (pause/resume, manual pick publish)
 └── PracticeDraftScreen.tsx (practice room URL → league/team/season auto-parse + dashboard)
-    ├── StatusHeader.tsx (job state, connection health, on-the-clock team)
-    ├── PickFeed.tsx (recent picks, clickable for player summary)
-    ├── RecommendationPanel.tsx (top candidates from draft_matrix.py)
-    └── InterventionControls.tsx (pause/resume, manual pick publish)
+    ├── StatusHeader.tsx
+    ├── PickFeed.tsx
+    ├── RecommendationPanel.tsx
+    └── InterventionControls.tsx (hidden when the intervention toggle is off)
 ```
 
-Note: `ConfigScreen` and `PracticeDraftScreen` route to distinct views; there is no shared
-`Dashboard` component wrapper. Both screens independently compose the same child components.
+Note: `ConfigScreen` only collects configuration. The live dashboard is composed by the
+local `Dashboard` component inside `App.tsx`; `PracticeDraftScreen` independently composes
+the same child components. Changes to the live view belong in `App.tsx`.
 
 ### API Client (`src/api/client.ts`)
 
@@ -46,7 +52,8 @@ Core functions:
 - `setDraftConfig(config: DraftConfig)`: `POST /v1/draft/config` with `mode: 'live'|'practice'`
 - `startDraftSync(leagueId?: string)`: `POST /v1/draft/start?league_id=...` (optional targeting)
 - `getDraftStatus(leagueId, season)`: `GET /v1/draft/status`
-- `streamDraftStatus(leagueId, season)`: SSE stream of `/v1/draft/stream`
+- SSE streaming is not an API-client function — `useDraftStream` constructs an
+  `EventSource` against `/v1/draft/stream` directly.
 - Practice-specific:
   - `startPracticeSyncJob(roomUrl)`: `POST /v1/draft/practice/sync-job` (room connector)
   - `getPracticeSyncJobStatus()`: `GET /v1/draft/practice/sync-job/status`

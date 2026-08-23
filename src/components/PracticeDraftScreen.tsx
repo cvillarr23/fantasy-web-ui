@@ -110,12 +110,17 @@ export function PracticeDraftScreen() {
   const cancelledRef = useRef(false)
   const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { status, connected, stale } = useDraftStream(practiceConfig?.league_id ?? '', practiceConfig?.season ?? 0)
+  const { status, connected, connectionState, reconnectCount, lastUpdatedAt, stale } = useDraftStream(
+    practiceConfig?.league_id ?? '',
+    practiceConfig?.season ?? 0,
+  )
   const streamMatchesPracticeConfig =
     Boolean(practiceConfig) &&
     status?.league_id === practiceConfig?.league_id &&
     status?.season === practiceConfig?.season
   const activeStatus = streamMatchesPracticeConfig ? status : null
+  const streamConnected = streamMatchesPracticeConfig && connected
+  const streamStale = streamMatchesPracticeConfig && stale
   const hasMismatchedStream = Boolean(practiceConfig && status && !streamMatchesPracticeConfig)
   const nextPickNumber = activeStatus?.recommendation?.pick_number ? Number(activeStatus.recommendation.pick_number) : undefined
 
@@ -191,11 +196,50 @@ export function PracticeDraftScreen() {
          await startPracticeSyncJob(roomUrl.trim())
        } catch (err) {
          if (!isAlreadyActiveError(err)) throw err
-         // A 409 only proves that some practice sync job is active; it does not prove
-         // that job uses the room URL currently entered. Require the user to end the
-         // existing run explicitly to avoid accidentally overwriting an active practice draft.
-         setError('A practice room sync job is already active. Please end it before starting a new one.')
-         setBusy(false)
+         // A 409 only proves that some practice sync job is active; it does not prove that
+         // job uses the room URL just entered. The stored config is the identity of the run
+         // this browser started, so reattach to that rather than blocking the dashboard
+         // (issue #19). Without a stored config there is nothing trustworthy to attach to.
+         const existing = loadStoredPracticeConfig()
+         if (!existing) {
+           setError(
+             'A practice room sync job is already active, but this browser has no saved config for it. End that run before starting a new one.',
+           )
+           setBusy(false)
+           return
+         }
+
+         const differs =
+           existing.league_id !== config.league_id ||
+           existing.team_id !== config.team_id ||
+           existing.season !== config.season
+
+         setTracking(true)
+         setJobState('Unknown')
+         setRoomConnected(false)
+         setPracticeConfig(existing)
+         try {
+           window.localStorage.setItem(ACTIVE_JOB_STORAGE_KEY, '1')
+         } catch {
+           // Storage unavailable - reconnect still proceeds
+         }
+         setNotice(
+           differs
+             ? `Reconnected to the active practice run (league ${existing.league_id}, season ${existing.season}). It does not match the details you entered - end the run to start a different one.`
+             : 'Reconnected to the existing practice run.',
+         )
+
+         try {
+           await startDraftSync(existing.league_id)
+         } catch (startErr) {
+           if (!isAlreadyActiveError(startErr)) {
+             setNeedsDraftSyncRetry(true)
+             setError(`Reattached to the practice room, but draft listener failed to start: ${getErrorMessage(startErr)}`)
+           }
+         }
+
+         if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current)
+         poll()
          return
        }
 
@@ -386,9 +430,16 @@ export function PracticeDraftScreen() {
               Connected to room. Waiting for draft status events for league {practiceConfig.league_id} ({practiceConfig.season}).
             </p>
           )}
-          {activeStatus && activeStatus.recent_picks.length === 0 && (
+          {activeStatus && activeStatus.recent_picks.length === 0 && streamConnected && !streamStale && (
             <p className="banner banner-info" role="status" aria-live="polite">
               Connected and listening. No picks have been observed yet.
+            </p>
+          )}
+          {activeStatus && activeStatus.recent_picks.length === 0 && (!streamConnected || streamStale) && (
+            <p className="banner banner-warning" role="status" aria-live="polite">
+              {streamStale
+                ? 'No draft updates received recently - the stream may be stalled.'
+                : 'Reconnecting to the draft status stream…'}
             </p>
           )}
         </div>
@@ -402,8 +453,11 @@ export function PracticeDraftScreen() {
         <div className="dashboard">
           <StatusHeader
             status={activeStatus}
-            connected={streamMatchesPracticeConfig ? connected : false}
-            stale={streamMatchesPracticeConfig ? stale : false}
+            connected={streamConnected}
+            connectionState={streamMatchesPracticeConfig ? connectionState : 'connecting'}
+            reconnectCount={streamMatchesPracticeConfig ? reconnectCount : 0}
+            lastUpdatedAt={streamMatchesPracticeConfig ? lastUpdatedAt : null}
+            stale={streamStale}
             myTeamId={practiceConfig.team_id}
           />
           <div className="dashboard-grid">
