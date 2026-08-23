@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   endPracticeSyncJob,
   getPracticeSyncJobStatus,
+  isAlreadyActiveError,
   setDraftConfig,
   startDraftSync,
   startPracticeSyncJob,
@@ -76,6 +77,10 @@ function loadShowInterventions(): boolean {
   }
 }
 
+function getErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err)
+}
+
 // job_state is the k8s Job's own lifecycle, not proof draft_sync.js has actually connected
 // to the ESPN room - "Active" just means the Pod is up/retrying, so label it as such rather
 // than claiming a room connection the backend doesn't actually confirm.
@@ -98,6 +103,8 @@ export function PracticeDraftScreen() {
   const [roomConnected, setRoomConnected] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
+  const [needsDraftSyncRetry, setNeedsDraftSyncRetry] = useState(false)
   const [showInterventions, setShowInterventions] = useState<boolean>(() => loadShowInterventions())
 
   const cancelledRef = useRef(false)
@@ -109,6 +116,7 @@ export function PracticeDraftScreen() {
     status?.league_id === practiceConfig?.league_id &&
     status?.season === practiceConfig?.season
   const activeStatus = streamMatchesPracticeConfig ? status : null
+  const hasMismatchedStream = Boolean(practiceConfig && status && !streamMatchesPracticeConfig)
   const nextPickNumber = activeStatus?.recommendation?.pick_number ? Number(activeStatus.recommendation.pick_number) : undefined
 
   // The Job can outlive this browser's local state (storage cleared, started from another
@@ -136,7 +144,7 @@ export function PracticeDraftScreen() {
         }
       }
     } catch (err) {
-      if (!cancelledRef.current) setError(String(err))
+      if (!cancelledRef.current) setError(getErrorMessage(err))
     } finally {
       if (!cancelledRef.current) setChecking(false)
     }
@@ -164,37 +172,89 @@ export function PracticeDraftScreen() {
     if (parsed.season) setSeason(parsed.season)
   }
 
-  async function handleStart(e: React.FormEvent) {
-    e.preventDefault()
+   async function handleStart(e: React.FormEvent) {
+     e.preventDefault()
+     setBusy(true)
+     setError(null)
+      setNotice(null)
+      setNeedsDraftSyncRetry(false)
+     let practiceJobTracking = false
+     try {
+       const config: DraftConfig = {
+         league_id: leagueId.trim(),
+         team_id: teamId.trim(),
+         season,
+         mode: 'practice',
+       }
+
+       try {
+         await startPracticeSyncJob(roomUrl.trim())
+       } catch (err) {
+         if (!isAlreadyActiveError(err)) throw err
+         // A 409 only proves that some practice sync job is active; it does not prove
+         // that job uses the room URL currently entered. Require the user to end the
+         // existing run explicitly to avoid accidentally overwriting an active practice draft.
+         setError('A practice room sync job is already active. Please end it before starting a new one.')
+         setBusy(false)
+         return
+       }
+
+       practiceJobTracking = true
+       setTracking(true)
+       setJobState('Unknown')
+       setRoomConnected(false)
+       setPracticeConfig(config)
+
+       // Persist tracking early so UI can show recovery controls even if later steps fail.
+       // Treat storage as best-effort to ensure startup continues if localStorage is blocked.
+       try {
+         window.localStorage.setItem(ACTIVE_JOB_STORAGE_KEY, '1')
+         window.localStorage.setItem(PRACTICE_CONFIG_STORAGE_KEY, JSON.stringify(config))
+       } catch {
+         // Storage unavailable (e.g., private mode) - continue without persistence
+       }
+
+       await setDraftConfig(config)
+       try {
+         await startDraftSync(config.league_id)
+       } catch (err) {
+          if (isAlreadyActiveError(err)) {
+            setNotice('Draft-sync is already active for this league. Reconnected to the existing run.')
+          } else {
+            setNeedsDraftSyncRetry(true)
+            setError(`Practice room connected, but draft listener failed to start: ${getErrorMessage(err)}`)
+          }
+       }
+
+       if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current)
+       poll()
+     } catch (err) {
+       // Keep tracking visible if we attached to an already-running practice job.
+       if (practiceJobTracking) {
+         if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current)
+         poll()
+       }
+       setError(getErrorMessage(err))
+     } finally {
+       setBusy(false)
+     }
+   }
+
+  async function handleRetryDraftSyncStart() {
+    if (!practiceConfig) return
     setBusy(true)
     setError(null)
-    let practiceJobStarted = false
     try {
-      const config: DraftConfig = {
-        league_id: leagueId.trim(),
-        team_id: teamId.trim(),
-        season,
-        mode: 'practice',
-      }
-      await startPracticeSyncJob(roomUrl.trim())
-      practiceJobStarted = true
-      setTracking(true)
-      setJobState('Unknown')
-      setRoomConnected(false)
-      setPracticeConfig(config)
-      window.localStorage.setItem(ACTIVE_JOB_STORAGE_KEY, '1')
-      window.localStorage.setItem(PRACTICE_CONFIG_STORAGE_KEY, JSON.stringify(config))
-      await setDraftConfig(config)
-      await startDraftSync(config.league_id)
-      if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current)
-      poll()
+      await startDraftSync(practiceConfig.league_id)
+      setNeedsDraftSyncRetry(false)
+      setNotice('Draft listener start request accepted. Waiting for picks and recommendations...')
     } catch (err) {
-      // If room-sync started, keep tracking visible so the user can end/retry safely.
-      if (practiceJobStarted) {
-        if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current)
-        poll()
+      if (isAlreadyActiveError(err)) {
+        setNeedsDraftSyncRetry(false)
+        setNotice('Draft listener is already active. Reconnected to the existing run.')
+        return
       }
-      setError(String(err))
+      setError(`Retry failed: ${getErrorMessage(err)}`)
     } finally {
       setBusy(false)
     }
@@ -203,6 +263,8 @@ export function PracticeDraftScreen() {
   async function handleEnd() {
     setBusy(true)
     setError(null)
+    setNotice(null)
+    setNeedsDraftSyncRetry(false)
     try {
       await endPracticeSyncJob()
       // Only clear local tracking once the backend confirms the Job is actually gone - if
@@ -217,7 +279,7 @@ export function PracticeDraftScreen() {
       window.localStorage.removeItem(PRACTICE_CONFIG_STORAGE_KEY)
       setRoomUrl('')
     } catch (err) {
-      setError(String(err))
+      setError(getErrorMessage(err))
     } finally {
       setBusy(false)
     }
@@ -296,6 +358,39 @@ export function PracticeDraftScreen() {
             />
             Show intervention controls
           </label>
+        </div>
+      )}
+
+      {!checking && tracking && (
+        <div className="practice-banners">
+          {notice && (
+            <p className="banner banner-info" role="status" aria-live="polite">
+              {notice}
+            </p>
+          )}
+          {needsDraftSyncRetry && (
+            <p className="banner banner-warning" role="status" aria-live="polite">
+              Draft listener is not confirmed yet. Retry start to resume picks/recommendations.
+              <button type="button" onClick={handleRetryDraftSyncStart} disabled={busy || !practiceConfig}>
+                Retry draft listener start
+              </button>
+            </p>
+          )}
+          {hasMismatchedStream && (
+            <p className="banner banner-warning" role="status" aria-live="polite">
+              Received stream updates for a different league/season. Waiting for the active practice stream.
+            </p>
+          )}
+          {practiceConfig && jobState === 'Active' && roomConnected && !activeStatus && !hasMismatchedStream && (
+            <p className="banner banner-info" role="status" aria-live="polite">
+              Connected to room. Waiting for draft status events for league {practiceConfig.league_id} ({practiceConfig.season}).
+            </p>
+          )}
+          {activeStatus && activeStatus.recent_picks.length === 0 && (
+            <p className="banner banner-info" role="status" aria-live="polite">
+              Connected and listening. No picks have been observed yet.
+            </p>
+          )}
         </div>
       )}
 

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { getDraftStatus } from '../api/client'
 import type { DraftStatusResponse } from '../api/types'
 
 const STALE_AFTER_MS = 15_000 // ~7x the backend's 2s SSE poll interval
@@ -21,9 +22,36 @@ export function useDraftStream(leagueId: string, season: number, limit = 10): Dr
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null)
   const [stale, setStale] = useState(false)
   const lastUpdatedRef = useRef<number | null>(null)
+  const sseArrivedRef = useRef(false)
 
   useEffect(() => {
-    if (!leagueId || !season) return
+    if (!leagueId || !season) {
+      setStatus(null)
+      setConnected(false)
+      setLastUpdatedAt(null)
+      setStale(false)
+      lastUpdatedRef.current = null
+      sseArrivedRef.current = false
+      return
+    }
+
+    // Track whether an SSE event arrived and cleanup status
+    sseArrivedRef.current = false
+    let isEffectActive = true
+
+    // Seed from snapshot first so reconnects show the latest known picks immediately.
+    void getDraftStatus(leagueId, season, limit)
+      .then((snapshot) => {
+        // Ignore snapshot result if SSE already fired or effect was cleaned up
+        if (!isEffectActive || sseArrivedRef.current) return
+        setStatus(snapshot)
+        lastUpdatedRef.current = Date.now()
+        setLastUpdatedAt(lastUpdatedRef.current)
+        setStale(false)
+      })
+      .catch(() => {
+        // Keep waiting for SSE even if initial snapshot fetch fails.
+      })
 
     const params = new URLSearchParams({ league_id: leagueId, season: String(season), limit: String(limit) })
     const source = new EventSource(`/v1/draft/stream?${params}`)
@@ -31,6 +59,7 @@ export function useDraftStream(leagueId: string, season: number, limit = 10): Dr
     source.onopen = () => setConnected(true)
     source.onerror = () => setConnected(false)
     source.onmessage = (event) => {
+      sseArrivedRef.current = true
       try {
         const payload = JSON.parse(event.data) as DraftStatusResponse
         setStatus(payload)
@@ -49,6 +78,7 @@ export function useDraftStream(leagueId: string, season: number, limit = 10): Dr
     }, 2_000)
 
     return () => {
+      isEffectActive = false
       source.close()
       window.clearInterval(staleCheck)
     }
