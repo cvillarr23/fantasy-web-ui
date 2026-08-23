@@ -253,8 +253,9 @@
 .candidate-score { font-size: 12px; opacity: 0.7; }
 
 /* Shown in place of the draft button for players with no ESPN id in the crosswalk. Rendered
-   as text rather than a disabled button with a title, because browsers show no tooltip for a
-   disabled control and it would be unreachable by keyboard or screen reader. */
+   as text rather than a title on a disabled button: tooltips on disabled controls are
+   unreliable, and a disabled button is not focusable, so the explanation would be unreachable
+   by keyboard or screen reader. */
 .candidate-unavailable {
   font-size: 12px;
   opacity: 0.7;

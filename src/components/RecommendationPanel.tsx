@@ -25,9 +25,11 @@ export function RecommendationPanel({ recommendation, onDraftPlayer }: Props) {
                   missing from the crosswalk genuinely cannot be drafted from here. Blocking
                   is the only safe option: player_id is a different namespace that overlaps
                   numerically, so falling back to it would draft someone else entirely.
-                  The reason is rendered as text, not a title attribute - browsers do not show
-                  a tooltip for a disabled button, and it would not be reachable by keyboard
-                  or screen reader if they did. */}
+                  The reason is rendered as text rather than a title on a disabled button:
+                  tooltips on disabled controls are unreliable across browsers, and a disabled
+                  button is not focusable, so keyboard and screen-reader users cannot reach the
+                  explanation at all. (The disabled+title button elsewhere in InterventionControls
+                  is only a "not built yet" placeholder, where losing the hint costs nothing.) */}
               {espnId ? (
                 <button onClick={() => onDraftPlayer(espnId, c.name, c.position, c.team)}>
                   Draft this player
