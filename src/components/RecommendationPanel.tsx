@@ -2,7 +2,7 @@ import type { DraftRecommendation } from '../api/types'
 
 interface Props {
   recommendation: DraftRecommendation
-  onDraftPlayer: (playerId: string, name: string, position: string, proTeam: string) => void
+  onDraftPlayer: (espnPlayerId: string, name: string, position: string, proTeam: string) => void
 }
 
 export function RecommendationPanel({ recommendation, onDraftPlayer }: Props) {
@@ -14,16 +14,35 @@ export function RecommendationPanel({ recommendation, onDraftPlayer }: Props) {
         <h2>System's top picks</h2>
         {candidates.length === 0 && <p className="muted">No recommendation yet.</p>}
         <ol>
-          {candidates.map((c) => (
+          {candidates.map((c) => {
+            const espnId = c.espn_id
+            return (
             <li key={c.player_id} className="candidate-row">
               <span className="candidate-name">{c.name}</span>
               <span className="candidate-position">{c.position}</span>
               <span className="candidate-score">VORP {c.vorp_score.toFixed(1)}</span>
-              <button onClick={() => onDraftPlayer(c.player_id, c.name, c.position, c.team)}>
-                Draft this player
-              </button>
+              {/* The click bot addresses ESPN's DOM by ESPN's own player id, so a player
+                  missing from the crosswalk genuinely cannot be drafted from here. Blocking
+                  is the only safe option: player_id is a different namespace that overlaps
+                  numerically, so falling back to it would draft someone else entirely.
+                  The reason is rendered as text rather than a title on a disabled button:
+                  tooltips on disabled controls are unreliable across browsers, and a disabled
+                  button is not focusable, so keyboard and screen-reader users cannot reach the
+                  explanation at all. (The disabled+title button elsewhere in InterventionControls
+                  is only a "not built yet" placeholder, where losing the hint costs nothing.) */}
+              {espnId ? (
+                <button onClick={() => onDraftPlayer(espnId, c.name, c.position, c.team)}>
+                  Draft this player
+                </button>
+              ) : (
+                <span className="candidate-unavailable" role="note">
+                  Draft in ESPN directly — no ESPN id for {c.name} in our crosswalk, which is
+                  true of every K and D/ST.
+                </span>
+              )}
             </li>
-          ))}
+            )
+          })}
         </ol>
       </div>
       <div className="recommendation-column placeholder-column">
