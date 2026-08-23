@@ -68,7 +68,17 @@
   gap: 20px;
 }
 
-.pick-feed, .recommendation-panel, .intervention-controls {
+.dashboard-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.9fr);
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 1100px) {
+  .dashboard-main { grid-template-columns: 1fr; }
+}
+
+.pick-feed, .diagnostics-panel, .recommendation-panel, .intervention-controls {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 16px;
@@ -127,6 +137,101 @@
 .pick-position { color: var(--accent); font-size: 12px; }
 .pick-pro-team { font-size: 12px; opacity: 0.8; }
 .pick-team { color: var(--text); opacity: 0.7; font-size: 12px; }
+
+
+
+.diagnostics-panel {
+  max-height: 58vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.diagnostics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.diagnostics-header h2 { margin: 0 0 8px; }
+.diagnostics-summary {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0.8;
+}
+.diagnostics-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.diagnostics-copy-status {
+  margin: 8px 0 0;
+  font-size: 12px;
+  opacity: 0.8;
+}
+.diagnostics-alert {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  font-size: 13px;
+}
+.diagnostics-recent-errors {
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 6px;
+}
+.diagnostics-recent-errors h3 {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+.diagnostics-recent-errors ul, .diagnostics-log {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.diagnostics-recent-errors li {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #ef4444;
+  overflow-wrap: anywhere;
+}
+.diagnostics-log {
+  margin-top: 12px;
+  overflow-y: auto;
+  min-height: 0;
+}
+.diagnostics-entry {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+}
+.diagnostics-time { opacity: 0.7; }
+.diagnostics-level {
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.diagnostics-info .diagnostics-level { color: var(--accent); }
+.diagnostics-warn .diagnostics-level { color: #eab308; }
+.diagnostics-error .diagnostics-level { color: #ef4444; }
+.diagnostics-message { overflow-wrap: anywhere; }
+.diagnostics-entry pre {
+  grid-column: 1 / -1;
+  margin: 4px 0 0;
+  padding: 8px;
+  border-radius: 4px;
+  background: var(--code-bg);
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+.diagnostics-panel.is-collapsed {
+  max-height: none;
+}
 
 .recommendation-panel {
   display: flex;
