@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { getDraftStatus } from '../api/client'
 import type { DraftStatusResponse } from '../api/types'
 
 const STALE_AFTER_MS = 15_000 // ~7x the backend's 2s SSE poll interval
@@ -23,7 +24,26 @@ export function useDraftStream(leagueId: string, season: number, limit = 10): Dr
   const lastUpdatedRef = useRef<number | null>(null)
 
   useEffect(() => {
-    if (!leagueId || !season) return
+    if (!leagueId || !season) {
+      setStatus(null)
+      setConnected(false)
+      setLastUpdatedAt(null)
+      setStale(false)
+      lastUpdatedRef.current = null
+      return
+    }
+
+    // Seed from snapshot first so reconnects show the latest known picks immediately.
+    void getDraftStatus(leagueId, season, limit)
+      .then((snapshot) => {
+        setStatus(snapshot)
+        lastUpdatedRef.current = Date.now()
+        setLastUpdatedAt(lastUpdatedRef.current)
+        setStale(false)
+      })
+      .catch(() => {
+        // Keep waiting for SSE even if initial snapshot fetch fails.
+      })
 
     const params = new URLSearchParams({ league_id: leagueId, season: String(season), limit: String(limit) })
     const source = new EventSource(`/v1/draft/stream?${params}`)

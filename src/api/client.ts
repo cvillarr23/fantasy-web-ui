@@ -1,11 +1,28 @@
 import type { DraftConfig, DraftStatusResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus } from './types'
 
-class ApiError extends Error {
+export class ApiError extends Error {
   status: number
   constructor(status: number, message: string) {
     super(message)
     this.status = status
   }
+}
+
+function extractErrorMessage(body: string, fallback: string): string {
+  if (!body.trim()) return fallback
+  try {
+    const parsed = JSON.parse(body) as { detail?: unknown; message?: unknown }
+    if (typeof parsed.detail === 'string' && parsed.detail.trim()) return parsed.detail
+    if (typeof parsed.message === 'string' && parsed.message.trim()) return parsed.message
+  } catch {
+    // Non-JSON error response - return as-is.
+  }
+  return body
+}
+
+export function isAlreadyActiveError(err: unknown): boolean {
+  if (!(err instanceof ApiError)) return false
+  return err.status === 409 || /already\s+active/i.test(err.message)
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -15,7 +32,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   })
   if (!response.ok) {
     const body = await response.text()
-    throw new ApiError(response.status, body || response.statusText)
+    throw new ApiError(response.status, extractErrorMessage(body, response.statusText))
   }
   if (response.status === 204) return undefined as T
   return response.json() as Promise<T>

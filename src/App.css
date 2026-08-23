@@ -324,6 +324,33 @@
   flex-wrap: wrap;
   gap: 16px;
 }
+.practice-banners {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+}
+.banner {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.banner-info {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+.banner-warning {
+  background: rgba(234, 179, 8, 0.14);
+  border-color: rgba(234, 179, 8, 0.45);
+}
+.banner button {
+  white-space: nowrap;
+}
 .practice-draft-screen label.practice-toggle {
   display: inline-flex;
   flex-direction: row;
