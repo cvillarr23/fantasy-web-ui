@@ -6,7 +6,11 @@ export interface DraftPickSummary {
   pick_number: number
   round: number | null
   team_id: string
-  player_id: string
+  /** Internal (Sleeper) id. Null when the ESPN->internal crosswalk has no entry for this
+   * player, which is always the case for K and D/ST. */
+  player_id: string | null
+  /** ESPN's own id, always present - the only identifier a pick is guaranteed to have. */
+  espn_player_id: string | null
   name: string | null
   position: string | null
 }
