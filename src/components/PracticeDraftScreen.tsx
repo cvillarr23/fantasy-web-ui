@@ -233,10 +233,8 @@ export function PracticeDraftScreen() {
          try {
            await startDraftSync(existing.league_id)
          } catch (startErr) {
-           if (!isAlreadyActiveError(startErr)) {
-             setNeedsDraftSyncRetry(true)
-             setError(`Reattached to the practice room, but draft listener failed to start: ${getErrorMessage(startErr)}`)
-           }
+           setNeedsDraftSyncRetry(true)
+           setError(`Reattached to the practice room, but draft listener failed to start: ${getErrorMessage(startErr)}`)
          }
 
          if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current)
