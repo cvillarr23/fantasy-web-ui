@@ -30,13 +30,15 @@
 ```
 App.tsx (main router/state manager)
 ├── ConfigScreen.tsx (live draft config: league ID, team ID, season)
-├── PracticeDraftScreen.tsx (practice room URL → league/team/season auto-parse + full dashboard)
-│   ├── StatusHeader.tsx (job state, connection health, on-the-clock team)
-│   ├── PickFeed.tsx (recent picks, clickable for player summary)
-│   ├── RecommendationPanel.tsx (top candidates from draft_matrix.py)
-│   └── InterventionControls.tsx (pause/resume, manual pick publish)
-└── Dashboard.tsx (reused for both live + practice views)
+└── PracticeDraftScreen.tsx (practice room URL → league/team/season auto-parse + dashboard)
+    ├── StatusHeader.tsx (job state, connection health, on-the-clock team)
+    ├── PickFeed.tsx (recent picks, clickable for player summary)
+    ├── RecommendationPanel.tsx (top candidates from draft_matrix.py)
+    └── InterventionControls.tsx (pause/resume, manual pick publish)
 ```
+
+Note: `ConfigScreen` and `PracticeDraftScreen` route to distinct views; there is no shared
+`Dashboard` component wrapper. Both screens independently compose the same child components.
 
 ### API Client (`src/api/client.ts`)
 

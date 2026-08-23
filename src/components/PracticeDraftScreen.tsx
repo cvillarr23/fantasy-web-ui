@@ -191,7 +191,12 @@ export function PracticeDraftScreen() {
          await startPracticeSyncJob(roomUrl.trim())
        } catch (err) {
          if (!isAlreadyActiveError(err)) throw err
-          setNotice('Practice room sync is already running. Reconnected to the active run.')
+         // A 409 only proves that some practice sync job is active; it does not prove
+         // that job uses the room URL currently entered. Require the user to end the
+         // existing run explicitly to avoid accidentally overwriting an active practice draft.
+         setError('A practice room sync job is already active. Please end it before starting a new one.')
+         setBusy(false)
+         return
        }
 
        practiceJobTracking = true
@@ -199,8 +204,15 @@ export function PracticeDraftScreen() {
        setJobState('Unknown')
        setRoomConnected(false)
        setPracticeConfig(config)
-       window.localStorage.setItem(ACTIVE_JOB_STORAGE_KEY, '1')
-       window.localStorage.setItem(PRACTICE_CONFIG_STORAGE_KEY, JSON.stringify(config))
+
+       // Persist tracking early so UI can show recovery controls even if later steps fail.
+       // Treat storage as best-effort to ensure startup continues if localStorage is blocked.
+       try {
+         window.localStorage.setItem(ACTIVE_JOB_STORAGE_KEY, '1')
+         window.localStorage.setItem(PRACTICE_CONFIG_STORAGE_KEY, JSON.stringify(config))
+       } catch {
+         // Storage unavailable (e.g., private mode) - continue without persistence
+       }
 
        await setDraftConfig(config)
        try {
