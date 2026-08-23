@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ConfigScreen } from './components/ConfigScreen'
+import { DiagnosticsPanel } from './components/DiagnosticsPanel'
 import { InterventionControls } from './components/InterventionControls'
 import { PickFeed } from './components/PickFeed'
 import { PracticeDraftScreen } from './components/PracticeDraftScreen'
@@ -31,7 +32,7 @@ function loadStoredConfig(): DraftConfig {
 }
 
 function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigure: () => void }) {
-  const { status, connected, connectionState, reconnectCount, lastUpdatedAt, stale } = useDraftStream(
+  const { status, connected, connectionState, reconnectCount, lastUpdatedAt, stale, diagnostics } = useDraftStream(
     config.league_id,
     config.season,
   )
@@ -54,7 +55,16 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
         myTeamId={config.team_id}
       />
       <div className="dashboard-grid">
-        <PickFeed picks={status?.recent_picks ?? []} myTeamId={config.team_id} />
+        <div className="dashboard-main">
+          <PickFeed picks={status?.recent_picks ?? []} myTeamId={config.team_id} />
+          <DiagnosticsPanel
+            status={status}
+            connectionState={connectionState}
+            reconnectCount={reconnectCount}
+            stale={stale}
+            entries={diagnostics}
+          />
+        </div>
         <div className="dashboard-side">
           <RecommendationPanel
             recommendation={status?.recommendation ?? {}}

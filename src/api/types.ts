@@ -26,15 +26,24 @@ export interface DraftRecommendation {
   top_candidates?: RankedCandidate[]
 }
 
+export interface DraftStatusError {
+  [key: string]: unknown
+}
+
 export interface DraftStatusResponse {
   league_id: string
   season: number
+  mode: 'live' | 'practice'
   job_state: 'Active' | 'Succeeded' | 'Failed' | 'Unknown'
   recommendation: DraftRecommendation
   last_clicker_action: string | null
   recent_picks: DraftPickSummary[]
   on_the_clock_team_id: string | null
   pipeline_health: 'healthy' | 'degraded'
+  recent_errors: DraftStatusError[]
+  listener_state: 'Active' | 'Starting' | 'Failed' | 'Unknown'
+  listener_last_event_at: string | null
+  listener_error: string | null
 }
 
 export interface RecentNewsItem {

@@ -9,6 +9,7 @@ import {
   triggerDraftPick,
 } from '../api/client'
 import type { DraftConfig, PracticeSyncJobStatus } from '../api/types'
+import { DiagnosticsPanel } from './DiagnosticsPanel'
 import { InterventionControls } from './InterventionControls'
 import { PickFeed } from './PickFeed'
 import { RecommendationPanel } from './RecommendationPanel'
@@ -110,7 +111,7 @@ export function PracticeDraftScreen() {
   const cancelledRef = useRef(false)
   const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { status, connected, connectionState, reconnectCount, lastUpdatedAt, stale } = useDraftStream(
+  const { status, connected, connectionState, reconnectCount, lastUpdatedAt, stale, diagnostics } = useDraftStream(
     practiceConfig?.league_id ?? '',
     practiceConfig?.season ?? 0,
   )
@@ -461,7 +462,16 @@ export function PracticeDraftScreen() {
             myTeamId={practiceConfig.team_id}
           />
           <div className="dashboard-grid">
-            <PickFeed picks={activeStatus?.recent_picks ?? []} myTeamId={practiceConfig.team_id} />
+            <div className="dashboard-main">
+              <PickFeed picks={activeStatus?.recent_picks ?? []} myTeamId={practiceConfig.team_id} />
+              <DiagnosticsPanel
+                status={activeStatus}
+                connectionState={streamMatchesPracticeConfig ? connectionState : 'connecting'}
+                reconnectCount={streamMatchesPracticeConfig ? reconnectCount : 0}
+                stale={streamStale}
+                entries={diagnostics}
+              />
+            </div>
             <div className="dashboard-side">
               <RecommendationPanel
                 recommendation={activeStatus?.recommendation ?? {}}
