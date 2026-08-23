@@ -49,6 +49,9 @@ export function useDraftStream(leagueId: string, season: number, limit = 10): Dr
     sseArrivedRef.current = false
     hasConnectedRef.current = false
     reconnectPendingRef.current = false
+    // A previous subscription may have left this true; the new EventSource is not open yet,
+    // so keep it false until this subscription's own onopen fires.
+    setConnected(false)
     setConnectionState('connecting')
     setReconnectCount(0)
     let isEffectActive = true
@@ -85,9 +88,11 @@ export function useDraftStream(leagueId: string, season: number, limit = 10): Dr
       if (hasConnectedRef.current) reconnectPendingRef.current = true
     }
     source.onmessage = (event) => {
-      sseArrivedRef.current = true
       try {
         const payload = JSON.parse(event.data) as DraftStatusResponse
+        // Only suppress the snapshot seed once a usable event has actually parsed - a
+        // malformed payload must not blank out the dashboard.
+        sseArrivedRef.current = true
         setStatus(payload)
         lastUpdatedRef.current = Date.now()
         setLastUpdatedAt(lastUpdatedRef.current)
