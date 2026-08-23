@@ -20,6 +20,16 @@ function extractErrorMessage(body: string, fallback: string): string {
   return body
 }
 
+/** True when a 409 means "the thing you asked for already exists, carry on".
+ *
+ * Only valid for the practice *room connector* (POST /v1/draft/practice/sync-job), where a
+ * 409 genuinely means the same job is already running and reattaching is correct.
+ *
+ * Deliberately NOT used for POST /v1/draft/start. That endpoint returns 200 with
+ * already_running: true when the listener for *this* league is up, so its 409 can only mean
+ * a listener is stuck on a *different* league - which silently starves this draft of every
+ * pick. Treating that as a benign reattach is what made a fatally broken run report itself
+ * as connected. */
 export function isAlreadyActiveError(err: unknown): boolean {
   if (!(err instanceof ApiError)) return false
   return err.status === 409 || /already\s+active/i.test(err.message)

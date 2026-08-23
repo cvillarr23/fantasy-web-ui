@@ -263,12 +263,8 @@ export function PracticeDraftScreen() {
        try {
          await startDraftSync(config.league_id)
        } catch (err) {
-          if (isAlreadyActiveError(err)) {
-            setNotice('Draft-sync is already active for this league. Reconnected to the existing run.')
-          } else {
-            setNeedsDraftSyncRetry(true)
-            setError(`Practice room connected, but draft listener failed to start: ${getErrorMessage(err)}`)
-          }
+         setNeedsDraftSyncRetry(true)
+         setError(`Practice room connected, but draft listener failed to start: ${getErrorMessage(err)}`)
        }
 
        if (pollTimeoutRef.current) clearTimeout(pollTimeoutRef.current)
@@ -294,11 +290,6 @@ export function PracticeDraftScreen() {
       setNeedsDraftSyncRetry(false)
       setNotice('Draft listener start request accepted. Waiting for picks and recommendations...')
     } catch (err) {
-      if (isAlreadyActiveError(err)) {
-        setNeedsDraftSyncRetry(false)
-        setNotice('Draft listener is already active. Reconnected to the existing run.')
-        return
-      }
       setError(`Retry failed: ${getErrorMessage(err)}`)
     } finally {
       setBusy(false)
