@@ -13,7 +13,8 @@ export function PickFeed({ picks, myTeamId }: Props) {
   const [playerDetailsById, setPlayerDetailsById] = useState<Record<string, { name: string; team: string; position: string }>>({})
   const myTeamPicks = useMemo(() => picks.filter((pick) => pick.team_id === myTeamId), [picks, myTeamId])
   const missingPlayerDetails = useMemo(
-    () => [...new Set(picks.map((pick) => pick.player_id))].filter((playerId) => !playerDetailsById[playerId]),
+    () => [...new Set(picks.map((pick) => pick.player_id).filter((id): id is string => Boolean(id)))]
+      .filter((playerId) => !playerDetailsById[playerId]),
     [picks, playerDetailsById],
   )
 
@@ -54,8 +55,12 @@ export function PickFeed({ picks, myTeamId }: Props) {
     return (
       <ol reversed>
         {list.map((pick) => {
-          const details = playerDetailsById[pick.player_id]
-          const displayName = details?.name ?? pick.name ?? 'Unknown player'
+          const details = pick.player_id ? playerDetailsById[pick.player_id] : undefined
+          // A pick with no internal id is normal, not an error: K and D/ST are absent from
+          // the crosswalk entirely. Show the ESPN id rather than a bare "Unknown player" so
+          // the pick is still identifiable against the draft board.
+          const displayName =
+            details?.name ?? pick.name ?? (pick.espn_player_id ? `ESPN player ${pick.espn_player_id}` : 'Unknown player')
           const displayPosition = details?.position ?? pick.position
           const proTeam = details?.team
           const draftingTeam = pick.team_id === myTeamId ? 'Your team' : `Team ${pick.team_id}`
@@ -65,6 +70,7 @@ export function PickFeed({ picks, myTeamId }: Props) {
                 type="button"
                 className="pick-row-button"
                 onClick={() => setExpandedPlayerId(pick.player_id)}
+                disabled={!pick.player_id}
                 aria-label={`Pick ${pick.pick_number}: ${displayName}, picked by ${draftingTeam}. Show player summary.`}
               >
                 <span className="pick-number">#{pick.pick_number}</span>
