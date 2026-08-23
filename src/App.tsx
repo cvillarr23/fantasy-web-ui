@@ -31,7 +31,10 @@ function loadStoredConfig(): DraftConfig {
 }
 
 function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigure: () => void }) {
-  const { status, connected, stale } = useDraftStream(config.league_id, config.season)
+  const { status, connected, connectionState, reconnectCount, lastUpdatedAt, stale } = useDraftStream(
+    config.league_id,
+    config.season,
+  )
   const nextPickNumber = status?.recommendation?.pick_number
     ? Number(status.recommendation.pick_number)
     : undefined
@@ -41,7 +44,15 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
       <div className="dashboard-toolbar">
         <button onClick={onReconfigure}>⚙ Reconfigure</button>
       </div>
-      <StatusHeader status={status} connected={connected} stale={stale} myTeamId={config.team_id} />
+      <StatusHeader
+        status={status}
+        connected={connected}
+        connectionState={connectionState}
+        reconnectCount={reconnectCount}
+        lastUpdatedAt={lastUpdatedAt}
+        stale={stale}
+        myTeamId={config.team_id}
+      />
       <div className="dashboard-grid">
         <PickFeed picks={status?.recent_picks ?? []} myTeamId={config.team_id} />
         <div className="dashboard-side">

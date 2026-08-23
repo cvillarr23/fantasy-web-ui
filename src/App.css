@@ -78,8 +78,24 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 70vh;
+  max-height: 32vh;
   overflow-y: auto;
+}
+
+.pick-feed-sections {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .pick-feed-sections {
+    grid-template-columns: 1fr;
+  }
+}
+.pick-section h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 15px;
 }
 
 .pick-row {
@@ -96,6 +112,7 @@
 .pick-number { color: var(--text); opacity: 0.7; min-width: 32px; }
 .pick-name { font-weight: 600; flex: 1; }
 .pick-position { color: var(--accent); font-size: 12px; }
+.pick-pro-team { font-size: 12px; opacity: 0.8; }
 .pick-team { color: var(--text); opacity: 0.7; font-size: 12px; }
 
 .recommendation-panel {

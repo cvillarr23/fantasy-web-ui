@@ -7,6 +7,8 @@ const STALE_AFTER_MS = 15_000 // ~7x the backend's 2s SSE poll interval
 interface DraftStreamState {
   status: DraftStatusResponse | null
   connected: boolean
+  connectionState: 'idle' | 'connecting' | 'connected' | 'reconnecting'
+  reconnectCount: number
   lastUpdatedAt: number | null
   stale: boolean
 }
@@ -19,24 +21,36 @@ interface DraftStreamState {
 export function useDraftStream(leagueId: string, season: number, limit = 10): DraftStreamState {
   const [status, setStatus] = useState<DraftStatusResponse | null>(null)
   const [connected, setConnected] = useState(false)
+  const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'connected' | 'reconnecting'>('idle')
+  const [reconnectCount, setReconnectCount] = useState(0)
   const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null)
   const [stale, setStale] = useState(false)
   const lastUpdatedRef = useRef<number | null>(null)
   const sseArrivedRef = useRef(false)
+  const hasConnectedRef = useRef(false)
+  const reconnectPendingRef = useRef(false)
 
   useEffect(() => {
     if (!leagueId || !season) {
       setStatus(null)
       setConnected(false)
+      setConnectionState('idle')
+      setReconnectCount(0)
       setLastUpdatedAt(null)
       setStale(false)
       lastUpdatedRef.current = null
       sseArrivedRef.current = false
+      hasConnectedRef.current = false
+      reconnectPendingRef.current = false
       return
     }
 
     // Track whether an SSE event arrived and cleanup status
     sseArrivedRef.current = false
+    hasConnectedRef.current = false
+    reconnectPendingRef.current = false
+    setConnectionState('connecting')
+    setReconnectCount(0)
     let isEffectActive = true
 
     // Seed from snapshot first so reconnects show the latest known picks immediately.
@@ -56,8 +70,20 @@ export function useDraftStream(leagueId: string, season: number, limit = 10): Dr
     const params = new URLSearchParams({ league_id: leagueId, season: String(season), limit: String(limit) })
     const source = new EventSource(`/v1/draft/stream?${params}`)
 
-    source.onopen = () => setConnected(true)
-    source.onerror = () => setConnected(false)
+    source.onopen = () => {
+      setConnected(true)
+      setConnectionState('connected')
+      if (reconnectPendingRef.current) {
+        setReconnectCount((count) => count + 1)
+        reconnectPendingRef.current = false
+      }
+      hasConnectedRef.current = true
+    }
+    source.onerror = () => {
+      setConnected(false)
+      setConnectionState(hasConnectedRef.current ? 'reconnecting' : 'connecting')
+      if (hasConnectedRef.current) reconnectPendingRef.current = true
+    }
     source.onmessage = (event) => {
       sseArrivedRef.current = true
       try {
@@ -84,5 +110,5 @@ export function useDraftStream(leagueId: string, season: number, limit = 10): Dr
     }
   }, [leagueId, season, limit])
 
-  return { status, connected, lastUpdatedAt, stale }
+  return { status, connected, connectionState, reconnectCount, lastUpdatedAt, stale }
 }

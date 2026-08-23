@@ -110,7 +110,10 @@ export function PracticeDraftScreen() {
   const cancelledRef = useRef(false)
   const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { status, connected, stale } = useDraftStream(practiceConfig?.league_id ?? '', practiceConfig?.season ?? 0)
+  const { status, connected, connectionState, reconnectCount, lastUpdatedAt, stale } = useDraftStream(
+    practiceConfig?.league_id ?? '',
+    practiceConfig?.season ?? 0,
+  )
   const streamMatchesPracticeConfig =
     Boolean(practiceConfig) &&
     status?.league_id === practiceConfig?.league_id &&
@@ -403,6 +406,9 @@ export function PracticeDraftScreen() {
           <StatusHeader
             status={activeStatus}
             connected={streamMatchesPracticeConfig ? connected : false}
+            connectionState={streamMatchesPracticeConfig ? connectionState : 'connecting'}
+            reconnectCount={streamMatchesPracticeConfig ? reconnectCount : 0}
+            lastUpdatedAt={streamMatchesPracticeConfig ? lastUpdatedAt : null}
             stale={streamMatchesPracticeConfig ? stale : false}
             myTeamId={practiceConfig.team_id}
           />
