@@ -70,7 +70,14 @@ function mergeSignals(a: AbortSignal, b: AbortSignal): AbortSignal {
 
 async function request<T>(path: string, init?: RequestInit, timeoutMs: number = DEFAULT_TIMEOUT_MS): Promise<T> {
   const timeoutController = new AbortController()
-  const timer = setTimeout(() => timeoutController.abort(), timeoutMs)
+  // An explicit flag rather than reading signal.aborted in the catch: the timer can fire in the
+  // window between some other failure rejecting and the catch running, which would misreport a
+  // genuine network or parse error as a timeout and send the user chasing the wrong problem.
+  let timedOut = false
+  const timer = setTimeout(() => {
+    timedOut = true
+    timeoutController.abort()
+  }, timeoutMs)
   // Merged rather than substituted: applying our signal after the init spread would defeat a
   // caller-supplied one, and applying theirs would defeat the timeout. Both have to survive.
   const callerSignal = init?.signal
@@ -93,7 +100,7 @@ async function request<T>(path: string, init?: RequestInit, timeoutMs: number = 
     return (await response.json()) as T
   } catch (err) {
     // The merged signal aborts for either reason; only claim a timeout if ours is why.
-    if (timeoutController.signal.aborted) throw new ApiTimeoutError(path, timeoutMs)
+    if (timedOut) throw new ApiTimeoutError(path, timeoutMs)
     throw err
   } finally {
     clearTimeout(timer)

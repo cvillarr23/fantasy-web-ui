@@ -99,7 +99,7 @@ export function PracticeDraftScreen() {
   const [teamId, setTeamId] = useState(initialPracticeConfig?.team_id ?? '')
   const [season, setSeason] = useState<number>(initialPracticeConfig?.season ?? new Date().getFullYear())
   const [checking, setChecking] = useState(true)
-  const [preflightFailed, setPreflightFailed] = useState(false)
+  const [preflightError, setPreflightError] = useState<string | null>(null)
   const [showFormWhileTracking, setShowFormWhileTracking] = useState(false)
   const [tracking, setTracking] = useState(false)
   const [jobState, setJobState] = useState<PracticeSyncJobStatus['job_state'] | null>(null)
@@ -138,7 +138,7 @@ export function PracticeDraftScreen() {
     try {
       const status = await getPracticeSyncJobStatus()
       if (cancelledRef.current) return
-      setPreflightFailed(false)
+      setPreflightError(null)
       setJobState(status.job_state)
       setRoomConnected(Boolean(status.room_connected))
       if (status.job_state === 'Unknown') {
@@ -154,13 +154,16 @@ export function PracticeDraftScreen() {
       }
     } catch (err) {
       if (cancelledRef.current) return
-      setError(getErrorMessage(err))
+      // Deliberately NOT setError: that renders red at the bottom of the screen and would
+      // contradict the amber banner, making a recoverable condition read as a hard failure.
+      // The banner below carries the detail instead.
+      //
       // This check is a convenience - it reattaches to a run this browser has forgotten. It is
       // not a precondition for starting one, so a backend that cannot answer it must not be
       // able to lock the user out of the form. That is exactly what happened when the
       // Kubernetes control plane stopped responding: the request never settled, `checking`
       // never cleared, and the screen sat on its spinner with no way forward.
-      setPreflightFailed(true)
+      setPreflightError(getErrorMessage(err))
     } finally {
       if (!cancelledRef.current) setChecking(false)
     }
@@ -178,6 +181,7 @@ export function PracticeDraftScreen() {
 
   const isValidUrl = /^https:\/\//.test(roomUrl.trim())
   const hasRequiredConfig = leagueId.trim() && teamId.trim() && season > 0
+  const formVisible = !checking && (!tracking || showFormWhileTracking)
 
   function updateRoomUrl(value: string) {
     setRoomUrl(value)
@@ -350,15 +354,19 @@ export function PracticeDraftScreen() {
 
       {checking && <p className="muted">Checking for an active practice run…</p>}
 
-      {preflightFailed && (
+      {preflightError && (
         <p className="warning" role="status">
-          Could not check for an active practice run - that check failed. You can still start one
-          below. If it reports that a run is already active, use <strong>Force start</strong> to tear
-          that run down first.
+          Could not check for an active practice run: {preflightError}
+          {/* The recovery advice only makes sense when the form is actually on screen. While
+              tracking with the form hidden, pointing at a Force start button the user cannot see
+              is worse than saying nothing. */}
+          {formVisible
+            ? <> You can still start one below. If it reports that a run is already active, use <strong>Force start</strong> to tear that run down first.</>
+            : <> The run shown below may be out of date.</>}
         </p>
       )}
 
-      {!checking && (!tracking || showFormWhileTracking) && (
+      {formVisible && (
         <form onSubmit={handleStart}>
           <label>
             Practice draft room URL
