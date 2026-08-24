@@ -8,6 +8,10 @@
   --accent-bg: rgba(170, 59, 255, 0.1);
   --accent-border: rgba(170, 59, 255, 0.5);
   --social-bg: rgba(244, 243, 236, 0.5);
+  /* amber-700, not amber-500: #f59e0b is ~2.1:1 on white and fails WCAG AA for text and for UI
+     component boundaries. This is ~4.9:1. Paired with --warn-dark below so the same token stays
+     readable on both themes. */
+  --warn: #b45309;
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 
@@ -40,6 +44,8 @@
     --accent: #c084fc;
     --accent-bg: rgba(192, 132, 252, 0.15);
     --accent-border: rgba(192, 132, 252, 0.5);
+    /* amber-400 on the dark surface: the light-theme amber-700 would be ~2.6:1 here. */
+    --warn: #fbbf24;
     --social-bg: rgba(47, 48, 58, 0.5);
     --shadow:
       rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
