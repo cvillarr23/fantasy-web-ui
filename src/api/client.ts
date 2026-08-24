@@ -54,21 +54,37 @@ export class ApiTimeoutError extends ApiError {
   }
 }
 
+/** AbortSignal.any is not available everywhere Vite targets, so fall back to forwarding
+ * whichever fires first. */
+function mergeSignals(a: AbortSignal, b: AbortSignal): AbortSignal {
+  if (typeof AbortSignal.any === 'function') return AbortSignal.any([a, b])
+  const merged = new AbortController()
+  const abort = () => merged.abort()
+  if (a.aborted || b.aborted) abort()
+  else {
+    a.addEventListener('abort', abort, { once: true })
+    b.addEventListener('abort', abort, { once: true })
+  }
+  return merged.signal
+}
+
 async function request<T>(path: string, init?: RequestInit, timeoutMs: number = DEFAULT_TIMEOUT_MS): Promise<T> {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  const timeoutController = new AbortController()
+  const timer = setTimeout(() => timeoutController.abort(), timeoutMs)
+  // Merged rather than substituted: applying our signal after the init spread would defeat a
+  // caller-supplied one, and applying theirs would defeat the timeout. Both have to survive.
+  const callerSignal = init?.signal
+  const signal = callerSignal ? mergeSignals(callerSignal, timeoutController.signal) : timeoutController.signal
   let response: Response
   try {
     response = await fetch(path, {
       headers: { 'Content-Type': 'application/json' },
       ...init,
-      // After the spread deliberately: an init.signal would otherwise silently replace ours
-      // and defeat the timeout entirely, which is the one thing this must not lose.
-      signal: controller.signal,
+      signal,
     })
   } catch (err) {
-    // A caller-supplied signal can also abort us; only claim a timeout if ours fired.
-    if (controller.signal.aborted) throw new ApiTimeoutError(path, timeoutMs)
+    // The merged signal aborts for either reason; only claim a timeout if ours is why.
+    if (timeoutController.signal.aborted) throw new ApiTimeoutError(path, timeoutMs)
     throw err
   } finally {
     clearTimeout(timer)

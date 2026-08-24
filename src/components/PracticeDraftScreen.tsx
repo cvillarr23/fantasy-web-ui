@@ -188,7 +188,9 @@ export function PracticeDraftScreen() {
     if (parsed.season) setSeason(parsed.season)
   }
 
-   async function handleStart(e: React.FormEvent, force = false) {
+   // Widened because Force start invokes this from a button onClick, which hands over a
+   // MouseEvent rather than the form's FormEvent. Only preventDefault is used, which both have.
+   async function handleStart(e: React.FormEvent | React.MouseEvent, force = false) {
      e.preventDefault()
      setBusy(true)
      setError(null)
