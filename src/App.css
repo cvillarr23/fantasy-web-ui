@@ -390,12 +390,13 @@
 .muted { opacity: 0.6; font-size: 14px; }
 .error { color: #ef4444; }
 /* Amber, not red: a failed preflight is a degraded-but-recoverable state the user can act on,
-   which shouldn't read as loudly as a hard error. */
-.warning { color: #f59e0b; }
+   which shouldn't read as loudly as a hard error. --warn is theme-aware because a single amber
+   cannot clear WCAG AA against both #fff and #16171d. */
+.warning { color: var(--warn); }
 .button-row button.secondary {
   background: transparent;
-  border: 1px solid #f59e0b;
-  color: #f59e0b;
+  border: 1px solid var(--warn);
+  color: var(--warn);
 }
 
 .config-screen {
