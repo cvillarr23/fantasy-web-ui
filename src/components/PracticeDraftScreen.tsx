@@ -352,8 +352,8 @@ export function PracticeDraftScreen() {
 
       {preflightFailed && (
         <p className="warning" role="status">
-          Could not check for an active practice run - the backend did not answer. You can still start
-          one below. If it reports that a run is already active, use <strong>Force start</strong> to tear
+          Could not check for an active practice run - that check failed. You can still start one
+          below. If it reports that a run is already active, use <strong>Force start</strong> to tear
           that run down first.
         </p>
       )}

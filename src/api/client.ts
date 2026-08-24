@@ -75,13 +75,22 @@ async function request<T>(path: string, init?: RequestInit, timeoutMs: number = 
   // caller-supplied one, and applying theirs would defeat the timeout. Both have to survive.
   const callerSignal = init?.signal
   const signal = callerSignal ? mergeSignals(callerSignal, timeoutController.signal) : timeoutController.signal
-  let response: Response
+  // The timer deliberately spans body consumption too, not just the fetch. fetch() resolves as
+  // soon as headers arrive, so a backend that sends a 200 and then stalls the body would hang
+  // .json() forever - reinstating the never-settles bug this whole change exists to remove.
+  // Aborting the signal rejects the in-flight body read as well.
   try {
-    response = await fetch(path, {
+    const response = await fetch(path, {
       headers: { 'Content-Type': 'application/json' },
       ...init,
       signal,
     })
+    if (!response.ok) {
+      const body = await response.text()
+      throw new ApiError(response.status, extractErrorMessage(body, response.statusText))
+    }
+    if (response.status === 204) return undefined as T
+    return (await response.json()) as T
   } catch (err) {
     // The merged signal aborts for either reason; only claim a timeout if ours is why.
     if (timeoutController.signal.aborted) throw new ApiTimeoutError(path, timeoutMs)
@@ -89,12 +98,6 @@ async function request<T>(path: string, init?: RequestInit, timeoutMs: number = 
   } finally {
     clearTimeout(timer)
   }
-  if (!response.ok) {
-    const body = await response.text()
-    throw new ApiError(response.status, extractErrorMessage(body, response.statusText))
-  }
-  if (response.status === 204) return undefined as T
-  return response.json() as Promise<T>
 }
 
 export function getDraftStatus(leagueId: string, season: number, limit = 10): Promise<DraftStatusResponse> {
