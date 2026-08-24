@@ -389,6 +389,14 @@
 .news-source { font-size: 12px; font-weight: 700; color: var(--accent); }
 .muted { opacity: 0.6; font-size: 14px; }
 .error { color: #ef4444; }
+/* Amber, not red: a failed preflight is a degraded-but-recoverable state the user can act on,
+   which shouldn't read as loudly as a hard error. */
+.warning { color: #f59e0b; }
+.button-row button.secondary {
+  background: transparent;
+  border: 1px solid #f59e0b;
+  color: #f59e0b;
+}
 
 .config-screen {
   max-width: 480px;

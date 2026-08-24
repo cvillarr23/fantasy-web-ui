@@ -99,6 +99,8 @@ export function PracticeDraftScreen() {
   const [teamId, setTeamId] = useState(initialPracticeConfig?.team_id ?? '')
   const [season, setSeason] = useState<number>(initialPracticeConfig?.season ?? new Date().getFullYear())
   const [checking, setChecking] = useState(true)
+  const [preflightFailed, setPreflightFailed] = useState(false)
+  const [showFormWhileTracking, setShowFormWhileTracking] = useState(false)
   const [tracking, setTracking] = useState(false)
   const [jobState, setJobState] = useState<PracticeSyncJobStatus['job_state'] | null>(null)
   const [roomConnected, setRoomConnected] = useState(false)
@@ -136,6 +138,7 @@ export function PracticeDraftScreen() {
     try {
       const status = await getPracticeSyncJobStatus()
       if (cancelledRef.current) return
+      setPreflightFailed(false)
       setJobState(status.job_state)
       setRoomConnected(Boolean(status.room_connected))
       if (status.job_state === 'Unknown') {
@@ -150,7 +153,14 @@ export function PracticeDraftScreen() {
         }
       }
     } catch (err) {
-      if (!cancelledRef.current) setError(getErrorMessage(err))
+      if (cancelledRef.current) return
+      setError(getErrorMessage(err))
+      // This check is a convenience - it reattaches to a run this browser has forgotten. It is
+      // not a precondition for starting one, so a backend that cannot answer it must not be
+      // able to lock the user out of the form. That is exactly what happened when the
+      // Kubernetes control plane stopped responding: the request never settled, `checking`
+      // never cleared, and the screen sat on its spinner with no way forward.
+      setPreflightFailed(true)
     } finally {
       if (!cancelledRef.current) setChecking(false)
     }
@@ -178,7 +188,7 @@ export function PracticeDraftScreen() {
     if (parsed.season) setSeason(parsed.season)
   }
 
-   async function handleStart(e: React.FormEvent) {
+   async function handleStart(e: React.FormEvent, force = false) {
      e.preventDefault()
      setBusy(true)
      setError(null)
@@ -194,9 +204,11 @@ export function PracticeDraftScreen() {
        }
 
        try {
-         await startPracticeSyncJob(roomUrl.trim())
+         await startPracticeSyncJob(roomUrl.trim(), force)
        } catch (err) {
-         if (!isAlreadyActiveError(err)) throw err
+         // force already tore down whatever was there, so a 409 back from it is not the
+         // benign "reattach to the run you meant" case - it is a real failure to displace.
+         if (force || !isAlreadyActiveError(err)) throw err
          // A 409 only proves that some practice sync job is active; it does not prove that
          // job uses the room URL just entered. The stored config is the identity of the run
          // this browser started, so reattach to that rather than blocking the dashboard
@@ -244,6 +256,7 @@ export function PracticeDraftScreen() {
 
        practiceJobTracking = true
        setTracking(true)
+       setShowFormWhileTracking(false)
        setJobState('Unknown')
        setRoomConnected(false)
        setPracticeConfig(config)
@@ -335,7 +348,15 @@ export function PracticeDraftScreen() {
 
       {checking && <p className="muted">Checking for an active practice run…</p>}
 
-      {!checking && !tracking && (
+      {preflightFailed && (
+        <p className="warning" role="status">
+          Could not check for an active practice run - the backend did not answer. You can still start
+          one below. If it reports that a run is already active, use <strong>Force start</strong> to tear
+          that run down first.
+        </p>
+      )}
+
+      {!checking && (!tracking || showFormWhileTracking) && (
         <form onSubmit={handleStart}>
           <label>
             Practice draft room URL
@@ -358,9 +379,22 @@ export function PracticeDraftScreen() {
             Season
             <input type="number" min="2000" value={season} onChange={(e) => setSeason(Number(e.target.value))} required />
           </label>
-          <button type="submit" disabled={busy || !isValidUrl || !hasRequiredConfig}>
-            Start practice sync
-          </button>
+          <div className="button-row">
+            <button type="submit" disabled={busy || !isValidUrl || !hasRequiredConfig}>
+              Start practice sync
+            </button>
+            {/* The escape hatch. A previous run can be left wedged by a Job stuck Terminating
+                or by a control plane that stopped answering long enough to strand one, and
+                without this the 409 is a dead end with nothing to reattach to. */}
+            <button
+              type="button"
+              className="secondary"
+              disabled={busy || !isValidUrl || !hasRequiredConfig}
+              onClick={(e) => handleStart(e, true)}
+            >
+              Force start (end any existing run)
+            </button>
+          </div>
         </form>
       )}
 
@@ -381,9 +415,19 @@ export function PracticeDraftScreen() {
                 : 'Connecting…'}
             </span>
           </p>
-          <button disabled={busy} onClick={handleEnd}>
-            End practice run
-          </button>
+          <div className="button-row">
+            <button disabled={busy} onClick={handleEnd}>
+              End practice run
+            </button>
+            {/* "End practice run" is the clean exit, but it depends on the same Kubernetes
+                calls that may be the reason the run is wedged in the first place. This reveals
+                the form so a new room can be forced in without a working teardown. */}
+            {!showFormWhileTracking && (
+              <button type="button" className="secondary" onClick={() => setShowFormWhileTracking(true)}>
+                Start a different room…
+              </button>
+            )}
+          </div>
           <label className="practice-toggle">
             <input
               type="checkbox"

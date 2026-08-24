@@ -35,11 +35,44 @@ export function isAlreadyActiveError(err: unknown): boolean {
   return err.status === 409 || /already\s+active/i.test(err.message)
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
-    headers: { 'Content-Type': 'application/json' },
-    ...init,
-  })
+/** Default per-request ceiling. Several draft endpoints call the Kubernetes apiserver, which
+ * has no timeout of its own - when the control plane degrades they simply never respond, and
+ * an un-aborted fetch never settles. A promise that never settles is worse than a failed one:
+ * it leaves the UI mid-flight forever with nothing to render and no way out. */
+const DEFAULT_TIMEOUT_MS = 15_000
+
+/** Teardown deletes a Job with Foreground propagation and then polls for the Pod to actually
+ * go (15 polls x 2s server-side), so it is legitimately slow rather than hung. */
+export const TEARDOWN_TIMEOUT_MS = 45_000
+
+/** Thrown when a request is aborted for exceeding its timeout. Status 0 distinguishes it from
+ * any real HTTP response, so callers can tell "the backend said no" from "the backend never
+ * answered" - they usually warrant different recovery. */
+export class ApiTimeoutError extends ApiError {
+  constructor(path: string, timeoutMs: number) {
+    super(0, `Request to ${path} timed out after ${Math.round(timeoutMs / 1000)}s - the backend did not respond.`)
+  }
+}
+
+async function request<T>(path: string, init?: RequestInit, timeoutMs: number = DEFAULT_TIMEOUT_MS): Promise<T> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  let response: Response
+  try {
+    response = await fetch(path, {
+      headers: { 'Content-Type': 'application/json' },
+      ...init,
+      // After the spread deliberately: an init.signal would otherwise silently replace ours
+      // and defeat the timeout entirely, which is the one thing this must not lose.
+      signal: controller.signal,
+    })
+  } catch (err) {
+    // A caller-supplied signal can also abort us; only claim a timeout if ours fired.
+    if (controller.signal.aborted) throw new ApiTimeoutError(path, timeoutMs)
+    throw err
+  } finally {
+    clearTimeout(timer)
+  }
   if (!response.ok) {
     const body = await response.text()
     throw new ApiError(response.status, extractErrorMessage(body, response.statusText))
@@ -102,11 +135,15 @@ export function searchPlayers(query: string): Promise<PlayerSearchResult[]> {
 
 // Creates fantasy-browser-worker's draft_sync.js Job pointed at a manually-joined ESPN
 // mock/practice draft room - see fantasy-core-pipeline's /v1/draft/practice/sync-job.
-export function startPracticeSyncJob(roomUrl: string): Promise<{ status: string; job_name: string }> {
-  return request('/v1/draft/practice/sync-job', {
+// force tears down whatever run is already there instead of 409ing, which is the only way
+// out when a previous run is wedged (a Job stuck Terminating, or a control plane that stops
+// answering long enough to strand one).
+export function startPracticeSyncJob(roomUrl: string, force = false): Promise<{ status: string; job_name: string }> {
+  const params = force ? '?force=true' : ''
+  return request(`/v1/draft/practice/sync-job${params}`, {
     method: 'POST',
     body: JSON.stringify({ room_url: roomUrl }),
-  })
+  }, force ? TEARDOWN_TIMEOUT_MS : undefined)
 }
 
 export function getPracticeSyncJobStatus(): Promise<PracticeSyncJobStatus> {
@@ -114,5 +151,5 @@ export function getPracticeSyncJobStatus(): Promise<PracticeSyncJobStatus> {
 }
 
 export function endPracticeSyncJob(): Promise<{ status: string; job_name: string }> {
-  return request('/v1/draft/practice/sync-job', { method: 'DELETE' })
+  return request('/v1/draft/practice/sync-job', { method: 'DELETE' }, TEARDOWN_TIMEOUT_MS)
 }
