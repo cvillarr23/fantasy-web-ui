@@ -159,8 +159,15 @@ export function useDraftStream(leagueId: string, season: number, limit = 10): Dr
     let isEffectActive = true
 
     function acceptStatus(payload: DraftStatusResponse, source: 'snapshot' | 'sse') {
+      // The first payload of a subscription is a baseline, not an observation. Its picks
+      // already happened - possibly hours ago, possibly in a draft that has since finished -
+      // and DraftPickSummary carries no timestamp, so their real age is unknowable here.
+      // Comparing them against an empty set reported every one as landing "0s ago", which is
+      // precisely the lie this field exists to prevent: it is the number you check to find
+      // out whether the feed has gone quiet. Left unknown until a pick actually arrives.
+      const isBaseline = previousStatusRef.current === null
       const previousPickKeys = new Set((previousStatusRef.current?.recent_picks ?? []).map(pickKey))
-      if (payload.recent_picks.some((pick) => !previousPickKeys.has(pickKey(pick)))) {
+      if (!isBaseline && payload.recent_picks.some((pick) => !previousPickKeys.has(pickKey(pick)))) {
         setLastPickAt(Date.now())
       }
       appendStatusDiagnostics(payload, previousStatusRef.current, source, append)
