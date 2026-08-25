@@ -32,7 +32,7 @@ function loadStoredConfig(): DraftConfig {
 }
 
 function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigure: () => void }) {
-  const { status, connected, connectionState, reconnectCount, lastUpdatedAt, stale, diagnostics } = useDraftStream(
+  const { status, connected, connectionState, reconnectCount, lastHeartbeatAt, lastPickAt, stale, diagnostics } = useDraftStream(
     config.league_id,
     config.season,
   )
@@ -50,7 +50,8 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
         connected={connected}
         connectionState={connectionState}
         reconnectCount={reconnectCount}
-        lastUpdatedAt={lastUpdatedAt}
+        lastHeartbeatAt={lastHeartbeatAt}
+        lastPickAt={lastPickAt}
         stale={stale}
         myTeamId={config.team_id}
       />

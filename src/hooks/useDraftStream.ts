@@ -4,14 +4,16 @@ import type { DraftPickSummary, DraftStatusResponse } from '../api/types'
 import type { DiagnosticsLogEntry, DiagnosticsLevel } from './useDiagnosticsLog'
 import { useDiagnosticsLog } from './useDiagnosticsLog'
 
-const STALE_AFTER_MS = 15_000 // ~7x the backend's 2s SSE poll interval
+const HEARTBEAT_INTERVAL_MS = 2_000
+const STALE_AFTER_MS = HEARTBEAT_INTERVAL_MS * 4
 
 interface DraftStreamState {
   status: DraftStatusResponse | null
   connected: boolean
   connectionState: 'idle' | 'connecting' | 'connected' | 'reconnecting'
   reconnectCount: number
-  lastUpdatedAt: number | null
+  lastHeartbeatAt: number | null
+  lastPickAt: number | null
   stale: boolean
   diagnostics: DiagnosticsLogEntry[]
 }
@@ -88,20 +90,18 @@ function appendStatusDiagnostics(
   }
 }
 
-// The backend's SSE endpoint (GET /v1/draft/status stream) only emits when the
-// aggregated status actually changes - see fantasy-core-pipeline's
-// _draft_status_event_generator - so "no new event in a while" is a real signal, not
-// just quiet data. pipeline_health itself doesn't catch a stalled-but-reachable job (no
-// staleness check on the backend), so this client-side timer is the UI's own safeguard.
+// The backend emits a named heartbeat every two seconds. Allow four missed heartbeats
+// before declaring the stream stale.
 export function useDraftStream(leagueId: string, season: number, limit = 10): DraftStreamState {
   const [status, setStatus] = useState<DraftStatusResponse | null>(null)
   const [connected, setConnected] = useState(false)
   const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'connected' | 'reconnecting'>('idle')
   const [reconnectCount, setReconnectCount] = useState(0)
-  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null)
+  const [lastHeartbeatAt, setLastHeartbeatAt] = useState<number | null>(null)
+  const [lastPickAt, setLastPickAt] = useState<number | null>(null)
   const [stale, setStale] = useState(false)
   const { entries: diagnostics, append } = useDiagnosticsLog()
-  const lastUpdatedRef = useRef<number | null>(null)
+  const lastHeartbeatRef = useRef<number | null>(null)
   const sseArrivedRef = useRef(false)
   const hasConnectedRef = useRef(false)
   const reconnectPendingRef = useRef(false)
@@ -125,9 +125,10 @@ export function useDraftStream(leagueId: string, season: number, limit = 10): Dr
       setConnected(false)
       setConnectionState('idle')
       setReconnectCount(0)
-      setLastUpdatedAt(null)
+      setLastHeartbeatAt(null)
+      setLastPickAt(null)
       setStale(false)
-      lastUpdatedRef.current = null
+      lastHeartbeatRef.current = null
       sseArrivedRef.current = false
       hasConnectedRef.current = false
       reconnectPendingRef.current = false
@@ -145,20 +146,31 @@ export function useDraftStream(leagueId: string, season: number, limit = 10): Dr
     reconnectCountRef.current = 0
     staleRef.current = false
     previousStatusRef.current = null
+    lastHeartbeatRef.current = null
     // A previous subscription may have left this true; the new EventSource is not open yet,
     // so keep it false until this subscription's own onopen fires.
     setConnected(false)
     setConnectionState('connecting')
     setReconnectCount(0)
+    setLastHeartbeatAt(null)
+    setLastPickAt(null)
+    setStale(false)
     updateConnectionState('connecting', 0)
     let isEffectActive = true
 
     function acceptStatus(payload: DraftStatusResponse, source: 'snapshot' | 'sse') {
+      const previousPickKeys = new Set((previousStatusRef.current?.recent_picks ?? []).map(pickKey))
+      if (payload.recent_picks.some((pick) => !previousPickKeys.has(pickKey(pick)))) {
+        setLastPickAt(Date.now())
+      }
       appendStatusDiagnostics(payload, previousStatusRef.current, source, append)
       previousStatusRef.current = payload
       setStatus(payload)
-      lastUpdatedRef.current = Date.now()
-      setLastUpdatedAt(lastUpdatedRef.current)
+    }
+
+    function markStreamAlive() {
+      lastHeartbeatRef.current = Date.now()
+      setLastHeartbeatAt(lastHeartbeatRef.current)
       staleRef.current = false
       setStale(false)
     }
@@ -179,6 +191,7 @@ export function useDraftStream(leagueId: string, season: number, limit = 10): Dr
 
     source.onopen = () => {
       setConnected(true)
+      markStreamAlive()
       let nextReconnectCount = reconnectCountRef.current
       if (reconnectPendingRef.current) {
         nextReconnectCount += 1
@@ -203,6 +216,7 @@ export function useDraftStream(leagueId: string, season: number, limit = 10): Dr
         // malformed payload must not blank out the dashboard.
         sseArrivedRef.current = true
         acceptStatus(payload, 'sse')
+        markStreamAlive()
       } catch (err) {
         append('error', 'Failed to parse draft status SSE event', {
           error: err instanceof Error ? err.message : String(err),
@@ -211,20 +225,21 @@ export function useDraftStream(leagueId: string, season: number, limit = 10): Dr
         // Malformed payload - skip this event, keep the connection open for the next one.
       }
     }
+    source.addEventListener('heartbeat', markStreamAlive)
 
     const staleCheck = window.setInterval(() => {
-      if (lastUpdatedRef.current !== null && Date.now() - lastUpdatedRef.current > STALE_AFTER_MS) {
+      if (lastHeartbeatRef.current !== null && Date.now() - lastHeartbeatRef.current > STALE_AFTER_MS) {
         if (!staleRef.current) {
           staleRef.current = true
           append('warn', 'Draft stream stale', {
             league_id: leagueId,
             season,
-            seconds_since_update: Math.round((Date.now() - lastUpdatedRef.current) / 1000),
+            seconds_since_heartbeat: Math.round((Date.now() - lastHeartbeatRef.current) / 1000),
           })
         }
         setStale(true)
       }
-    }, 2_000)
+    }, HEARTBEAT_INTERVAL_MS)
 
     return () => {
       isEffectActive = false
@@ -233,5 +248,5 @@ export function useDraftStream(leagueId: string, season: number, limit = 10): Dr
     }
   }, [leagueId, season, limit, append])
 
-  return { status, connected, connectionState, reconnectCount, lastUpdatedAt, stale, diagnostics }
+  return { status, connected, connectionState, reconnectCount, lastHeartbeatAt, lastPickAt, stale, diagnostics }
 }
