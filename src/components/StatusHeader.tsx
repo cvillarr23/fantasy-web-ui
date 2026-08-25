@@ -30,7 +30,7 @@ function formatAge(timestamp: number | null, now: number): string {
 }
 
 export function StatusHeader({ status, connected, connectionState, reconnectCount, lastHeartbeatAt, lastPickAt, stale, myTeamId }: Props) {
-  const [now, setNow] = useState(0)
+  const [now, setNow] = useState(() => Date.now())
   const health = status?.pipeline_health ?? 'unknown'
   const onTheClock = status?.on_the_clock_team_id ?? null
   const isMyTurn = onTheClock !== null && onTheClock === myTeamId
