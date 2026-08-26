@@ -7,7 +7,7 @@ export interface DraftPickSummary {
   round: number | null
   team_id: string
   /** Internal (Sleeper) id. Null when the ESPN->internal crosswalk has no entry for this
-   * player, which is always the case for K and D/ST. */
+   * player. */
   player_id: string | null
   /** ESPN's own id, as it arrived on the draft stream. Null only on picks recorded before
    * this column existed; every pick written since carries one, and it is the only identifier
@@ -42,7 +42,7 @@ export interface TeamAggregate {
 export interface RankedCandidate {
   player_id: string
   // ESPN's id, from the DynastyProcess crosswalk. Null for the ~18% of players it doesn't
-  // cover (which includes every K and D/ST). trigger-draft-pick requires this one - the
+  // cover. trigger-draft-pick requires this one - the
   // browser worker clicks button.Button--draft[data-player-id=...] in the ESPN room - and
   // the two id spaces overlap numerically, so player_id must never be substituted.
   espn_id: string | null

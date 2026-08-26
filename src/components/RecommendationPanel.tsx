@@ -60,8 +60,7 @@ export function RecommendationPanel({ recommendation, pickNumber, onDraftPlayer 
                 </span>
               ) : (
                 <span className="candidate-unavailable" role="note">
-                  Draft in ESPN directly — no ESPN id for {c.name} in our crosswalk, which is
-                  true of every K and D/ST.
+                  Draft in ESPN directly — no ESPN id for {c.name} in our crosswalk.
                 </span>
               )}
             </li>
