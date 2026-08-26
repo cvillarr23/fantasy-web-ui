@@ -56,9 +56,8 @@ export function PickFeed({ picks, myTeamId }: Props) {
       <ol reversed>
         {list.map((pick) => {
           const details = pick.player_id ? playerDetailsById[pick.player_id] : undefined
-          // A pick with no internal id is normal, not an error: K and D/ST are absent from
-          // the crosswalk entirely. Show the ESPN id rather than a bare "Unknown player" so
-          // the pick is still identifiable against the draft board.
+          // A pick with no internal id is normal, not an error. Show the ESPN id rather than
+          // a bare "Unknown player" so the pick is still identifiable against the draft board.
           const displayName =
             details?.name ?? pick.name ?? (pick.espn_player_id ? `ESPN player ${pick.espn_player_id}` : 'Unknown player')
           const displayPosition = details?.position ?? pick.position
