@@ -63,6 +63,26 @@ export interface DraftRecommendation {
   /** Epoch seconds ESPN's own pick clock expires - the real deadline, since pausing our
    * publisher does not pause ESPN's clock. Same absence rules as auto_publish_at. */
   pick_clock_expires_at?: number
+  /** ESPN's own suggested-next-pick, scraped by fantasy-browser-worker and joined against
+   * our players/VORP data (issue #80). Absent (not null) whenever no scrape has landed yet,
+   * the scrape was malformed, or the draft is complete - the API can't distinguish "not on
+   * the clock" from "worker hasn't published" from this field alone. */
+  espn_suggestion?: EspnSuggestion
+}
+
+export interface EspnSuggestion {
+  /** Always present when this object exists at all. */
+  espn_player_id: string
+  /** Our internal id - null if players.espn_id has no match for this player. */
+  player_id: string | null
+  /** Null if both the crosswalk match and the worker's own pool lookup failed. */
+  name: string | null
+  position: string | null
+  team: string | null
+  /** Null if the player wasn't in the undrafted VORP pool - show the name, blank the score. */
+  vorp_score: number | null
+  /** ISO 8601 timestamp. */
+  suggested_at: string | null
 }
 
 export interface DraftStatusError {

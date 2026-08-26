@@ -12,6 +12,7 @@ interface Props {
 
 export function RecommendationPanel({ recommendation, pickNumber, onDraftPlayer }: Props) {
   const candidates = recommendation.top_candidates ?? []
+  const suggestion = recommendation.espn_suggestion
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
@@ -68,12 +69,42 @@ export function RecommendationPanel({ recommendation, pickNumber, onDraftPlayer 
           })}
         </ol>
       </div>
-      <div className="recommendation-column placeholder-column">
+      <div className="recommendation-column">
         <h2>ESPN's suggested pick</h2>
-        {/* Follow-up ticket: ESPN's own recommended-next-pick isn't ingested anywhere
-            yet - it only exists inside ESPN's UI and would need fantasy-browser-worker
-            to scrape it. Kept as an explicit slot so this drops in cleanly later. */}
-        <p className="muted">Not available yet — pending a fantasy-browser-worker follow-up.</p>
+        {pickNumber === undefined ? (
+          <p className="muted">No active pick — nothing to compare yet.</p>
+        ) : !suggestion ? (
+          <p className="muted">ESPN hasn't published a suggestion for this pick yet.</p>
+        ) : (
+          <ol>
+            <li className="candidate-row">
+              <span className="candidate-name">{suggestion.name ?? `ESPN id ${suggestion.espn_player_id}`}</span>
+              {suggestion.position && <span className="candidate-position">{suggestion.position}</span>}
+              {/* Unlike the left column, VORP absence here isn't a hidden row - the issue
+                  asks to keep the row and just blank the score when there's no VORP match. */}
+              {suggestion.vorp_score !== null && (
+                <span className="candidate-score">VORP {suggestion.vorp_score.toFixed(1)}</span>
+              )}
+              {/* espn_player_id is always present whenever this object exists at all (the
+                  backend never resolves a suggestion without one), so unlike the left
+                  column's crosswalk gap, drafting here is never blocked - only gated on
+                  pickNumber, already guaranteed by the branch above. */}
+              <button
+                disabled={busy}
+                onClick={() =>
+                  handleDraft(
+                    suggestion.espn_player_id,
+                    suggestion.name ?? `ESPN id ${suggestion.espn_player_id}`,
+                    suggestion.position ?? '',
+                    suggestion.team ?? '',
+                  )
+                }
+              >
+                Draft this player
+              </button>
+            </li>
+          </ol>
+        )}
       </div>
       {message && <p className="status-message">{message}</p>}
     </section>
