@@ -16,6 +16,7 @@ const MATCHUP_BADGE_DELTA = 0.1
 
 export function TeamComparisonPanel({ teamRosters, teamAggregates, myTeamId }: Props) {
   const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null)
+  const [collapsed, setCollapsed] = useState(false)
 
   const teamIds = useMemo(() => {
     const ids = Object.keys(teamRosters)
@@ -35,42 +36,54 @@ export function TeamComparisonPanel({ teamRosters, teamAggregates, myTeamId }: P
 
   const valueAlertTeamId = teamIds.find((teamId) => teamAggregates[teamId]?.most_recent_pick_value_alert)
 
-  if (teamIds.length === 0) {
-    return (
-      <section className="team-comparison-panel">
-        <h2>Team comparison</h2>
-        <p className="muted">No picks yet.</p>
-      </section>
-    )
+  function handleToggle() {
+    const next = !collapsed
+    setCollapsed(next)
+    if (next) setExpandedPlayerId(null)
   }
 
   return (
-    <section className="team-comparison-panel">
-      <h2>Team comparison</h2>
-      {valueAlertTeamId && (
-        <ValueAlertBanner
-          teamId={valueAlertTeamId}
-          myTeamId={myTeamId}
-          aggregate={teamAggregates[valueAlertTeamId]}
-          roster={teamRosters[valueAlertTeamId]}
-          playerDetailsById={playerDetailsById}
-        />
-      )}
-      <div className="team-comparison-columns">
-        {teamIds.map((teamId) => (
-          <TeamColumn
-            key={teamId}
-            teamId={teamId}
-            isMyTeam={teamId === myTeamId}
-            roster={teamRosters[teamId] ?? []}
-            aggregate={teamAggregates[teamId]}
-            playerDetailsById={playerDetailsById}
-            onSelectPlayer={setExpandedPlayerId}
-          />
-        ))}
+    <section className={`team-comparison-panel ${collapsed ? 'is-collapsed' : ''}`}>
+      <div className="diagnostics-header">
+        <h2>Team comparison</h2>
+        <div className="diagnostics-actions">
+          <button type="button" onClick={handleToggle} aria-expanded={!collapsed}>
+            {collapsed ? 'Show' : 'Hide'}
+          </button>
+        </div>
       </div>
-      {expandedPlayerId && (
-        <PlayerSummaryPopover playerId={expandedPlayerId} onClose={() => setExpandedPlayerId(null)} />
+      {teamIds.length === 0 ? (
+        <p className="muted">No picks yet.</p>
+      ) : (
+        !collapsed && (
+          <>
+            {valueAlertTeamId && (
+              <ValueAlertBanner
+                teamId={valueAlertTeamId}
+                myTeamId={myTeamId}
+                aggregate={teamAggregates[valueAlertTeamId]}
+                roster={teamRosters[valueAlertTeamId]}
+                playerDetailsById={playerDetailsById}
+              />
+            )}
+            <div className="team-comparison-columns">
+              {teamIds.map((teamId) => (
+                <TeamColumn
+                  key={teamId}
+                  teamId={teamId}
+                  isMyTeam={teamId === myTeamId}
+                  roster={teamRosters[teamId] ?? []}
+                  aggregate={teamAggregates[teamId]}
+                  playerDetailsById={playerDetailsById}
+                  onSelectPlayer={setExpandedPlayerId}
+                />
+              ))}
+            </div>
+            {expandedPlayerId && (
+              <PlayerSummaryPopover playerId={expandedPlayerId} onClose={() => setExpandedPlayerId(null)} />
+            )}
+          </>
+        )
       )}
     </section>
   )
