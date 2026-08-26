@@ -98,10 +98,43 @@
   .dashboard-main { grid-template-columns: 1fr; }
 }
 
-.pick-feed, .diagnostics-panel, .recommendation-panel, .intervention-controls, .team-comparison-panel, .roster-comparison-panel {
+.pick-feed, .diagnostics-panel, .recommendation-panel, .intervention-controls, .team-comparison-panel, .roster-comparison-panel, .team-position-grid {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 16px;
+}
+
+.team-position-grid {
+  grid-column: 1 / -1;
+}
+.team-position-grid h2 {
+  margin-top: 0;
+}
+.team-position-grid table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.team-position-grid th,
+.team-position-grid td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+.team-position-grid th[scope='row'] {
+  text-align: left;
+  font-weight: 600;
+}
+.team-position-grid .my-team-row {
+  background: var(--accent-bg);
+}
+.team-position-grid .my-team-row th[scope='row'] {
+  color: var(--accent);
+}
+.team-position-grid .gap-cell {
+  background: rgba(234, 179, 8, 0.14);
+  color: var(--warn);
+  font-weight: 700;
 }
 
 .team-comparison-panel {

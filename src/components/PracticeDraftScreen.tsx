@@ -16,6 +16,7 @@ import { RecommendationPanel } from './RecommendationPanel'
 import { RosterVsLeaguePanel } from './RosterVsLeaguePanel'
 import { StatusHeader } from './StatusHeader'
 import { TeamComparisonPanel } from './TeamComparisonPanel'
+import { TeamPositionGrid } from './TeamPositionGrid'
 import { useDraftStream } from '../hooks/useDraftStream'
 
 const ACTIVE_JOB_STORAGE_KEY = 'fantasy-web-ui.practice-sync-active'
@@ -517,6 +518,7 @@ export function PracticeDraftScreen() {
           <div className="dashboard-grid">
             <div className="dashboard-main">
               <PickFeed picks={activeStatus?.recent_picks ?? []} myTeamId={practiceConfig.team_id} />
+              <TeamPositionGrid teamAggregates={activeStatus?.team_aggregates} myTeamId={practiceConfig.team_id} />
               <RosterVsLeaguePanel status={activeStatus} myTeamId={practiceConfig.team_id} />
               <DiagnosticsPanel
                 status={activeStatus}

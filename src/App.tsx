@@ -8,6 +8,7 @@ import { RecommendationPanel } from './components/RecommendationPanel'
 import { RosterVsLeaguePanel } from './components/RosterVsLeaguePanel'
 import { StatusHeader } from './components/StatusHeader'
 import { TeamComparisonPanel } from './components/TeamComparisonPanel'
+import { TeamPositionGrid } from './components/TeamPositionGrid'
 import { useDraftStream } from './hooks/useDraftStream'
 import { triggerDraftPick } from './api/client'
 import type { DraftConfig } from './api/types'
@@ -67,6 +68,7 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
       <div className="dashboard-grid">
         <div className="dashboard-main">
           <PickFeed picks={status?.recent_picks ?? []} myTeamId={config.team_id} />
+          <TeamPositionGrid teamAggregates={status?.team_aggregates} myTeamId={config.team_id} />
           <RosterVsLeaguePanel status={status} myTeamId={config.team_id} />
           <DiagnosticsPanel
             status={status}
