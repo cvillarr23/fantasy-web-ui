@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { isPickTooLateError, pauseDraft, resumeDraft, triggerDraftPick } from '../api/client'
 import { PlayerPicker } from './PlayerPicker'
+import { useToast } from '../hooks/useToast'
 import type { PlayerSearchResult } from '../api/types'
 
 interface Props {
@@ -17,17 +18,16 @@ interface Props {
 // dry-run log - the copy must say so clearly since it's used mid-draft under time pressure.
 export function InterventionControls({ leagueId, teamId, pickNumber, pickClockExpiresAt, held, setHeld }: Props) {
   const [busy, setBusy] = useState(false)
-  const [message, setMessage] = useState<string | null>(null)
+  const { toast, showToast } = useToast()
   const [manualPlayer, setManualPlayer] = useState<PlayerSearchResult | null>(null)
 
   async function run(action: () => Promise<unknown>, label: string) {
     setBusy(true)
-    setMessage(null)
     try {
       await action()
-      setMessage(`${label} succeeded.`)
+      showToast('success', `${label} succeeded.`)
     } catch (err) {
-      setMessage(`${label} failed: ${String(err)}`)
+      showToast('error', `${label} failed: ${String(err)}`)
     } finally {
       setBusy(false)
     }
@@ -42,12 +42,11 @@ export function InterventionControls({ leagueId, teamId, pickNumber, pickClockEx
     // than publish unvalidated, which is the exact gap this fix exists to close.
     if (!espnId || pickNumber === undefined) return
     setBusy(true)
-    setMessage(null)
     try {
       // Pausing first means the manual choice always wins over our own pending auto-publish.
       await pauseDraft(leagueId, pickNumber)
     } catch (err) {
-      setMessage(`Pause failed: ${String(err)}`)
+      showToast('error', `Pause failed: ${String(err)}`)
       setBusy(false)
       return
     }
@@ -58,10 +57,13 @@ export function InterventionControls({ leagueId, teamId, pickNumber, pickClockEx
         pickNumber,
         expiresAt: pickClockExpiresAt,
       })
-      setMessage('Manual draft-pick publish succeeded.')
+      showToast('success', `${manualPlayer.name} drafted.`)
       setManualPlayer(null)
     } catch (err) {
-      setMessage(isPickTooLateError(err) ? 'Too late — the pick was already made.' : `Manual draft-pick publish failed: ${String(err)}`)
+      showToast(
+        'error',
+        isPickTooLateError(err) ? 'Too late — the pick was already made.' : `Manual draft-pick publish failed: ${String(err)}`,
+      )
     } finally {
       setBusy(false)
     }
@@ -115,7 +117,7 @@ export function InterventionControls({ leagueId, teamId, pickNumber, pickClockEx
         )}
       </form>
 
-      {message && <p className="status-message">{message}</p>}
+      {toast && <p className={`status-message toast toast-${toast.tone}`}>{toast.message}</p>}
     </section>
   )
 }
