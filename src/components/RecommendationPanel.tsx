@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { isPickTooLateError } from '../api/client'
+import { useToast } from '../hooks/useToast'
 import type { DraftRecommendation } from '../api/types'
 
 interface Props {
@@ -14,16 +15,15 @@ export function RecommendationPanel({ recommendation, pickNumber, onDraftPlayer 
   const candidates = recommendation.top_candidates ?? []
   const suggestion = recommendation.espn_suggestion
   const [busy, setBusy] = useState(false)
-  const [message, setMessage] = useState<string | null>(null)
+  const { toast, showToast } = useToast()
 
   async function handleDraft(espnId: string, name: string, position: string, proTeam: string) {
     setBusy(true)
-    setMessage(null)
     try {
       await onDraftPlayer(espnId, name, position, proTeam)
-      setMessage(`${name} published.`)
+      showToast('success', `${name} published.`)
     } catch (err) {
-      setMessage(isPickTooLateError(err) ? 'Too late — the pick was already made.' : `Publish failed: ${String(err)}`)
+      showToast('error', isPickTooLateError(err) ? 'Too late — the pick was already made.' : `Publish failed: ${String(err)}`)
     } finally {
       setBusy(false)
     }
@@ -80,6 +80,10 @@ export function RecommendationPanel({ recommendation, pickNumber, onDraftPlayer 
             <li className="candidate-row">
               <span className="candidate-name">{suggestion.name ?? `ESPN id ${suggestion.espn_player_id}`}</span>
               {suggestion.position && <span className="candidate-position">{suggestion.position}</span>}
+              {/* Reviewer-caught (PR #49): team is already passed to the publish callback
+                  below but was never rendered, so two same-named/same-position players
+                  couldn't be told apart before triggering a live draft action. */}
+              {suggestion.team && <span className="candidate-team">{suggestion.team}</span>}
               {/* Unlike the left column, VORP absence here isn't a hidden row - the issue
                   asks to keep the row and just blank the score when there's no VORP match. */}
               {suggestion.vorp_score !== null && (
@@ -106,7 +110,7 @@ export function RecommendationPanel({ recommendation, pickNumber, onDraftPlayer 
           </ol>
         )}
       </div>
-      {message && <p className="status-message">{message}</p>}
+      {toast && <p className={`status-message toast toast-${toast.tone}`}>{toast.message}</p>}
     </section>
   )
 }
