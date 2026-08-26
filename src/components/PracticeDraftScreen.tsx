@@ -13,6 +13,7 @@ import { DiagnosticsPanel } from './DiagnosticsPanel'
 import { InterventionControls } from './InterventionControls'
 import { PickFeed } from './PickFeed'
 import { RecommendationPanel } from './RecommendationPanel'
+import { RosterVsLeaguePanel } from './RosterVsLeaguePanel'
 import { StatusHeader } from './StatusHeader'
 import { useDraftStream } from '../hooks/useDraftStream'
 
@@ -515,6 +516,7 @@ export function PracticeDraftScreen() {
           <div className="dashboard-grid">
             <div className="dashboard-main">
               <PickFeed picks={activeStatus?.recent_picks ?? []} myTeamId={practiceConfig.team_id} />
+              <RosterVsLeaguePanel status={activeStatus} myTeamId={practiceConfig.team_id} />
               <DiagnosticsPanel
                 status={activeStatus}
                 connectionState={streamMatchesPracticeConfig ? connectionState : 'connecting'}

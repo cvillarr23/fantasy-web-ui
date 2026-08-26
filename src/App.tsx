@@ -5,6 +5,7 @@ import { InterventionControls } from './components/InterventionControls'
 import { PickFeed } from './components/PickFeed'
 import { PracticeDraftScreen } from './components/PracticeDraftScreen'
 import { RecommendationPanel } from './components/RecommendationPanel'
+import { RosterVsLeaguePanel } from './components/RosterVsLeaguePanel'
 import { StatusHeader } from './components/StatusHeader'
 import { useDraftStream } from './hooks/useDraftStream'
 import { triggerDraftPick } from './api/client'
@@ -65,6 +66,7 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
       <div className="dashboard-grid">
         <div className="dashboard-main">
           <PickFeed picks={status?.recent_picks ?? []} myTeamId={config.team_id} />
+          <RosterVsLeaguePanel status={status} myTeamId={config.team_id} />
           <DiagnosticsPanel
             status={status}
             connectionState={connectionState}

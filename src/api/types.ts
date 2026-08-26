@@ -61,6 +61,11 @@ export interface DraftStatusResponse {
   listener_state: 'Active' | 'Starting' | 'Failed' | 'Unknown'
   listener_last_event_at: string | null
   listener_error: string | null
+  team_aggregates?: Record<string, TeamAggregate> | null
+}
+
+export interface TeamAggregate {
+  position_counts?: Record<string, number | null> | null
 }
 
 export interface RecentNewsItem {
