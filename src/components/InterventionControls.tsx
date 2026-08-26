@@ -103,9 +103,8 @@ export function InterventionControls({ leagueId, teamId, pickNumber, pickClockEx
         <PlayerPicker selected={manualPlayer} onSelect={setManualPlayer} onClear={() => setManualPlayer(null)} />
         {manualPlayer && !manualPlayer.espn_id && (
           <p className="status-message">
-            {manualPlayer.name} has no ESPN id in our crosswalk, which is true of every K and
-            D/ST. The click bot addresses players by ESPN's id, so this one has to be drafted
-            in ESPN directly.
+            {manualPlayer.name} has no ESPN id in our crosswalk. The click bot addresses players
+            by ESPN's id, so this one has to be drafted in ESPN directly.
           </p>
         )}
         <button type="submit" disabled={busy || !manualPlayer?.espn_id || pickNumber === undefined}>
