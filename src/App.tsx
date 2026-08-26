@@ -6,6 +6,7 @@ import { PickFeed } from './components/PickFeed'
 import { PracticeDraftScreen } from './components/PracticeDraftScreen'
 import { RecommendationPanel } from './components/RecommendationPanel'
 import { StatusHeader } from './components/StatusHeader'
+import { TeamComparisonPanel } from './components/TeamComparisonPanel'
 import { useDraftStream } from './hooks/useDraftStream'
 import { triggerDraftPick } from './api/client'
 import type { DraftConfig } from './api/types'
@@ -96,6 +97,11 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
           />
         </div>
       </div>
+      <TeamComparisonPanel
+        teamRosters={status?.team_rosters ?? {}}
+        teamAggregates={status?.team_aggregates ?? {}}
+        myTeamId={config.team_id}
+      />
     </div>
   )
 }
