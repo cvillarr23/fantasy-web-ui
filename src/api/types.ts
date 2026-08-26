@@ -35,6 +35,12 @@ export interface DraftRecommendation {
   recommended_name?: string
   pick_number?: string
   top_candidates?: RankedCandidate[]
+  /** Epoch seconds our own system will auto-publish this pick. Absent until a publish is
+   * scheduled, and wiped entirely if the listener Job doesn't exist. */
+  auto_publish_at?: number
+  /** Epoch seconds ESPN's own pick clock expires - the real deadline, since pausing our
+   * publisher does not pause ESPN's clock. Same absence rules as auto_publish_at. */
+  pick_clock_expires_at?: number
 }
 
 export interface DraftStatusError {

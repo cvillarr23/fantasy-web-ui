@@ -143,11 +143,40 @@ export function resumeDraft(leagueId: string, pickNumber?: number): Promise<unkn
 // worker clicks button.Button--draft[data-player-id=...], which is ESPN's namespace. The two
 // overlap numerically (ESPN 12483 is Matthew Stafford, internal 12483 is Jack Bech), so
 // sending the wrong one drafts a different, real player. The API rejects that case with 422.
-export function triggerDraftPick(teamId: string, espnPlayerId: string, name: string, position: string, proTeam: string): Promise<unknown> {
+//
+// leagueId/pickNumber let the gateway reject a publish whose slot is already filled;
+// expiresAt (ESPN's pick-clock deadline, not our own auto_publish_at) lets it reject one
+// submitted after the window closed. Both checks 409. idempotency_key is generated fresh
+// per call - this function is never used to retry a specific prior attempt.
+export function triggerDraftPick(
+  teamId: string,
+  espnPlayerId: string,
+  name: string,
+  position: string,
+  proTeam: string,
+  options?: { leagueId?: string; pickNumber?: number; expiresAt?: number },
+): Promise<unknown> {
   return request('/v1/trigger/draft-pick', {
     method: 'POST',
-    body: JSON.stringify({ team_id: teamId, player_id: espnPlayerId, name, position, pro_team: proTeam }),
+    body: JSON.stringify({
+      team_id: teamId,
+      player_id: espnPlayerId,
+      name,
+      position,
+      pro_team: proTeam,
+      idempotency_key: crypto.randomUUID(),
+      league_id: options?.leagueId,
+      pick_number: options?.pickNumber,
+      expires_at: options?.expiresAt,
+    }),
   })
+}
+
+/** True when a 409 from POST /v1/trigger/draft-pick means the pick can no longer be made -
+ * the slot was already filled or ESPN's pick deadline passed. Scoped to this endpoint only,
+ * same caveat as isAlreadyActiveError above: a 409 elsewhere means something unrelated. */
+export function isPickTooLateError(err: unknown): boolean {
+  return err instanceof ApiError && err.status === 409
 }
 
 export function getPlayerSummary(playerId: string): Promise<PlayerSummary> {

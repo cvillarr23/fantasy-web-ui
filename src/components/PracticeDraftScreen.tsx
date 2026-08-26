@@ -126,6 +126,8 @@ export function PracticeDraftScreen() {
   const streamStale = streamMatchesPracticeConfig && stale
   const hasMismatchedStream = Boolean(practiceConfig && status && !streamMatchesPracticeConfig)
   const nextPickNumber = activeStatus?.recommendation?.pick_number ? Number(activeStatus.recommendation.pick_number) : undefined
+  const [held, setHeld] = useState(false)
+  useEffect(() => { setHeld(false) }, [nextPickNumber])
 
   // The Job can outlive this browser's local state (storage cleared, started from another
   // browser, a reload after it finished) - so localStorage is only ever a hint, never the
@@ -504,6 +506,10 @@ export function PracticeDraftScreen() {
             lastPickAt={streamMatchesPracticeConfig ? lastPickAt : null}
             stale={streamStale}
             myTeamId={practiceConfig.team_id}
+            leagueId={practiceConfig.league_id}
+            pickNumber={nextPickNumber}
+            held={held}
+            setHeld={setHeld}
           />
           <div className="dashboard-grid">
             <div className="dashboard-main">
@@ -520,7 +526,11 @@ export function PracticeDraftScreen() {
               <RecommendationPanel
                 recommendation={activeStatus?.recommendation ?? {}}
                 onDraftPlayer={(playerId, name, position, proTeam) =>
-                  triggerDraftPick(practiceConfig.team_id, playerId, name, position, proTeam)
+                  triggerDraftPick(practiceConfig.team_id, playerId, name, position, proTeam, {
+                    leagueId: practiceConfig.league_id,
+                    pickNumber: nextPickNumber,
+                    expiresAt: activeStatus?.recommendation?.pick_clock_expires_at,
+                  })
                 }
               />
               {showInterventions && (
@@ -528,6 +538,9 @@ export function PracticeDraftScreen() {
                   leagueId={practiceConfig.league_id}
                   teamId={practiceConfig.team_id}
                   pickNumber={nextPickNumber}
+                  pickClockExpiresAt={activeStatus?.recommendation?.pick_clock_expires_at}
+                  held={held}
+                  setHeld={setHeld}
                 />
               )}
             </div>

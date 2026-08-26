@@ -52,6 +52,26 @@
   font-weight: 700;
 }
 
+.pick-clock-band {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  margin-top: 4px;
+  border-radius: 8px;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  background: rgba(59, 130, 246, 0.12);
+}
+.pick-clock-band.held {
+  border-color: var(--border);
+  background: var(--code-bg);
+}
+.pick-clock-band .countdown {
+  font-weight: 700;
+  color: var(--accent);
+}
+
 .dashboard-grid {
   display: grid;
   grid-template-columns: 2fr 1fr;
