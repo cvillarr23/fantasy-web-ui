@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
-import { getPlayerSummary } from '../api/client'
+import { useMemo, useState } from 'react'
 import type { DraftPickSummary } from '../api/types'
+import { usePlayerDetailsCache } from '../hooks/usePlayerDetailsCache'
 import { PlayerSummaryPopover } from './PlayerSummaryPopover'
 
 interface Props {
@@ -10,43 +10,9 @@ interface Props {
 
 export function PickFeed({ picks, myTeamId }: Props) {
   const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null)
-  const [playerDetailsById, setPlayerDetailsById] = useState<Record<string, { name: string; team: string; position: string }>>({})
   const myTeamPicks = useMemo(() => picks.filter((pick) => pick.team_id === myTeamId), [picks, myTeamId])
-  const missingPlayerDetails = useMemo(
-    () => [...new Set(picks.map((pick) => pick.player_id).filter((id): id is string => Boolean(id)))]
-      .filter((playerId) => !playerDetailsById[playerId]),
-    [picks, playerDetailsById],
-  )
-
-  useEffect(() => {
-    if (missingPlayerDetails.length === 0) return
-    let cancelled = false
-
-    void Promise.all(
-      missingPlayerDetails.map(async (playerId) => {
-        try {
-          const summary = await getPlayerSummary(playerId)
-          return [playerId, { name: summary.name, team: summary.team, position: summary.position }] as const
-        } catch {
-          return null
-        }
-      }),
-    ).then((results) => {
-      if (cancelled) return
-      const nextDetails: Record<string, { name: string; team: string; position: string }> = {}
-      for (const result of results) {
-        if (!result) continue
-        nextDetails[result[0]] = result[1]
-      }
-      if (Object.keys(nextDetails).length > 0) {
-        setPlayerDetailsById((current) => ({ ...current, ...nextDetails }))
-      }
-    })
-
-    return () => {
-      cancelled = true
-    }
-  }, [missingPlayerDetails])
+  const playerIds = useMemo(() => picks.map((pick) => pick.player_id), [picks])
+  const playerDetailsById = usePlayerDetailsCache(playerIds)
 
   function renderPickList(list: DraftPickSummary[], emptyText: string) {
     if (list.length === 0) {
@@ -56,9 +22,8 @@ export function PickFeed({ picks, myTeamId }: Props) {
       <ol reversed>
         {list.map((pick) => {
           const details = pick.player_id ? playerDetailsById[pick.player_id] : undefined
-          // A pick with no internal id is normal, not an error: K and D/ST are absent from
-          // the crosswalk entirely. Show the ESPN id rather than a bare "Unknown player" so
-          // the pick is still identifiable against the draft board.
+          // A pick with no internal id is normal, not an error. Show the ESPN id rather than
+          // a bare "Unknown player" so the pick is still identifiable against the draft board.
           const displayName =
             details?.name ?? pick.name ?? (pick.espn_player_id ? `ESPN player ${pick.espn_player_id}` : 'Unknown player')
           const displayPosition = details?.position ?? pick.position

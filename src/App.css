@@ -98,10 +98,78 @@
   .dashboard-main { grid-template-columns: 1fr; }
 }
 
-.pick-feed, .diagnostics-panel, .recommendation-panel, .intervention-controls, .roster-comparison-panel {
+.pick-feed, .diagnostics-panel, .recommendation-panel, .intervention-controls, .team-comparison-panel, .roster-comparison-panel {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 16px;
+}
+
+.team-comparison-panel {
+  margin-top: 24px;
+}
+
+.team-comparison-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .team-comparison-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.team-column h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+.team-column.my-team-column {
+  border-left: 3px solid var(--accent);
+  padding-left: 10px;
+}
+
+.team-aggregate-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.position-chip {
+  font-size: 12px;
+  opacity: 0.8;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2px 8px;
+}
+
+.team-roster-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 32vh;
+  overflow-y: auto;
+}
+
+.badge-scarcity, .badge-matchup {
+  font-size: 11px;
+  opacity: 0.85;
+  border-radius: 10px;
+  padding: 1px 7px;
+  white-space: nowrap;
+}
+.badge-scarcity {
+  background: rgba(234, 179, 8, 0.14);
+  border: 1px solid rgba(234, 179, 8, 0.45);
+}
+.badge-matchup {
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+}
+
+.value-alert-banner {
+  margin-bottom: 16px;
 }
 
 .pick-feed ol {

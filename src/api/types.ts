@@ -7,7 +7,7 @@ export interface DraftPickSummary {
   round: number | null
   team_id: string
   /** Internal (Sleeper) id. Null when the ESPN->internal crosswalk has no entry for this
-   * player, which is always the case for K and D/ST. */
+   * player. */
   player_id: string | null
   /** ESPN's own id, as it arrived on the draft stream. Null only on picks recorded before
    * this column existed; every pick written since carries one, and it is the only identifier
@@ -15,12 +15,34 @@ export interface DraftPickSummary {
   espn_player_id: string | null
   name: string | null
   position: string | null
+  /** Player's most recent weekly_stats row - a CURRENT pipeline value, not a snapshot frozen
+   * at the moment this pick happened. Null if the player has no weekly_stats row at all. */
+  vorp_score: number | null
+  projected_points: number | null
+  scarcity_multiplier: number | null
+  matchup_coefficient: number | null
+}
+
+export interface TeamAggregate {
+  /** Sum of vorp_score across this team's drafted players - a CURRENT snapshot recomputed
+   * on every status refresh, not a running total frozen pick-by-pick. */
+  total_vorp: number
+  total_projected_points: number
+  /** Drafted player count per position, e.g. {"RB": 3, "WR": 4}. Players with no
+   * players-table match (K/D-ST with no crosswalk entry) are omitted, not bucketed. */
+  position_counts: Record<string, number>
+  /** True if this team's single most recent pick landed well past the round its overall
+   * VORP rank would predict - a "great value" signal, not a claim the pick was objectively
+   * good. */
+  most_recent_pick_value_alert: boolean
+  most_recent_pick_vorp_rank: number | null
+  most_recent_pick_expected_round: number | null
 }
 
 export interface RankedCandidate {
   player_id: string
   // ESPN's id, from the DynastyProcess crosswalk. Null for the ~18% of players it doesn't
-  // cover (which includes every K and D/ST). trigger-draft-pick requires this one - the
+  // cover. trigger-draft-pick requires this one - the
   // browser worker clicks button.Button--draft[data-player-id=...] in the ESPN room - and
   // the two id spaces overlap numerically, so player_id must never be substituted.
   espn_id: string | null
@@ -55,17 +77,18 @@ export interface DraftStatusResponse {
   recommendation: DraftRecommendation
   last_clicker_action: string | null
   recent_picks: DraftPickSummary[]
+  /** All draft picks grouped by team_id for full-roster rendering, ordered by pick_number
+   * ascending within each team. Unbounded, unlike recent_picks. */
+  team_rosters: Record<string, DraftPickSummary[]>
+  /** Per-team VORP/projected-points totals, position breakdown, and a value-pick alert for
+   * that team's most recent pick - keyed by team_id, same keys as team_rosters. */
+  team_aggregates: Record<string, TeamAggregate>
   on_the_clock_team_id: string | null
   pipeline_health: 'healthy' | 'degraded'
   recent_errors: DraftStatusError[]
   listener_state: 'Active' | 'Starting' | 'Failed' | 'Unknown'
   listener_last_event_at: string | null
   listener_error: string | null
-  team_aggregates?: Record<string, TeamAggregate> | null
-}
-
-export interface TeamAggregate {
-  position_counts?: Record<string, number | null> | null
 }
 
 export interface RecentNewsItem {
