@@ -68,7 +68,7 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
       <div className="dashboard-grid">
         <div className="dashboard-main">
           <PickFeed picks={status?.recent_picks ?? []} myTeamId={config.team_id} />
-          <TeamPositionGrid teamAggregates={status?.team_aggregates} myTeamId={config.team_id} />
+          <TeamPositionGrid teamIds={status?.team_ids} teamAggregates={status?.team_aggregates} myTeamId={config.team_id} />
           <RosterVsLeaguePanel status={status} myTeamId={config.team_id} />
           <DiagnosticsPanel
             status={status}
@@ -102,6 +102,7 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
         </div>
       </div>
       <TeamComparisonPanel
+        teamIds={status?.team_ids ?? []}
         teamRosters={status?.team_rosters ?? {}}
         teamAggregates={status?.team_aggregates ?? {}}
         myTeamId={config.team_id}

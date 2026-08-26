@@ -30,14 +30,24 @@ function getPositionCount(positionCounts: Record<string, number> | undefined, al
 }
 
 interface Props {
+  teamIds?: string[]
   teamAggregates: TeamAggregates | undefined
   myTeamId: string
 }
 
-export function TeamPositionGrid({ teamAggregates, myTeamId }: Props) {
+export function TeamPositionGrid({ teamIds, teamAggregates, myTeamId }: Props) {
   const entries = Object.entries(teamAggregates ?? {}) as TeamAggregateEntry[]
-  const hasMyTeam = entries.some(([teamId]) => teamId === myTeamId)
-  const allEntries: TeamAggregateEntry[] = hasMyTeam ? entries : [[myTeamId, { position_counts: {} }], ...entries]
+  const knownTeamIds = new Set(entries.map(([teamId]) => teamId))
+  // team_ids (from draft_slots) is the source of truth once the backend sends it - it's what
+  // lets a zero-pick team still get a row here, with an all-zero position_counts fallback,
+  // instead of silently disappearing from the grid.
+  const missingTeamIds = (teamIds ?? []).filter((teamId) => !knownTeamIds.has(teamId))
+  const hasMyTeam = knownTeamIds.has(myTeamId) || missingTeamIds.includes(myTeamId)
+  const allEntries: TeamAggregateEntry[] = [
+    ...(hasMyTeam ? [] : ([[myTeamId, { position_counts: {} }]] as TeamAggregateEntry[])),
+    ...entries,
+    ...missingTeamIds.map((teamId): TeamAggregateEntry => [teamId, { position_counts: {} }]),
+  ]
   const sortedEntries = allEntries
     .filter(([teamId]) => teamId.trim().length > 0)
     .sort(([teamA], [teamB]) => teamA.localeCompare(teamB, undefined, { numeric: true }))
@@ -86,8 +96,6 @@ export function TeamPositionGrid({ teamAggregates, myTeamId }: Props) {
           })}
         </tbody>
       </table>
-      {/* Until backend issues #38/#39 are fully rolled out everywhere, missing zero-pick teams or
-          uncounted K/D-ST picks can still surface false-positive gap cells in this panel. */}
     </section>
   )
 }

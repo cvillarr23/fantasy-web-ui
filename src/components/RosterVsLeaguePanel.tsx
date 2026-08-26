@@ -11,7 +11,7 @@ function formatLeagueMean(value: number): string {
 }
 
 export function RosterVsLeaguePanel({ status, myTeamId }: Props) {
-  const rows = buildPositionComparisonRows(status?.team_aggregates, myTeamId)
+  const rows = buildPositionComparisonRows(status?.team_aggregates, myTeamId, status?.team_ids)
 
   return (
     <section className="roster-comparison-panel">

@@ -27,6 +27,7 @@ function comparePositionName(a: string, b: string): number {
 export function buildPositionComparisonRows(
   teamAggregates: Record<string, TeamAggregate> | null | undefined,
   myTeamId: string,
+  teamIds?: string[],
 ): PositionComparisonRow[] {
   if (!teamAggregates || !myTeamId) return []
   const aggregateEntries = Object.entries(teamAggregates)
@@ -44,13 +45,19 @@ export function buildPositionComparisonRows(
 
   const positions = [...positionSet].sort(comparePositionName)
   const myCounts = teamAggregates[myTeamId]?.position_counts ?? {}
+  // team_ids (from draft_slots) is the source of truth for how many teams are in the league,
+  // once the backend sends it - a zero-pick team has no key in teamAggregates at all, and
+  // without this the league mean/rank would be computed over only the teams that have picked
+  // so far rather than the whole league.
+  const teamCount = teamIds && teamIds.length > 0 ? teamIds.length : aggregateEntries.length
 
   return positions.map((position) => {
-    const allCounts = aggregateEntries.map(([, aggregate]) => normalizeCount(aggregate.position_counts?.[position]))
+    const knownCounts = aggregateEntries.map(([, aggregate]) => normalizeCount(aggregate.position_counts?.[position]))
+    const allCounts = [...knownCounts, ...Array(Math.max(teamCount - knownCounts.length, 0)).fill(0)]
     const yourCount = normalizeCount(myCounts[position])
-    const leagueMean = allCounts.reduce((sum, count) => sum + count, 0) / aggregateEntries.length
+    const leagueMean = allCounts.reduce((sum, count) => sum + count, 0) / teamCount
     const rank = allCounts.filter((count) => count > yourCount).length + 1
 
-    return { position, yourCount, leagueMean, rank, teamCount: aggregateEntries.length }
+    return { position, yourCount, leagueMean, rank, teamCount }
   })
 }
