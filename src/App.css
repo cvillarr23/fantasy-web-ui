@@ -98,7 +98,7 @@
   .dashboard-main { grid-template-columns: 1fr; }
 }
 
-.pick-feed, .diagnostics-panel, .recommendation-panel, .intervention-controls {
+.pick-feed, .diagnostics-panel, .recommendation-panel, .intervention-controls, .team-comparison-panel {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 16px;
@@ -251,6 +251,36 @@
 }
 .diagnostics-panel.is-collapsed {
   max-height: none;
+}
+
+.team-comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.team-comparison-card {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+}
+.team-comparison-card h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+.team-aggregate-list, .team-roster-list {
+  margin: 0;
+  padding-left: 16px;
+}
+.team-aggregate-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+.team-roster-list {
+  margin-top: 8px;
+  max-height: 140px;
+  overflow-y: auto;
 }
 
 .recommendation-panel {

@@ -14,6 +14,7 @@ import { InterventionControls } from './InterventionControls'
 import { PickFeed } from './PickFeed'
 import { RecommendationPanel } from './RecommendationPanel'
 import { StatusHeader } from './StatusHeader'
+import { TeamComparisonPanel } from './TeamComparisonPanel'
 import { useDraftStream } from '../hooks/useDraftStream'
 
 const ACTIVE_JOB_STORAGE_KEY = 'fantasy-web-ui.practice-sync-active'
@@ -515,6 +516,7 @@ export function PracticeDraftScreen() {
           <div className="dashboard-grid">
             <div className="dashboard-main">
               <PickFeed picks={activeStatus?.recent_picks ?? []} myTeamId={practiceConfig.team_id} />
+              <TeamComparisonPanel status={activeStatus} />
               <DiagnosticsPanel
                 status={activeStatus}
                 connectionState={streamMatchesPracticeConfig ? connectionState : 'connecting'}

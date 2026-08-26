@@ -47,6 +47,10 @@ export interface DraftStatusError {
   [key: string]: unknown
 }
 
+export interface TeamAggregate {
+  [metric: string]: number
+}
+
 export interface DraftStatusResponse {
   league_id: string
   season: number
@@ -61,6 +65,13 @@ export interface DraftStatusResponse {
   listener_state: 'Active' | 'Starting' | 'Failed' | 'Unknown'
   listener_last_event_at: string | null
   listener_error: string | null
+  // Full league team ids from draft_slots. This is the source of truth for rendering
+  // comparison columns, including teams that have not made a pick yet.
+  team_ids?: string[]
+  // Keyed by team id. Teams with no picks should still appear with [] from the backend.
+  team_rosters?: Record<string, DraftPickSummary[]>
+  // Keyed by team id. Teams with no picks should still appear with zeroed aggregates.
+  team_aggregates?: Record<string, TeamAggregate>
 }
 
 export interface RecentNewsItem {
