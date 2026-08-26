@@ -15,6 +15,11 @@ interface Props {
   pickNumber: number | undefined
   held: boolean
   setHeld: (held: boolean) => void
+  // Practice's "hands-off" mode hides InterventionControls (and its Resume button) entirely -
+  // offering Hold here without any way to release it would strand the pick paused with no
+  // in-UI recovery, so the button itself is gated by the same toggle. The countdown still
+  // renders either way; only the ability to pause is what's gated.
+  holdEnabled: boolean
 }
 
 function getConnectionLabel(
@@ -54,6 +59,7 @@ export function StatusHeader({
   pickNumber,
   held,
   setHeld,
+  holdEnabled,
 }: Props) {
   const [now, setNow] = useState(() => Date.now())
   const [holdBusy, setHoldBusy] = useState(false)
@@ -117,16 +123,20 @@ export function StatusHeader({
       </div>
       {isMyTurn && (
         <div className={`pick-clock-band ${held ? 'held' : ''}`}>
+          {/* Pausing our own publisher does not pause ESPN's clock, so this stays visible -
+              and is the only deadline left that matters - in both the held and unheld cases. */}
+          {espnClockIn !== null && <span className="countdown">ESPN clock: {espnClockIn}s</span>}
           {held ? (
-            <span>Pick held — auto-publish paused. Release it from Intervene.</span>
+            <span>Held — autodraft in {espnClockIn ?? '—'}s unless you pick or release.</span>
           ) : (
             <>
-              {espnClockIn !== null && <span className="countdown">ESPN clock: {espnClockIn}s</span>}
               {autoPublishIn !== null && <span className="countdown">Auto-publish in: {autoPublishIn}s</span>}
               {espnClockIn === null && autoPublishIn === null && <span>No auto-publish scheduled yet</span>}
-              <button onClick={handleHold} disabled={holdBusy}>
-                Hold this pick
-              </button>
+              {holdEnabled && (
+                <button onClick={handleHold} disabled={holdBusy}>
+                  Hold this pick
+                </button>
+              )}
             </>
           )}
           {holdError && <span className="status-message">Hold failed: {holdError}</span>}

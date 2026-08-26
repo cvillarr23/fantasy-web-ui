@@ -148,13 +148,18 @@ export function resumeDraft(leagueId: string, pickNumber?: number): Promise<unkn
 // expiresAt (ESPN's pick-clock deadline, not our own auto_publish_at) lets it reject one
 // submitted after the window closed. Both checks 409. idempotency_key is generated fresh
 // per call - this function is never used to retry a specific prior attempt.
+//
+// leagueId/pickNumber are required, not optional: making them easy to omit is exactly how
+// the manual-pick path ended up with no slot validation at all before this fix. expiresAt
+// stays optional - it's legitimately absent until the backend has scheduled a publish for
+// this pick, and there's no deadline to violate before that happens either.
 export function triggerDraftPick(
   teamId: string,
   espnPlayerId: string,
   name: string,
   position: string,
   proTeam: string,
-  options?: { leagueId?: string; pickNumber?: number; expiresAt?: number },
+  options: { leagueId: string; pickNumber: number; expiresAt?: number },
 ): Promise<unknown> {
   return request('/v1/trigger/draft-pick', {
     method: 'POST',
@@ -165,9 +170,9 @@ export function triggerDraftPick(
       position,
       pro_team: proTeam,
       idempotency_key: crypto.randomUUID(),
-      league_id: options?.leagueId,
-      pick_number: options?.pickNumber,
-      expires_at: options?.expiresAt,
+      league_id: options.leagueId,
+      pick_number: options.pickNumber,
+      expires_at: options.expiresAt,
     }),
   })
 }

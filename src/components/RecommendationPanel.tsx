@@ -1,12 +1,32 @@
+import { useState } from 'react'
+import { isPickTooLateError } from '../api/client'
 import type { DraftRecommendation } from '../api/types'
 
 interface Props {
   recommendation: DraftRecommendation
-  onDraftPlayer: (espnPlayerId: string, name: string, position: string, proTeam: string) => void
+  // Undefined when there's no known current pick to target - drafting is disabled in that
+  // case, since the gateway can't check for a slot conflict without a pick_number either.
+  pickNumber: number | undefined
+  onDraftPlayer: (espnPlayerId: string, name: string, position: string, proTeam: string) => Promise<unknown>
 }
 
-export function RecommendationPanel({ recommendation, onDraftPlayer }: Props) {
+export function RecommendationPanel({ recommendation, pickNumber, onDraftPlayer }: Props) {
   const candidates = recommendation.top_candidates ?? []
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+
+  async function handleDraft(espnId: string, name: string, position: string, proTeam: string) {
+    setBusy(true)
+    setMessage(null)
+    try {
+      await onDraftPlayer(espnId, name, position, proTeam)
+      setMessage(`${name} published.`)
+    } catch (err) {
+      setMessage(isPickTooLateError(err) ? 'Too late — the pick was already made.' : `Publish failed: ${String(err)}`)
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <section className="recommendation-panel">
@@ -30,10 +50,14 @@ export function RecommendationPanel({ recommendation, onDraftPlayer }: Props) {
                   button is not focusable, so keyboard and screen-reader users cannot reach the
                   explanation at all. (The disabled+title button elsewhere in InterventionControls
                   is only a "not built yet" placeholder, where losing the hint costs nothing.) */}
-              {espnId ? (
-                <button onClick={() => onDraftPlayer(espnId, c.name, c.position, c.team)}>
+              {espnId && pickNumber !== undefined ? (
+                <button disabled={busy} onClick={() => handleDraft(espnId, c.name, c.position, c.team)}>
                   Draft this player
                 </button>
+              ) : espnId ? (
+                <span className="candidate-unavailable" role="note">
+                  No active pick number yet — publishing is disabled until one is known.
+                </span>
               ) : (
                 <span className="candidate-unavailable" role="note">
                   Draft in ESPN directly — no ESPN id for {c.name} in our crosswalk, which is
@@ -52,6 +76,7 @@ export function RecommendationPanel({ recommendation, onDraftPlayer }: Props) {
             to scrape it. Kept as an explicit slot so this drops in cleanly later. */}
         <p className="muted">Not available yet — pending a fantasy-browser-worker follow-up.</p>
       </div>
+      {message && <p className="status-message">{message}</p>}
     </section>
   )
 }

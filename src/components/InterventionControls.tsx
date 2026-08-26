@@ -33,18 +33,26 @@ export function InterventionControls({ leagueId, teamId, pickNumber, pickClockEx
     }
   }
 
-  // Kept separate from run() above: a 409 here means "the pick is gone", but run()'s generic
-  // formatting is shared with Pause/Resume, where a 409 means something unrelated - folding
-  // this in would leak pick-specific wording into those failures too.
+  // Two separate try/catch blocks, not one: isPickTooLateError is only valid for the trigger
+  // endpoint's 409. If pauseDraft's own try/catch were merged with the trigger call's, a
+  // pause-specific 409 would be mislabeled "the pick was already made".
   async function submitManualPick() {
     const espnId = manualPlayer?.espn_id
-    if (!espnId) return
+    // No known pick_number means we can't ask the gateway to check the slot - refuse rather
+    // than publish unvalidated, which is the exact gap this fix exists to close.
+    if (!espnId || pickNumber === undefined) return
     setBusy(true)
     setMessage(null)
     try {
       // Pausing first means the manual choice always wins over our own pending auto-publish.
       await pauseDraft(leagueId, pickNumber)
-      setHeld(true)
+    } catch (err) {
+      setMessage(`Pause failed: ${String(err)}`)
+      setBusy(false)
+      return
+    }
+    setHeld(true)
+    try {
       await triggerDraftPick(teamId, espnId, manualPlayer.name, manualPlayer.position, manualPlayer.team, {
         leagueId,
         pickNumber,
@@ -100,7 +108,12 @@ export function InterventionControls({ leagueId, teamId, pickNumber, pickClockEx
             in ESPN directly.
           </p>
         )}
-        <button type="submit" disabled={busy || !manualPlayer?.espn_id}>Publish manual pick</button>
+        <button type="submit" disabled={busy || !manualPlayer?.espn_id || pickNumber === undefined}>
+          Publish manual pick
+        </button>
+        {pickNumber === undefined && (
+          <p className="status-message">No active pick number yet — publishing is disabled until one is known.</p>
+        )}
       </form>
 
       {message && <p className="status-message">{message}</p>}

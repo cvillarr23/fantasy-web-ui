@@ -60,6 +60,7 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
         pickNumber={nextPickNumber}
         held={held}
         setHeld={setHeld}
+        holdEnabled
       />
       <div className="dashboard-grid">
         <div className="dashboard-main">
@@ -75,13 +76,15 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
         <div className="dashboard-side">
           <RecommendationPanel
             recommendation={status?.recommendation ?? {}}
-            onDraftPlayer={(playerId, name, position, proTeam) =>
-              triggerDraftPick(config.team_id, playerId, name, position, proTeam, {
+            pickNumber={nextPickNumber}
+            onDraftPlayer={(playerId, name, position, proTeam) => {
+              if (nextPickNumber === undefined) return Promise.reject(new Error('No active pick to draft against.'))
+              return triggerDraftPick(config.team_id, playerId, name, position, proTeam, {
                 leagueId: config.league_id,
                 pickNumber: nextPickNumber,
                 expiresAt: status?.recommendation?.pick_clock_expires_at,
               })
-            }
+            }}
           />
           <InterventionControls
             leagueId={config.league_id}

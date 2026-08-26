@@ -510,6 +510,7 @@ export function PracticeDraftScreen() {
             pickNumber={nextPickNumber}
             held={held}
             setHeld={setHeld}
+            holdEnabled={showInterventions}
           />
           <div className="dashboard-grid">
             <div className="dashboard-main">
@@ -525,13 +526,15 @@ export function PracticeDraftScreen() {
             <div className="dashboard-side">
               <RecommendationPanel
                 recommendation={activeStatus?.recommendation ?? {}}
-                onDraftPlayer={(playerId, name, position, proTeam) =>
-                  triggerDraftPick(practiceConfig.team_id, playerId, name, position, proTeam, {
+                pickNumber={nextPickNumber}
+                onDraftPlayer={(playerId, name, position, proTeam) => {
+                  if (nextPickNumber === undefined) return Promise.reject(new Error('No active pick to draft against.'))
+                  return triggerDraftPick(practiceConfig.team_id, playerId, name, position, proTeam, {
                     leagueId: practiceConfig.league_id,
                     pickNumber: nextPickNumber,
                     expiresAt: activeStatus?.recommendation?.pick_clock_expires_at,
                   })
-                }
+                }}
               />
               {showInterventions && (
                 <InterventionControls
