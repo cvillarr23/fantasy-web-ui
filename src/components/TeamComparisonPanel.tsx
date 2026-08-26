@@ -4,6 +4,7 @@ import { usePlayerDetailsCache } from '../hooks/usePlayerDetailsCache'
 import { PlayerSummaryPopover } from './PlayerSummaryPopover'
 
 interface Props {
+  teamIds: string[]
   teamRosters: Record<string, DraftPickSummary[]>
   teamAggregates: Record<string, TeamAggregate>
   myTeamId: string
@@ -14,19 +15,25 @@ interface Props {
 const SCARCITY_BADGE_THRESHOLD = 1.05
 const MATCHUP_BADGE_DELTA = 0.1
 
-export function TeamComparisonPanel({ teamRosters, teamAggregates, myTeamId }: Props) {
+export function TeamComparisonPanel({ teamIds: teamIdsFromStatus, teamRosters, teamAggregates, myTeamId }: Props) {
   const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null)
   const [collapsed, setCollapsed] = useState(false)
 
   const teamIds = useMemo(() => {
-    const ids = Object.keys(teamRosters)
+    // team_ids (from draft_slots) is the source of truth once the backend has synced it -
+    // it's the only source that knows about a team before its first pick lands, so it's what
+    // lets a zero-pick team still get a column. Falling back to team_rosters'/team_aggregates'
+    // own keys keeps this panel working against an older backend that doesn't send it yet.
+    const ids = teamIdsFromStatus.length > 0
+      ? [...teamIdsFromStatus]
+      : Array.from(new Set([...Object.keys(teamRosters), ...Object.keys(teamAggregates)]))
     ids.sort((a, b) => {
       if (a === myTeamId) return -1
       if (b === myTeamId) return 1
-      return a.localeCompare(b)
+      return a.localeCompare(b, undefined, { numeric: true })
     })
     return ids
-  }, [teamRosters, myTeamId])
+  }, [teamIdsFromStatus, teamRosters, teamAggregates, myTeamId])
 
   const allPlayerIds = useMemo(
     () => Object.values(teamRosters).flat().map((pick) => pick.player_id),
@@ -53,7 +60,7 @@ export function TeamComparisonPanel({ teamRosters, teamAggregates, myTeamId }: P
         </div>
       </div>
       {teamIds.length === 0 ? (
-        <p className="muted">No picks yet.</p>
+        <p className="muted">No team data yet.</p>
       ) : (
         !collapsed && (
           <>

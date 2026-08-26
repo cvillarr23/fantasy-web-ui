@@ -518,7 +518,7 @@ export function PracticeDraftScreen() {
           <div className="dashboard-grid">
             <div className="dashboard-main">
               <PickFeed picks={activeStatus?.recent_picks ?? []} myTeamId={practiceConfig.team_id} />
-              <TeamPositionGrid teamAggregates={activeStatus?.team_aggregates} myTeamId={practiceConfig.team_id} />
+              <TeamPositionGrid teamIds={activeStatus?.team_ids} teamAggregates={activeStatus?.team_aggregates} myTeamId={practiceConfig.team_id} />
               <RosterVsLeaguePanel status={activeStatus} myTeamId={practiceConfig.team_id} />
               <DiagnosticsPanel
                 status={activeStatus}
@@ -554,6 +554,7 @@ export function PracticeDraftScreen() {
             </div>
           </div>
           <TeamComparisonPanel
+            teamIds={activeStatus?.team_ids ?? []}
             teamRosters={activeStatus?.team_rosters ?? {}}
             teamAggregates={activeStatus?.team_aggregates ?? {}}
             myTeamId={practiceConfig.team_id}

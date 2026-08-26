@@ -77,6 +77,11 @@ export interface DraftStatusResponse {
   recommendation: DraftRecommendation
   last_clicker_action: string | null
   recent_picks: DraftPickSummary[]
+  /** Every team_id in the league, from draft_slots, in slot order - independent of who has
+   * picked so far. Unlike team_rosters/team_aggregates (which only ever gain a key once a
+   * team's first pick lands), this is the source of truth for rendering one comparison column
+   * per team, including teams with zero picks. Empty if draft_slots hasn't synced yet. */
+  team_ids: string[]
   /** All draft picks grouped by team_id for full-roster rendering, ordered by pick_number
    * ascending within each team. Unbounded, unlike recent_picks. */
   team_rosters: Record<string, DraftPickSummary[]>
