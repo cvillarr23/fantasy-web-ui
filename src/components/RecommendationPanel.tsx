@@ -8,10 +8,11 @@ interface Props {
   // Undefined when there's no known current pick to target - drafting is disabled in that
   // case, since the gateway can't check for a slot conflict without a pick_number either.
   pickNumber: number | undefined
+  isMyTurn: boolean
   onDraftPlayer: (espnPlayerId: string, name: string, position: string, proTeam: string) => Promise<unknown>
 }
 
-export function RecommendationPanel({ recommendation, pickNumber, onDraftPlayer }: Props) {
+export function RecommendationPanel({ recommendation, pickNumber, isMyTurn, onDraftPlayer }: Props) {
   const candidates = recommendation.top_candidates ?? []
   const suggestion = recommendation.espn_suggestion
   const [busy, setBusy] = useState(false)
@@ -51,18 +52,22 @@ export function RecommendationPanel({ recommendation, pickNumber, onDraftPlayer 
                   button is not focusable, so keyboard and screen-reader users cannot reach the
                   explanation at all. (The disabled+title button elsewhere in InterventionControls
                   is only a "not built yet" placeholder, where losing the hint costs nothing.) */}
-              {espnId && pickNumber !== undefined ? (
-                <button disabled={busy} onClick={() => handleDraft(espnId, c.name, c.position, c.team)}>
-                  Draft this player
-                </button>
-              ) : espnId ? (
-                <span className="candidate-unavailable" role="note">
-                  No active pick number yet — publishing is disabled until one is known.
-                </span>
-              ) : (
+              {!espnId ? (
                 <span className="candidate-unavailable" role="note">
                   Draft in ESPN directly — no ESPN id for {c.name} in our crosswalk.
                 </span>
+              ) : pickNumber === undefined ? (
+                <span className="candidate-unavailable" role="note">
+                  No active pick number yet — publishing is disabled until one is known.
+                </span>
+              ) : !isMyTurn ? (
+                <span className="candidate-unavailable" role="note">
+                  Not your turn yet — wait for the clock to reach your team.
+                </span>
+              ) : (
+                <button disabled={busy} onClick={() => handleDraft(espnId, c.name, c.position, c.team)}>
+                  Draft this player
+                </button>
               )}
             </li>
             )
@@ -75,6 +80,8 @@ export function RecommendationPanel({ recommendation, pickNumber, onDraftPlayer 
           <p className="muted">No active pick — nothing to compare yet.</p>
         ) : !suggestion ? (
           <p className="muted">ESPN hasn't published a suggestion for this pick yet.</p>
+        ) : !isMyTurn ? (
+          <p className="muted">Not your turn yet — you'll be able to draft once the clock reaches your team.</p>
         ) : (
           <ol>
             <li className="candidate-row">

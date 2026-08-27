@@ -8,6 +8,7 @@ interface Props {
   leagueId: string
   teamId: string
   pickNumber?: number
+  isMyTurn: boolean
   pickClockExpiresAt: number | undefined
   held: boolean
   setHeld: (held: boolean) => void
@@ -16,7 +17,7 @@ interface Props {
 // UI copy is deliberate: fantasy-browser-worker's draft_clicker.js (WORKER-06) now consumes
 // draft_targets and fires a real click in ESPN's UI, so this button is a live action, not a
 // dry-run log - the copy must say so clearly since it's used mid-draft under time pressure.
-export function InterventionControls({ leagueId, teamId, pickNumber, pickClockExpiresAt, held, setHeld }: Props) {
+export function InterventionControls({ leagueId, teamId, pickNumber, isMyTurn, pickClockExpiresAt, held, setHeld }: Props) {
   const [busy, setBusy] = useState(false)
   const { toast, showToast } = useToast()
   const [manualPlayer, setManualPlayer] = useState<PlayerSearchResult | null>(null)
@@ -40,7 +41,7 @@ export function InterventionControls({ leagueId, teamId, pickNumber, pickClockEx
     const espnId = manualPlayer?.espn_id
     // No known pick_number means we can't ask the gateway to check the slot - refuse rather
     // than publish unvalidated, which is the exact gap this fix exists to close.
-    if (!espnId || pickNumber === undefined) return
+    if (!espnId || pickNumber === undefined || !isMyTurn) return
     setBusy(true)
     try {
       // Pausing first means the manual choice always wins over our own pending auto-publish.
@@ -109,11 +110,15 @@ export function InterventionControls({ leagueId, teamId, pickNumber, pickClockEx
             by ESPN's id, so this one has to be drafted in ESPN directly.
           </p>
         )}
-        <button type="submit" disabled={busy || !manualPlayer?.espn_id || pickNumber === undefined}>
+        <button type="submit" disabled={busy || !manualPlayer?.espn_id || pickNumber === undefined || !isMyTurn}>
           Publish manual pick
         </button>
-        {pickNumber === undefined && (
+        {pickNumber === undefined ? (
           <p className="status-message">No active pick number yet — publishing is disabled until one is known.</p>
+        ) : (
+          !isMyTurn && (
+            <p className="status-message">Not your turn yet — publishing is disabled until the clock reaches your team.</p>
+          )
         )}
       </form>
 

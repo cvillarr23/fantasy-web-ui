@@ -10,7 +10,7 @@ interface Props {
   lastHeartbeatAt: number | null
   lastPickAt: number | null
   stale: boolean
-  myTeamId: string
+  isMyTurn: boolean
   leagueId: string
   pickNumber: number | undefined
   held: boolean
@@ -54,7 +54,7 @@ export function StatusHeader({
   lastHeartbeatAt,
   lastPickAt,
   stale,
-  myTeamId,
+  isMyTurn,
   leagueId,
   pickNumber,
   held,
@@ -66,7 +66,6 @@ export function StatusHeader({
   const [holdError, setHoldError] = useState<string | null>(null)
   const health = status?.pipeline_health ?? 'unknown'
   const onTheClock = status?.on_the_clock_team_id ?? null
-  const isMyTurn = onTheClock !== null && onTheClock === myTeamId
   const onTheClockLabel = onTheClock === null ? '—' : isMyTurn ? 'Your team' : `Team ${onTheClock}`
   const lastHeartbeatTime = lastHeartbeatAt
     ? new Date(lastHeartbeatAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
