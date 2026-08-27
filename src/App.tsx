@@ -50,6 +50,25 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
       <div className="dashboard-toolbar">
         <button onClick={onReconfigure}>⚙ Reconfigure</button>
       </div>
+      <div className="stream-banners">
+        {status && (status.recent_picks?.length ?? 0) === 0 && connected && !stale && (
+          <p className="banner banner-info" role="status" aria-live="polite">
+            Connected and listening. No picks have been observed yet.
+          </p>
+        )}
+        {/* Deliberately not gated on recent_picks.length or status: a stall that starts mid-draft
+            (after picks have already landed) is exactly the case where this warning matters most -
+            gating it on "no picks yet" would hide it right when the user needs it. Likewise, not
+            requiring `status` means the banner still shows if the stream never got a first
+            snapshot at all (e.g. backend down from the start). */}
+        {(!connected || stale) && (
+          <p className="banner banner-warning" role="status" aria-live="polite">
+            {stale
+              ? 'No draft updates received recently - the stream may be stalled.'
+              : 'Reconnecting to the draft status stream…'}
+          </p>
+        )}
+      </div>
       <StatusHeader
         status={status}
         connected={connected}

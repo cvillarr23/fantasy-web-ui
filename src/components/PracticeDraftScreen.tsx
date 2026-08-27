@@ -455,7 +455,7 @@ export function PracticeDraftScreen() {
       )}
 
       {!checking && tracking && (
-        <div className="practice-banners">
+        <div className="stream-banners">
           {notice && (
             <p className="banner banner-info" role="status" aria-live="polite">
               {notice}
