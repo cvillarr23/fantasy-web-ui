@@ -50,7 +50,7 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
       <div className="dashboard-toolbar">
         <button onClick={onReconfigure}>⚙ Reconfigure</button>
       </div>
-      <div className="practice-banners">
+      <div className="stream-banners">
         {status && (status.recent_picks?.length ?? 0) === 0 && connected && !stale && (
           <p className="banner banner-info" role="status" aria-live="polite">
             Connected and listening. No picks have been observed yet.
