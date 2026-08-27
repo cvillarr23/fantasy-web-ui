@@ -42,6 +42,8 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
   const nextPickNumber = status?.recommendation?.pick_number
     ? Number(status.recommendation.pick_number)
     : undefined
+  const onTheClockTeamId = status?.on_the_clock_team_id ?? null
+  const isMyTurn = onTheClockTeamId !== null && onTheClockTeamId === config.team_id
   const [held, setHeld] = useState(false)
   useEffect(() => { setHeld(false) }, [nextPickNumber])
 
@@ -77,7 +79,7 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
         lastHeartbeatAt={lastHeartbeatAt}
         lastPickAt={lastPickAt}
         stale={stale}
-        myTeamId={config.team_id}
+        isMyTurn={isMyTurn}
         leagueId={config.league_id}
         pickNumber={nextPickNumber}
         held={held}
@@ -101,6 +103,7 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
           <RecommendationPanel
             recommendation={status?.recommendation ?? {}}
             pickNumber={nextPickNumber}
+            isMyTurn={isMyTurn}
             onDraftPlayer={(playerId, name, position, proTeam) => {
               if (nextPickNumber === undefined) return Promise.reject(new Error('No active pick to draft against.'))
               return triggerDraftPick(config.team_id, playerId, name, position, proTeam, {
@@ -114,6 +117,7 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
             leagueId={config.league_id}
             teamId={config.team_id}
             pickNumber={nextPickNumber}
+            isMyTurn={isMyTurn}
             pickClockExpiresAt={status?.recommendation?.pick_clock_expires_at}
             held={held}
             setHeld={setHeld}

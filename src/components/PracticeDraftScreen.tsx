@@ -129,6 +129,8 @@ export function PracticeDraftScreen() {
   const streamStale = streamMatchesPracticeConfig && stale
   const hasMismatchedStream = Boolean(practiceConfig && status && !streamMatchesPracticeConfig)
   const nextPickNumber = activeStatus?.recommendation?.pick_number ? Number(activeStatus.recommendation.pick_number) : undefined
+  const onTheClockTeamId = activeStatus?.on_the_clock_team_id ?? null
+  const isMyTurn = onTheClockTeamId !== null && onTheClockTeamId === practiceConfig?.team_id
   const [held, setHeld] = useState(false)
   useEffect(() => { setHeld(false) }, [nextPickNumber])
 
@@ -511,7 +513,7 @@ export function PracticeDraftScreen() {
             lastHeartbeatAt={streamMatchesPracticeConfig ? lastHeartbeatAt : null}
             lastPickAt={streamMatchesPracticeConfig ? lastPickAt : null}
             stale={streamStale}
-            myTeamId={practiceConfig.team_id}
+            isMyTurn={isMyTurn}
             leagueId={practiceConfig.league_id}
             pickNumber={nextPickNumber}
             held={held}
@@ -535,6 +537,7 @@ export function PracticeDraftScreen() {
               <RecommendationPanel
                 recommendation={activeStatus?.recommendation ?? {}}
                 pickNumber={nextPickNumber}
+                isMyTurn={isMyTurn}
                 onDraftPlayer={(playerId, name, position, proTeam) => {
                   if (nextPickNumber === undefined) return Promise.reject(new Error('No active pick to draft against.'))
                   return triggerDraftPick(practiceConfig.team_id, playerId, name, position, proTeam, {
@@ -549,6 +552,7 @@ export function PracticeDraftScreen() {
                   leagueId={practiceConfig.league_id}
                   teamId={practiceConfig.team_id}
                   pickNumber={nextPickNumber}
+                  isMyTurn={isMyTurn}
                   pickClockExpiresAt={activeStatus?.recommendation?.pick_clock_expires_at}
                   held={held}
                   setHeld={setHeld}
