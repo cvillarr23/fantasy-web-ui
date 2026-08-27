@@ -484,7 +484,10 @@ export function PracticeDraftScreen() {
               Connected and listening. No picks have been observed yet.
             </p>
           )}
-          {activeStatus && activeStatus.recent_picks.length === 0 && (!streamConnected || streamStale) && (
+          {/* Deliberately not gated on recent_picks.length: a stall that starts mid-draft (after
+              picks have already landed) is exactly the case where this warning matters most -
+              gating it on "no picks yet" would hide it right when the user needs it. */}
+          {activeStatus && (!streamConnected || streamStale) && (
             <p className="banner banner-warning" role="status" aria-live="polite">
               {streamStale
                 ? 'No draft updates received recently - the stream may be stalled.'

@@ -6,6 +6,10 @@ import { useDiagnosticsLog } from './useDiagnosticsLog'
 
 const HEARTBEAT_INTERVAL_MS = 2_000
 const STALE_AFTER_MS = HEARTBEAT_INTERVAL_MS * 4
+// A CLOSED EventSource never fires onopen/onerror again on its own - the browser only retries
+// automatically while readyState stays CONNECTING. This is how long to wait before we recreate
+// the connection ourselves when we detect that terminal state.
+const FORCED_RECONNECT_DELAY_MS = 3_000
 
 interface DraftStreamState {
   status: DraftStatusResponse | null
@@ -109,6 +113,8 @@ export function useDraftStream(leagueId: string, season: number, limit = 10): Dr
   const staleRef = useRef(false)
   const connectionStateRef = useRef<'idle' | 'connecting' | 'connected' | 'reconnecting'>('idle')
   const previousStatusRef = useRef<DraftStatusResponse | null>(null)
+  const forcedReconnectScheduledRef = useRef(false)
+  const [retryTick, setRetryTick] = useState(0)
 
   useEffect(() => {
     function updateConnectionState(nextState: 'idle' | 'connecting' | 'connected' | 'reconnecting', nextReconnectCount = reconnectCountRef.current) {
@@ -147,6 +153,7 @@ export function useDraftStream(leagueId: string, season: number, limit = 10): Dr
     staleRef.current = false
     previousStatusRef.current = null
     lastHeartbeatRef.current = null
+    forcedReconnectScheduledRef.current = false
     // A previous subscription may have left this true; the new EventSource is not open yet,
     // so keep it false until this subscription's own onopen fires.
     setConnected(false)
@@ -215,6 +222,20 @@ export function useDraftStream(leagueId: string, season: number, limit = 10): Dr
       setConnectionState(nextState)
       if (hasConnectedRef.current) reconnectPendingRef.current = true
       updateConnectionState(nextState)
+      // The browser only auto-retries while readyState stays CONNECTING. If it has given up
+      // for good (CLOSED), nothing will ever call onopen/onerror on this source again, so the
+      // state above would otherwise be stuck reporting "reconnecting" forever. Force a fresh
+      // EventSource by bumping retryTick, which re-runs this whole effect.
+      if (source.readyState === EventSource.CLOSED && !forcedReconnectScheduledRef.current) {
+        forcedReconnectScheduledRef.current = true
+        append('warn', 'Draft stream connection closed permanently by the browser; forcing reconnect', {
+          league_id: leagueId,
+          season,
+        })
+        window.setTimeout(() => {
+          if (isEffectActive) setRetryTick((t) => t + 1)
+        }, FORCED_RECONNECT_DELAY_MS)
+      }
     }
     source.onmessage = (event) => {
       try {
@@ -253,7 +274,7 @@ export function useDraftStream(leagueId: string, season: number, limit = 10): Dr
       source.close()
       window.clearInterval(staleCheck)
     }
-  }, [leagueId, season, limit, append])
+  }, [leagueId, season, limit, append, retryTick])
 
   return { status, connected, connectionState, reconnectCount, lastHeartbeatAt, lastPickAt, stale, diagnostics }
 }
