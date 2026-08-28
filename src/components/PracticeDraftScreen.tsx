@@ -133,6 +133,15 @@ export function PracticeDraftScreen() {
   const isMyTurn = onTheClockTeamId !== null && onTheClockTeamId === practiceConfig?.team_id
   const [held, setHeld] = useState(false)
   useEffect(() => { setHeld(false) }, [nextPickNumber])
+  // Same optimistic-override pattern as App.tsx's Dashboard: reflect the operator's own
+  // toggle immediately, then defer back to the polled/streamed truth (including a
+  // circuit-breaker self-heal) as soon as it changes.
+  const [autoPublishOverride, setAutoPublishOverride] = useState<boolean | null>(null)
+  useEffect(() => { setAutoPublishOverride(null) }, [activeStatus?.auto_publish_enabled, activeStatus?.auto_publish_disabled_by])
+  const autoPublishEnabled = autoPublishOverride ?? activeStatus?.auto_publish_enabled ?? true
+  const autoPublishDisabledBy = autoPublishOverride !== null
+    ? (autoPublishOverride ? null : 'manual')
+    : activeStatus?.auto_publish_disabled_by ?? null
 
   // The Job can outlive this browser's local state (storage cleared, started from another
   // browser, a reload after it finished) - so localStorage is only ever a hint, never the
@@ -554,6 +563,9 @@ export function PracticeDraftScreen() {
                   pickClockExpiresAt={activeStatus?.recommendation?.pick_clock_expires_at}
                   held={held}
                   setHeld={setHeld}
+                  autoPublishEnabled={autoPublishEnabled}
+                  autoPublishDisabledBy={autoPublishDisabledBy}
+                  onAutoPublishChange={setAutoPublishOverride}
                 />
               )}
             </div>

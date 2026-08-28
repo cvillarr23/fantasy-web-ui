@@ -135,6 +135,18 @@ export function resumeDraft(leagueId: string, pickNumber?: number): Promise<unkn
   })
 }
 
+// Flips draft_config.auto_publish_enabled - the manual kill switch for this league's
+// auto-publish (issue #108). Disabling here sets auto_publish_disabled_by='manual' on the
+// backend; re-enabling clears it to null. Distinct from pause/resume: pause only holds the
+// single upcoming pick, while this stops every future auto-publish for the league until
+// flipped back (or until the backend's own circuit breaker trips and self-heals it).
+export function setAutoPublishEnabled(leagueId: string, enabled: boolean): Promise<unknown> {
+  return request('/v1/draft/auto-publish', {
+    method: 'POST',
+    body: JSON.stringify({ league_id: leagueId, enabled }),
+  })
+}
+
 // Publishes to the draft_targets queue (see fantasy-core-pipeline's /v1/trigger/draft-pick).
 // fantasy-browser-worker's draft_clicker.js (WORKER-06) consumes this and actually clicks
 // the pick in ESPN's UI - this is a real, live action, not a log-only publish.

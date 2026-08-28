@@ -119,6 +119,18 @@ export interface DraftStatusResponse {
   listener_state: 'Active' | 'Starting' | 'Failed' | 'Unknown'
   listener_last_event_at: string | null
   listener_error: string | null
+  /** Manual + automatic (circuit-breaker) kill switch for this league's auto-publish.
+   * False means the system will keep computing recommendations but will never call
+   * /v1/trigger/draft-pick automatically - only a manual pick via InterventionControls
+   * will submit anything. Part of issue #108. */
+  auto_publish_enabled: boolean
+  /** Why auto_publish_enabled is currently false; null whenever it's true or has never
+   * been disabled. 'manual' means an operator used this toggle and it stays off until
+   * they flip it back. 'circuit_breaker' means fantasy-core-pipeline's own failure
+   * counter tripped it automatically - it self-heals on the next opponent pick event,
+   * so this value can flip back to null on its own between two status polls with no
+   * user action. */
+  auto_publish_disabled_by: 'manual' | 'circuit_breaker' | null
 }
 
 export interface RecentNewsItem {

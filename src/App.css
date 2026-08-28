@@ -432,6 +432,25 @@
   max-width: 220px;
 }
 
+.auto-publish-kill-switch { margin-bottom: 12px; }
+.auto-publish-toggle {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.auto-publish-kill-switch-off .auto-publish-toggle {
+  color: #ef4444;
+}
+.circuit-breaker-notice {
+  border-radius: 10px;
+  padding: 6px 10px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+}
 .button-row { display: flex; gap: 8px; margin-bottom: 12px; }
 
 .manual-pick-form {

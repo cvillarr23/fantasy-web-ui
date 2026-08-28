@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { isPickTooLateError, pauseDraft, resumeDraft, triggerDraftPick } from '../api/client'
+import { isPickTooLateError, pauseDraft, resumeDraft, setAutoPublishEnabled, triggerDraftPick } from '../api/client'
 import { PlayerPicker } from './PlayerPicker'
 import { useToast } from '../hooks/useToast'
 import type { DraftConfig, PlayerSearchResult } from '../api/types'
@@ -15,16 +15,47 @@ interface Props {
   pickClockExpiresAt: number | undefined
   held: boolean
   setHeld: (held: boolean) => void
+  // Kill switch state from the latest /v1/draft/status poll (issue #108). Passed as two
+  // separate primitives rather than folded into `config` because these are live/polled
+  // status, not stored draft config - same granularity as pickNumber/isMyTurn above.
+  autoPublishEnabled: boolean
+  autoPublishDisabledBy: 'manual' | 'circuit_breaker' | null
+  onAutoPublishChange: (enabled: boolean) => void
 }
 
 // UI copy is deliberate: fantasy-browser-worker's draft_clicker.js (WORKER-06) now consumes
 // draft_targets and fires a real click in ESPN's UI, so this button is a live action, not a
 // dry-run log - the copy must say so clearly since it's used mid-draft under time pressure.
-export function InterventionControls({ config, pickNumber, isMyTurn, pickClockExpiresAt, held, setHeld }: Props) {
+export function InterventionControls({
+  config,
+  pickNumber,
+  isMyTurn,
+  pickClockExpiresAt,
+  held,
+  setHeld,
+  autoPublishEnabled,
+  autoPublishDisabledBy,
+  onAutoPublishChange,
+}: Props) {
   const { league_id: leagueId } = config
   const [busy, setBusy] = useState(false)
+  const [autoPublishBusy, setAutoPublishBusy] = useState(false)
   const { toast, showToast } = useToast()
   const [manualPlayer, setManualPlayer] = useState<PlayerSearchResult | null>(null)
+
+  async function toggleAutoPublish() {
+    const next = !autoPublishEnabled
+    setAutoPublishBusy(true)
+    try {
+      await setAutoPublishEnabled(leagueId, next)
+      onAutoPublishChange(next)
+      showToast('success', `Auto-publish ${next ? 'enabled' : 'disabled'}.`)
+    } catch (err) {
+      showToast('error', `Failed to ${next ? 'enable' : 'disable'} auto-publish: ${String(err)}`)
+    } finally {
+      setAutoPublishBusy(false)
+    }
+  }
 
   async function run(action: () => Promise<unknown>, label: string) {
     setBusy(true)
@@ -76,6 +107,28 @@ export function InterventionControls({ config, pickNumber, isMyTurn, pickClockEx
   return (
     <section className="intervention-controls">
       <h2>Intervene</h2>
+      <div className={`auto-publish-kill-switch${autoPublishEnabled ? '' : ' auto-publish-kill-switch-off'}`}>
+        <label className="auto-publish-toggle">
+          <input
+            type="checkbox"
+            checked={autoPublishEnabled}
+            disabled={autoPublishBusy}
+            onChange={toggleAutoPublish}
+          />
+          Auto-publish picks
+        </label>
+        {autoPublishDisabledBy === 'circuit_breaker' ? (
+          <p className="status-message circuit-breaker-notice">
+            ⚠ Auto-disabled after repeated pick failures — will retry automatically on the
+            next pick, or re-enable now.
+          </p>
+        ) : autoPublishDisabledBy === 'manual' ? (
+          <p className="muted">
+            When off, picks are never sent automatically — you must click a player below to
+            draft.
+          </p>
+        ) : null}
+      </div>
       <div className="button-row">
         <button disabled={busy} onClick={() => run(async () => { await pauseDraft(leagueId, pickNumber); setHeld(true) }, 'Pause')}>
           Hold our next auto-pick

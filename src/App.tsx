@@ -46,6 +46,15 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
   const isMyTurn = onTheClockTeamId !== null && onTheClockTeamId === config.team_id
   const [held, setHeld] = useState(false)
   useEffect(() => { setHeld(false) }, [nextPickNumber])
+  // Optimistic override so the toggle reflects the operator's own action immediately,
+  // rather than waiting on the next stream tick - cleared whenever the backend's own value
+  // changes (including the circuit breaker self-healing it out from under us).
+  const [autoPublishOverride, setAutoPublishOverride] = useState<boolean | null>(null)
+  useEffect(() => { setAutoPublishOverride(null) }, [status?.auto_publish_enabled, status?.auto_publish_disabled_by])
+  const autoPublishEnabled = autoPublishOverride ?? status?.auto_publish_enabled ?? true
+  const autoPublishDisabledBy = autoPublishOverride !== null
+    ? (autoPublishOverride ? null : 'manual')
+    : status?.auto_publish_disabled_by ?? null
 
   return (
     <div className="dashboard">
@@ -119,6 +128,9 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
             pickClockExpiresAt={status?.recommendation?.pick_clock_expires_at}
             held={held}
             setHeld={setHeld}
+            autoPublishEnabled={autoPublishEnabled}
+            autoPublishDisabledBy={autoPublishDisabledBy}
+            onAutoPublishChange={setAutoPublishOverride}
           />
         </div>
       </div>
