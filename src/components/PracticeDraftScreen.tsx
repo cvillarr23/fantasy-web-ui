@@ -543,6 +543,7 @@ export function PracticeDraftScreen() {
                   return triggerDraftPick(practiceConfig.team_id, playerId, name, position, proTeam, {
                     leagueId: practiceConfig.league_id,
                     pickNumber: nextPickNumber,
+                    mode: practiceConfig.mode,
                     expiresAt: activeStatus?.recommendation?.pick_clock_expires_at,
                   })
                 }}
@@ -551,6 +552,7 @@ export function PracticeDraftScreen() {
                 <InterventionControls
                   leagueId={practiceConfig.league_id}
                   teamId={practiceConfig.team_id}
+                  mode={practiceConfig.mode}
                   pickNumber={nextPickNumber}
                   isMyTurn={isMyTurn}
                   pickClockExpiresAt={activeStatus?.recommendation?.pick_clock_expires_at}

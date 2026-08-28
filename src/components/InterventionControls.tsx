@@ -7,6 +7,9 @@ import type { PlayerSearchResult } from '../api/types'
 interface Props {
   leagueId: string
   teamId: string
+  // Forwarded verbatim to triggerDraftPick so the gateway/click bot know whether to submit
+  // for real without guessing - see the comment on triggerDraftPick in api/client.ts.
+  mode: 'live' | 'practice'
   pickNumber?: number
   isMyTurn: boolean
   pickClockExpiresAt: number | undefined
@@ -17,7 +20,7 @@ interface Props {
 // UI copy is deliberate: fantasy-browser-worker's draft_clicker.js (WORKER-06) now consumes
 // draft_targets and fires a real click in ESPN's UI, so this button is a live action, not a
 // dry-run log - the copy must say so clearly since it's used mid-draft under time pressure.
-export function InterventionControls({ leagueId, teamId, pickNumber, isMyTurn, pickClockExpiresAt, held, setHeld }: Props) {
+export function InterventionControls({ leagueId, teamId, mode, pickNumber, isMyTurn, pickClockExpiresAt, held, setHeld }: Props) {
   const [busy, setBusy] = useState(false)
   const { toast, showToast } = useToast()
   const [manualPlayer, setManualPlayer] = useState<PlayerSearchResult | null>(null)
@@ -56,6 +59,7 @@ export function InterventionControls({ leagueId, teamId, pickNumber, isMyTurn, p
       await triggerDraftPick(teamId, espnId, manualPlayer.name, manualPlayer.position, manualPlayer.team, {
         leagueId,
         pickNumber,
+        mode,
         expiresAt: pickClockExpiresAt,
       })
       showToast('success', `${manualPlayer.name} drafted.`)

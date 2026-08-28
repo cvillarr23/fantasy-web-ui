@@ -109,6 +109,7 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
               return triggerDraftPick(config.team_id, playerId, name, position, proTeam, {
                 leagueId: config.league_id,
                 pickNumber: nextPickNumber,
+                mode: config.mode,
                 expiresAt: status?.recommendation?.pick_clock_expires_at,
               })
             }}
@@ -116,6 +117,7 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
           <InterventionControls
             leagueId={config.league_id}
             teamId={config.team_id}
+            mode={config.mode}
             pickNumber={nextPickNumber}
             isMyTurn={isMyTurn}
             pickClockExpiresAt={status?.recommendation?.pick_clock_expires_at}
