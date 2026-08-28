@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { isPickTooLateError, pauseDraft, resumeDraft, setAutoPublishEnabled, triggerDraftPick } from '../api/client'
 import { PlayerPicker } from './PlayerPicker'
 import { useToast } from '../hooks/useToast'
@@ -42,6 +42,12 @@ export function InterventionControls({
   const [autoPublishBusy, setAutoPublishBusy] = useState(false)
   const { toast, showToast } = useToast()
   const [manualPlayer, setManualPlayer] = useState<PlayerSearchResult | null>(null)
+  // Selecting a player before it's actually our turn used to just disable the submit button
+  // with no way to act on the choice - the operator had to keep watching the clock and
+  // resubmit the instant it turned. queued means "publish this automatically the moment
+  // isMyTurn flips true", without touching pauseDraft/triggerDraftPick until that moment
+  // actually arrives (submitManualPick below still does the real pause-then-trigger work).
+  const [queued, setQueued] = useState(false)
 
   async function toggleAutoPublish() {
     const next = !autoPublishEnabled
@@ -104,6 +110,35 @@ export function InterventionControls({
     }
   }
 
+  // One handler for all three states of the same button: already our turn publishes right
+  // away (unchanged behavior); not our turn yet queues it (or, if already queued, cancels
+  // the queue instead of re-queuing) - see the isMyTurn effect above for the actual publish.
+  function handleManualPickButtonClick() {
+    if (!manualPlayer?.espn_id || pickNumber === undefined) return
+    if (isMyTurn) {
+      submitManualPick()
+      return
+    }
+    if (queued) {
+      setQueued(false)
+      showToast('success', 'Queue cancelled.')
+      return
+    }
+    setQueued(true)
+    showToast('success', `${manualPlayer.name} queued — will publish automatically when it's your turn.`)
+  }
+
+  // Fires the moment isMyTurn flips true for a player queued while it wasn't our turn yet -
+  // otherwise the operator has to keep watching the clock and resubmit by hand the instant
+  // it turns, which is the exact gap this queue exists to close. Cleared before calling
+  // submitManualPick so a re-render mid-publish can't re-trigger it.
+  useEffect(() => {
+    if (queued && isMyTurn && manualPlayer?.espn_id && pickNumber !== undefined && !busy) {
+      setQueued(false)
+      submitManualPick()
+    }
+  }, [queued, isMyTurn, pickNumber, manualPlayer, busy, submitManualPick])
+
   return (
     <section className="intervention-controls">
       <h2>Intervene</h2>
@@ -152,29 +187,44 @@ export function InterventionControls({
         className="manual-pick-form"
         onSubmit={(e) => {
           e.preventDefault()
-          submitManualPick()
+          handleManualPickButtonClick()
         }}
       >
         <p className="muted">
           This actually drafts the selected player in ESPN — the browser worker consumes
           this and clicks it for you. Only use this if you actually want it locked in now.
         </p>
-        <PlayerPicker selected={manualPlayer} onSelect={setManualPlayer} onClear={() => setManualPlayer(null)} />
+        <PlayerPicker
+          selected={manualPlayer}
+          onSelect={(player) => {
+            setManualPlayer(player)
+            setQueued(false)
+          }}
+          onClear={() => {
+            setManualPlayer(null)
+            setQueued(false)
+          }}
+        />
         {manualPlayer && !manualPlayer.espn_id && (
           <p className="status-message">
             {manualPlayer.name} has no ESPN id in our crosswalk. The click bot addresses players
             by ESPN's id, so this one has to be drafted in ESPN directly.
           </p>
         )}
-        <button type="submit" disabled={busy || !manualPlayer?.espn_id || pickNumber === undefined || !isMyTurn}>
-          Publish manual pick
+        <button type="submit" disabled={busy || !manualPlayer?.espn_id || pickNumber === undefined}>
+          {isMyTurn ? 'Publish manual pick' : queued ? 'Cancel queue' : 'Queue for my turn'}
         </button>
         {pickNumber === undefined ? (
           <p className="status-message">No active pick number yet — publishing is disabled until one is known.</p>
         ) : (
-          !isMyTurn && (
-            <p className="status-message">Not your turn yet — publishing is disabled until the clock reaches your team.</p>
-          )
+          !isMyTurn &&
+          (queued ? (
+            <p className="status-message">
+              Queued — {manualPlayer?.name} will publish automatically the instant it's your turn.
+            </p>
+          ) : (
+            <p className="status-message">Not your turn yet — click above to queue this pick for your turn.</p>
+          ))
         )}
       </form>
 
