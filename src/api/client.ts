@@ -144,43 +144,51 @@ export function resumeDraft(leagueId: string, pickNumber?: number): Promise<unkn
 // overlap numerically (ESPN 12483 is Matthew Stafford, internal 12483 is Jack Bech), so
 // sending the wrong one drafts a different, real player. The API rejects that case with 422.
 //
-// leagueId/pickNumber let the gateway reject a publish whose slot is already filled;
-// expiresAt (ESPN's pick-clock deadline, not our own auto_publish_at) lets it reject one
-// submitted after the window closed. Both checks 409. idempotency_key is generated fresh
-// per call - this function is never used to retry a specific prior attempt.
+// Takes the whole DraftConfig rather than separate teamId/leagueId/mode args on purpose:
+// those three always come from the same stored config for a given draft, and passing them
+// as independent parameters is exactly how a call site previously ended up omitting mode
+// entirely (confirmed live 2026-08-27 - every trigger call across App.tsx,
+// PracticeDraftScreen.tsx, and InterventionControls.tsx had built its own options object by
+// hand, and one of them simply forgot the field). Threading the single config object closes
+// off that whole class of per-call-site omission - there's no longer a second copy of
+// team_id/league_id/mode to fall out of sync.
 //
-// leagueId/pickNumber are required, not optional: making them easy to omit is exactly how
-// the manual-pick path ended up with no slot validation at all before this fix. expiresAt
+// pickNumber lets the gateway reject a publish whose slot is already filled; expiresAt
+// (ESPN's pick-clock deadline, not our own auto_publish_at) lets it reject one submitted
+// after the window closed. Both checks 409. idempotency_key is generated fresh per call -
+// this function is never used to retry a specific prior attempt.
+//
+// pickNumber is required, not optional: making it easy to omit is exactly how the
+// manual-pick path ended up with no slot validation at all before an earlier fix. expiresAt
 // stays optional - it's legitimately absent until the backend has scheduled a publish for
 // this pick, and there's no deadline to violate before that happens either.
 //
-// mode is also required, not optional: fantasy-core-pipeline's draft_matrix.py forwards its
-// own mode on the automated path (from the Job's env), but this manual path has no such
-// env to read - the caller's stored DraftConfig.mode is the only source of truth. Confirmed
-// live 2026-08-27: omitting it left the gateway forwarding no mode at all, so
-// draft_clicker.js fell back to its safe "mode is unset" default (DRY_RUN=true) even for a
-// practice league - the operator saw "drafted" toast but nothing was actually clicked, and
-// ESPN autodrafted that slot once the clock ran out.
+// mode (config.mode) is what tells draft_clicker.js it's safe to submit for real in a
+// practice room even when DRY_RUN is unset (which otherwise defaults to true everywhere,
+// live included). Omitting it left the gateway forwarding no mode at all, so draft_clicker.js
+// fell back to its safe "mode is unset" default (DRY_RUN=true) even for a practice league -
+// the operator saw "drafted" toast but nothing was actually clicked, and ESPN autodrafted
+// that slot once the clock ran out.
 export function triggerDraftPick(
-  teamId: string,
+  config: DraftConfig,
   espnPlayerId: string,
   name: string,
   position: string,
   proTeam: string,
-  options: { leagueId: string; pickNumber: number; mode: 'live' | 'practice'; expiresAt?: number },
+  options: { pickNumber: number; expiresAt?: number },
 ): Promise<unknown> {
   return request('/v1/trigger/draft-pick', {
     method: 'POST',
     body: JSON.stringify({
-      team_id: teamId,
+      team_id: config.team_id,
       player_id: espnPlayerId,
       name,
       position,
       pro_team: proTeam,
       idempotency_key: crypto.randomUUID(),
-      league_id: options.leagueId,
+      league_id: config.league_id,
       pick_number: options.pickNumber,
-      mode: options.mode,
+      mode: config.mode,
       expires_at: options.expiresAt,
     }),
   })

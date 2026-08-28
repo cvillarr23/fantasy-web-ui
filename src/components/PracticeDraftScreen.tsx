@@ -540,19 +540,15 @@ export function PracticeDraftScreen() {
                 isMyTurn={isMyTurn}
                 onDraftPlayer={(playerId, name, position, proTeam) => {
                   if (nextPickNumber === undefined) return Promise.reject(new Error('No active pick to draft against.'))
-                  return triggerDraftPick(practiceConfig.team_id, playerId, name, position, proTeam, {
-                    leagueId: practiceConfig.league_id,
+                  return triggerDraftPick(practiceConfig, playerId, name, position, proTeam, {
                     pickNumber: nextPickNumber,
-                    mode: practiceConfig.mode,
                     expiresAt: activeStatus?.recommendation?.pick_clock_expires_at,
                   })
                 }}
               />
               {showInterventions && (
                 <InterventionControls
-                  leagueId={practiceConfig.league_id}
-                  teamId={practiceConfig.team_id}
-                  mode={practiceConfig.mode}
+                  config={practiceConfig}
                   pickNumber={nextPickNumber}
                   isMyTurn={isMyTurn}
                   pickClockExpiresAt={activeStatus?.recommendation?.pick_clock_expires_at}

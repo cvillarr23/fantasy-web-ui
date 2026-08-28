@@ -106,18 +106,14 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
             isMyTurn={isMyTurn}
             onDraftPlayer={(playerId, name, position, proTeam) => {
               if (nextPickNumber === undefined) return Promise.reject(new Error('No active pick to draft against.'))
-              return triggerDraftPick(config.team_id, playerId, name, position, proTeam, {
-                leagueId: config.league_id,
+              return triggerDraftPick(config, playerId, name, position, proTeam, {
                 pickNumber: nextPickNumber,
-                mode: config.mode,
                 expiresAt: status?.recommendation?.pick_clock_expires_at,
               })
             }}
           />
           <InterventionControls
-            leagueId={config.league_id}
-            teamId={config.team_id}
-            mode={config.mode}
+            config={config}
             pickNumber={nextPickNumber}
             isMyTurn={isMyTurn}
             pickClockExpiresAt={status?.recommendation?.pick_clock_expires_at}

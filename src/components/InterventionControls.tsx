@@ -2,14 +2,14 @@ import { useState } from 'react'
 import { isPickTooLateError, pauseDraft, resumeDraft, triggerDraftPick } from '../api/client'
 import { PlayerPicker } from './PlayerPicker'
 import { useToast } from '../hooks/useToast'
-import type { PlayerSearchResult } from '../api/types'
+import type { DraftConfig, PlayerSearchResult } from '../api/types'
 
 interface Props {
-  leagueId: string
-  teamId: string
-  // Forwarded verbatim to triggerDraftPick so the gateway/click bot know whether to submit
-  // for real without guessing - see the comment on triggerDraftPick in api/client.ts.
-  mode: 'live' | 'practice'
+  // team_id/league_id/mode all come from the same stored config for this draft - taking the
+  // whole object (rather than three separate props) is what keeps triggerDraftPick's own
+  // signature honest below: there's only one place these three values can be sourced from,
+  // so a future caller can't independently forget one the way the manual-pick path once did.
+  config: DraftConfig
   pickNumber?: number
   isMyTurn: boolean
   pickClockExpiresAt: number | undefined
@@ -20,7 +20,8 @@ interface Props {
 // UI copy is deliberate: fantasy-browser-worker's draft_clicker.js (WORKER-06) now consumes
 // draft_targets and fires a real click in ESPN's UI, so this button is a live action, not a
 // dry-run log - the copy must say so clearly since it's used mid-draft under time pressure.
-export function InterventionControls({ leagueId, teamId, mode, pickNumber, isMyTurn, pickClockExpiresAt, held, setHeld }: Props) {
+export function InterventionControls({ config, pickNumber, isMyTurn, pickClockExpiresAt, held, setHeld }: Props) {
+  const { league_id: leagueId } = config
   const [busy, setBusy] = useState(false)
   const { toast, showToast } = useToast()
   const [manualPlayer, setManualPlayer] = useState<PlayerSearchResult | null>(null)
@@ -56,10 +57,8 @@ export function InterventionControls({ leagueId, teamId, mode, pickNumber, isMyT
     }
     setHeld(true)
     try {
-      await triggerDraftPick(teamId, espnId, manualPlayer.name, manualPlayer.position, manualPlayer.team, {
-        leagueId,
+      await triggerDraftPick(config, espnId, manualPlayer.name, manualPlayer.position, manualPlayer.team, {
         pickNumber,
-        mode,
         expiresAt: pickClockExpiresAt,
       })
       showToast('success', `${manualPlayer.name} drafted.`)
