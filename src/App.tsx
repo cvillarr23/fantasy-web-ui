@@ -97,7 +97,7 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
       />
       <div className="dashboard-grid">
         <div className="dashboard-main">
-          <PickFeed picks={status?.recent_picks ?? []} myTeamId={config.team_id} />
+          <PickFeed picks={status?.recent_picks ?? []} myTeamId={config.team_id} status={status} />
           <TeamPositionGrid teamIds={status?.team_ids} teamAggregates={status?.team_aggregates} myTeamId={config.team_id} />
           <RosterVsLeaguePanel status={status} myTeamId={config.team_id} />
           <DiagnosticsPanel

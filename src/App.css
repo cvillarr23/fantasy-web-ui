@@ -215,6 +215,15 @@
   margin-bottom: 16px;
 }
 
+.pick-feed-provenance-warning {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  font-size: 13px;
+}
+
 .pick-feed ol {
   list-style: none;
   margin: 0;

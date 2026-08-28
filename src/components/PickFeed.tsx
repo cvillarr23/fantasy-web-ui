@@ -1,18 +1,33 @@
 import { useMemo, useState } from 'react'
-import type { DraftPickSummary } from '../api/types'
+import type { DraftPickSummary, DraftStatusResponse } from '../api/types'
 import { usePlayerDetailsCache } from '../hooks/usePlayerDetailsCache'
 import { PlayerSummaryPopover } from './PlayerSummaryPopover'
 
 interface Props {
   picks: DraftPickSummary[]
   myTeamId: string
+  status: DraftStatusResponse | null
 }
 
-export function PickFeed({ picks, myTeamId }: Props) {
+function formatDisplayTime(value: string | null | undefined): string {
+  if (!value) return '—'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+}
+
+export function PickFeed({ picks, myTeamId, status }: Props) {
   const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null)
   const myTeamPicks = useMemo(() => picks.filter((pick) => pick.team_id === myTeamId), [picks, myTeamId])
   const playerIds = useMemo(() => picks.map((pick) => pick.player_id), [picks])
   const playerDetailsById = usePlayerDetailsCache(playerIds)
+  // was_autodrafted is only ever set (true/false) once the backend listener actually
+  // processes a pick - if that listener isn't running at all, the column silently stays
+  // NULL forever, indistinguishable in the badge below from a legitimate opponent pick.
+  // Cross-referencing listener/pipeline health here means an operator sees "this may be
+  // stale" instead of every pick quietly looking confirmed-fine.
+  const provenanceUnreliable =
+    myTeamPicks.length > 0 && status !== null && (status.listener_state !== 'Active' || status.pipeline_health !== 'healthy')
 
   function renderPickList(list: DraftPickSummary[], emptyText: string) {
     if (list.length === 0) {
@@ -67,6 +82,13 @@ export function PickFeed({ picks, myTeamId }: Props) {
   return (
     <section className="pick-feed">
       <h2>Pick feed</h2>
+      {provenanceUnreliable && (
+        <p className="pick-feed-provenance-warning">
+          ⚠ Pick provenance may be unreliable — draft listener not responding (last event{' '}
+          {formatDisplayTime(status?.listener_last_event_at)}). The "ESPN autodraft" badge below may be missing
+          on a pick it should be flagging.
+        </p>
+      )}
       <div className="pick-feed-sections">
         <article className="pick-section">
           <h3>League picks</h3>
