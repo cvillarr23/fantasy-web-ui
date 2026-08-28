@@ -21,6 +21,11 @@ export interface DraftPickSummary {
   projected_points: number | null
   scarcity_multiplier: number | null
   matchup_coefficient: number | null
+  /** Only meaningful for our own team's picks - null for every opponent pick, since the
+   * concept doesn't apply to picks our system never attempted. true means our system's
+   * attempted pick was never confirmed/matched and ESPN autodrafted for us instead; false
+   * means our attempted pick landed as intended. */
+  was_autodrafted: boolean | null
 }
 
 export interface TeamAggregate {

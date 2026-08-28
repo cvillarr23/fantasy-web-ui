@@ -29,6 +29,9 @@ export function PickFeed({ picks, myTeamId }: Props) {
           const displayPosition = details?.position ?? pick.position
           const proTeam = details?.team
           const draftingTeam = pick.team_id === myTeamId ? 'Your team' : `Team ${pick.team_id}`
+          // was_autodrafted is only meaningful on our own team's picks - it's null for every
+          // opponent pick, so the myTeamId check guards against a false positive there.
+          const isSuspectedAutodraft = pick.team_id === myTeamId && pick.was_autodrafted === true
           return (
             <li key={pick.pick_number} className={`pick-row ${pick.team_id === myTeamId ? 'my-pick' : ''}`}>
               <button
@@ -36,13 +39,23 @@ export function PickFeed({ picks, myTeamId }: Props) {
                 className="pick-row-button"
                 onClick={() => setExpandedPlayerId(pick.player_id)}
                 disabled={!pick.player_id}
-                aria-label={`Pick ${pick.pick_number}: ${displayName}, picked by ${draftingTeam}. Show player summary.`}
+                aria-label={`Pick ${pick.pick_number}: ${displayName}, picked by ${draftingTeam}${
+                  isSuspectedAutodraft ? ', ESPN autodraft' : ''
+                }. Show player summary.`}
               >
                 <span className="pick-number">#{pick.pick_number}</span>
                 <span className="pick-name">{displayName}</span>
                 {displayPosition && <span className="pick-position">{displayPosition}</span>}
                 {proTeam && <span className="pick-pro-team">{proTeam}</span>}
                 <span className="pick-team">picked by {draftingTeam}</span>
+                {isSuspectedAutodraft && (
+                  <span
+                    className="badge-autodraft"
+                    title="Our system's attempted pick was never confirmed - ESPN autodrafted for us instead."
+                  >
+                    ⚠ ESPN autodraft
+                  </span>
+                )}
               </button>
             </li>
           )
