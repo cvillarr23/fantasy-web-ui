@@ -11,6 +11,7 @@ interface Props {
   lastPickAt: number | null
   stale: boolean
   isMyTurn: boolean
+  myTeamId: string
   leagueId: string
   pickNumber: number | undefined
   held: boolean
@@ -55,6 +56,7 @@ export function StatusHeader({
   lastPickAt,
   stale,
   isMyTurn,
+  myTeamId,
   leagueId,
   pickNumber,
   held,
@@ -67,6 +69,11 @@ export function StatusHeader({
   const health = status?.pipeline_health ?? 'unknown'
   const onTheClock = status?.on_the_clock_team_id ?? null
   const onTheClockLabel = onTheClock === null ? '—' : isMyTurn ? 'Your team' : `Team ${onTheClock}`
+  // ESPN's own autodraft toggle being on for our seat means it fills that pick instantly,
+  // regardless of any clock - no auto-publish hold delay can ever win that race (confirmed
+  // live 2026-08-28, league 298899823). Surfaced as a standing warning (not tied to isMyTurn)
+  // since the toggle can be on well before it's actually our turn.
+  const ourAutodraftIsOn = status?.autodraft_active_team_id === myTeamId
   const lastHeartbeatTime = lastHeartbeatAt
     ? new Date(lastHeartbeatAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     : '—'
@@ -93,6 +100,12 @@ export function StatusHeader({
 
   return (
     <header className="status-header">
+      {ourAutodraftIsOn && (
+        <p className="status-message autodraft-active-warning">
+          ⚠ ESPN's own autodraft is ON for your team — it will fill your picks instantly,
+          regardless of our system. Turn it off in the ESPN draft room for auto-publish to work.
+        </p>
+      )}
       <div className={`health-badge health-${stale ? 'stale' : health}`}>
         {stale ? 'STALE' : health.toUpperCase()}
       </div>

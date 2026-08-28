@@ -523,6 +523,7 @@ export function PracticeDraftScreen() {
             lastPickAt={streamMatchesPracticeConfig ? lastPickAt : null}
             stale={streamStale}
             isMyTurn={isMyTurn}
+            myTeamId={practiceConfig.team_id}
             leagueId={practiceConfig.league_id}
             pickNumber={nextPickNumber}
             held={held}

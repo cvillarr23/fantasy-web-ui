@@ -224,6 +224,16 @@
   font-size: 13px;
 }
 
+.autodraft-active-warning {
+  margin: 0 0 12px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+  font-weight: 600;
+}
+
 .pick-feed ol {
   list-style: none;
   margin: 0;

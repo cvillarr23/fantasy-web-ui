@@ -89,6 +89,7 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
         lastPickAt={lastPickAt}
         stale={stale}
         isMyTurn={isMyTurn}
+        myTeamId={config.team_id}
         leagueId={config.league_id}
         pickNumber={nextPickNumber}
         held={held}

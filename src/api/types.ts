@@ -114,6 +114,12 @@ export interface DraftStatusResponse {
    * that team's most recent pick - keyed by team_id, same keys as team_rosters. */
   team_aggregates: Record<string, TeamAggregate>
   on_the_clock_team_id: string | null
+  /** Team whose ESPN autodraft toggle is currently ON, from fantasy-browser-worker's live
+   * AUTODRAFT WS frame - null if no team currently has it active or the signal hasn't been
+   * seen yet. When this is our own team, ESPN fills that pick instantly regardless of our
+   * own auto-publish clock - no hold delay can win that race (issue #108 follow-up,
+   * confirmed live 2026-08-28, league 298899823). */
+  autodraft_active_team_id: string | null
   pipeline_health: 'healthy' | 'degraded'
   recent_errors: DraftStatusError[]
   listener_state: 'Active' | 'Starting' | 'Failed' | 'Unknown'
