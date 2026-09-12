@@ -65,6 +65,7 @@ export function ConfigScreen({ initial, onConfigured }: Props) {
             label="Season"
             value={season}
             onChange={(value) => setSeason(typeof value === 'number' ? value : Number(value) || season)}
+            allowDecimal={false}
             required
           />
           <Button type="submit" loading={busy}>Save config &amp; continue to dashboard</Button>

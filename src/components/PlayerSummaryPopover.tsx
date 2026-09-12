@@ -26,7 +26,12 @@ export function PlayerSummaryPopover({ playerId, onClose }: Props) {
   }, [playerId])
 
   return (
-    <Modal opened onClose={onClose} title={summary?.name} size="md">
+    <Modal
+      opened
+      onClose={onClose}
+      title={summary?.name ?? (error ? 'Unable to load player' : 'Loading player…')}
+      size="md"
+    >
       {error && <p className="error">Failed to load player summary: {error}</p>}
       {!summary && !error && <p>Loading…</p>}
       {summary && (

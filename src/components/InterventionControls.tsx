@@ -145,7 +145,7 @@ export function InterventionControls({
       <h2>Intervene</h2>
       <div className={`auto-publish-kill-switch${autoPublishEnabled ? '' : ' auto-publish-kill-switch-off'}`}>
         <Switch
-          className="auto-publish-toggle"
+          classNames={{ label: 'auto-publish-toggle' }}
           label="Auto-publish picks"
           checked={autoPublishEnabled}
           disabled={autoPublishBusy}
@@ -186,9 +186,15 @@ export function InterventionControls({
       </p>
       <div className="button-row">
         <Tooltip label="Not available yet — pending fantasy-browser-worker#32">
-          <Button variant="default" disabled>
-            Toggle ESPN autodraft (not available yet)
-          </Button>
+          {/* Disabled elements don't reliably fire the hover/focus events Tooltip listens for
+              (Firefox suppresses pointer events on them entirely) - wrapping in a non-disabled
+              span, with pointer-events disabled only on the button itself, keeps the tooltip
+              reachable without making the button appear clickable. */}
+          <span>
+            <Button variant="default" disabled style={{ pointerEvents: 'none' }}>
+              Toggle ESPN autodraft (not available yet)
+            </Button>
+          </span>
         </Tooltip>
       </div>
 

@@ -411,6 +411,7 @@ export function PracticeDraftScreen() {
               min={2000}
               value={season}
               onChange={(value) => setSeason(typeof value === 'number' ? value : Number(value) || season)}
+              allowDecimal={false}
               required
             />
             <Group>

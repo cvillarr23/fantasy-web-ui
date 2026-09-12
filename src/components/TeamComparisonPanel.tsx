@@ -78,7 +78,7 @@ export function TeamComparisonPanel({ teamIds: teamIdsFromStatus, teamRosters, t
         </div>
       </div>
       {loading ? (
-        <SkeletonTeamColumns />
+        !collapsed && <SkeletonTeamColumns />
       ) : teamIds.length === 0 ? (
         <p className="muted">No team data yet.</p>
       ) : (
