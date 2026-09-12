@@ -101,7 +101,11 @@ export function PracticeDraftScreen() {
   const [practiceConfig, setPracticeConfig] = useState<DraftConfig | null>(initialPracticeConfig)
   const [leagueId, setLeagueId] = useState(initialPracticeConfig?.league_id ?? '')
   const [teamId, setTeamId] = useState(initialPracticeConfig?.team_id ?? '')
-  const [season, setSeason] = useState<number>(initialPracticeConfig?.season ?? new Date().getFullYear())
+  // number | string, not just number: NumberInput's onChange passes intermediate values (e.g.
+  // '' while clearing the field) that don't parse to a valid year yet - coercing those back to
+  // the old season here would fight the user mid-edit, so the raw value is kept as-is and only
+  // normalized to a number where it's actually used (hasRequiredConfig, handleStart's config).
+  const [season, setSeason] = useState<number | string>(initialPracticeConfig?.season ?? new Date().getFullYear())
   const [checking, setChecking] = useState(true)
   const [preflightError, setPreflightError] = useState<string | null>(null)
   const [showFormWhileTracking, setShowFormWhileTracking] = useState(false)
@@ -197,7 +201,7 @@ export function PracticeDraftScreen() {
 
 
   const isValidUrl = /^https:\/\//.test(roomUrl.trim())
-  const hasRequiredConfig = leagueId.trim() && teamId.trim() && season > 0
+  const hasRequiredConfig = leagueId.trim() && teamId.trim() && Number(season) > 0
   const formVisible = !checking && (!tracking || showFormWhileTracking)
 
   function updateRoomUrl(value: string) {
@@ -222,7 +226,9 @@ export function PracticeDraftScreen() {
        const config: DraftConfig = {
          league_id: leagueId.trim(),
          team_id: teamId.trim(),
-         season,
+         // hasRequiredConfig already guards both buttons that call this on Number(season) > 0,
+         // so this is always a valid year by the time handleStart runs.
+         season: Number(season),
          mode: 'practice',
        }
 
@@ -410,7 +416,7 @@ export function PracticeDraftScreen() {
               label="Season"
               min={2000}
               value={season}
-              onChange={(value) => setSeason(typeof value === 'number' ? value : Number(value) || season)}
+              onChange={setSeason}
               allowDecimal={false}
               required
             />

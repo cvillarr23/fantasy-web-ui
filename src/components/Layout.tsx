@@ -1,29 +1,30 @@
-import { AppShell, Tabs } from '@mantine/core'
-import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { AppShell } from '@mantine/core'
+import { NavLink, Outlet } from 'react-router-dom'
 
-const NAV_TABS = [
-  { value: '/draft', label: 'Draft Day' },
-  { value: '/practice', label: 'Practice Draft' },
-  { value: '/lineup', label: 'Lineup' },
-  { value: '/waivers', label: 'Waivers' },
+const NAV_LINKS = [
+  { to: '/draft', label: 'Draft Day' },
+  { to: '/practice', label: 'Practice Draft' },
+  { to: '/lineup', label: 'Lineup' },
+  { to: '/waivers', label: 'Waivers' },
 ]
 
+// Plain nav links (not Mantine's Tabs) are deliberate: these switch the whole page via the
+// router, they don't switch panels within one view, so the ARIA tabs/tabpanel pattern Tabs
+// implements doesn't apply here - a screen reader would announce tabs with no associated
+// tabpanel content, since the routed content renders via <Outlet> outside any Tabs tree.
+// NavLink's own route matching (rather than a manual pathname === value comparison) also
+// means a trailing-slash URL still highlights the right link.
 export function Layout() {
-  const location = useLocation()
-  const navigate = useNavigate()
-
   return (
     <AppShell header={{ height: 56 }}>
       <AppShell.Header>
-        <Tabs value={location.pathname} onChange={(value) => value && navigate(value)} px="md">
-          <Tabs.List>
-            {NAV_TABS.map((tab) => (
-              <Tabs.Tab key={tab.value} value={tab.value}>
-                {tab.label}
-              </Tabs.Tab>
-            ))}
-          </Tabs.List>
-        </Tabs>
+        <nav className="app-nav">
+          {NAV_LINKS.map((link) => (
+            <NavLink key={link.to} to={link.to} end>
+              {link.label}
+            </NavLink>
+          ))}
+        </nav>
       </AppShell.Header>
       <AppShell.Main>
         <Outlet />

@@ -11,7 +11,12 @@ interface Props {
 export function ConfigScreen({ initial, onConfigured }: Props) {
   const [leagueId, setLeagueId] = useState(initial.league_id)
   const [teamId, setTeamId] = useState(initial.team_id)
-  const [season, setSeason] = useState(initial.season)
+  // number | string, not just number: NumberInput's onChange passes intermediate values
+  // (e.g. '' while clearing the field, or a partial typed digit) that don't parse to a
+  // valid year yet. Coercing those back to the old season here would fight the user mid-edit
+  // (typing a new year would keep snapping back to the previous one) - so the raw value is
+  // kept as-is and only normalized to a number where it's actually used, in handleSubmit.
+  const [season, setSeason] = useState<number | string>(initial.season)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [started, setStarted] = useState(false)
@@ -21,7 +26,12 @@ export function ConfigScreen({ initial, onConfigured }: Props) {
     setBusy(true)
     setError(null)
     try {
-      const config: DraftConfig = { league_id: leagueId.trim(), team_id: teamId.trim(), season, mode: 'live' }
+      const config: DraftConfig = {
+        league_id: leagueId.trim(),
+        team_id: teamId.trim(),
+        season: Number(season) || initial.season,
+        mode: 'live',
+      }
       await setDraftConfig(config)
       onConfigured(config)
     } catch (err) {
@@ -64,7 +74,7 @@ export function ConfigScreen({ initial, onConfigured }: Props) {
           <NumberInput
             label="Season"
             value={season}
-            onChange={(value) => setSeason(typeof value === 'number' ? value : Number(value) || season)}
+            onChange={setSeason}
             allowDecimal={false}
             required
           />
