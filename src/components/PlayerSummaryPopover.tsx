@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Modal } from '@mantine/core'
 import { getPlayerSummary } from '../api/client'
 import type { PlayerSummary } from '../api/types'
 
@@ -25,30 +26,31 @@ export function PlayerSummaryPopover({ playerId, onClose }: Props) {
   }, [playerId])
 
   return (
-    <div className="popover-backdrop" onClick={onClose}>
-      <div className="popover" onClick={(e) => e.stopPropagation()}>
-        <button className="popover-close" onClick={onClose} aria-label="Close">×</button>
-        {error && <p className="error">Failed to load player summary: {error}</p>}
-        {!summary && !error && <p>Loading…</p>}
-        {summary && (
-          <>
-            <h3>{summary.name}</h3>
-            <p className="subtitle">{summary.position} · {summary.team} · {summary.status}
-              {summary.injury_status ? ` · ${summary.injury_status}` : ''}</p>
-            <h4>Recent news</h4>
-            {summary.recent_news.length === 0 && <p className="muted">No recent news.</p>}
-            <ul className="news-list">
-              {summary.recent_news.map((item, i) => (
-                <li key={i}>
-                  <span className="news-source">{item.source}</span>
-                  <p>{item.raw_text}</p>
-                  {item.url && <a href={item.url} target="_blank" rel="noreferrer">source</a>}
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </div>
-    </div>
+    <Modal
+      opened
+      onClose={onClose}
+      title={summary?.name ?? (error ? 'Unable to load player' : 'Loading player…')}
+      size="md"
+    >
+      {error && <p className="error">Failed to load player summary: {error}</p>}
+      {!summary && !error && <p>Loading…</p>}
+      {summary && (
+        <>
+          <p className="subtitle">{summary.position} · {summary.team} · {summary.status}
+            {summary.injury_status ? ` · ${summary.injury_status}` : ''}</p>
+          <h4>Recent news</h4>
+          {summary.recent_news.length === 0 && <p className="muted">No recent news.</p>}
+          <ul className="news-list">
+            {summary.recent_news.map((item, i) => (
+              <li key={i}>
+                <span className="news-source">{item.source}</span>
+                <p>{item.raw_text}</p>
+                {item.url && <a href={item.url} target="_blank" rel="noreferrer">source</a>}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </Modal>
   )
 }

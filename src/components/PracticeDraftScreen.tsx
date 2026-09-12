@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Badge, Button, Group, NumberInput, Stack, Switch, TextInput } from '@mantine/core'
 import {
   endPracticeSyncJob,
   getPracticeSyncJobStatus,
@@ -100,7 +101,11 @@ export function PracticeDraftScreen() {
   const [practiceConfig, setPracticeConfig] = useState<DraftConfig | null>(initialPracticeConfig)
   const [leagueId, setLeagueId] = useState(initialPracticeConfig?.league_id ?? '')
   const [teamId, setTeamId] = useState(initialPracticeConfig?.team_id ?? '')
-  const [season, setSeason] = useState<number>(initialPracticeConfig?.season ?? new Date().getFullYear())
+  // number | string, not just number: NumberInput's onChange passes intermediate values (e.g.
+  // '' while clearing the field) that don't parse to a valid year yet - coercing those back to
+  // the old season here would fight the user mid-edit, so the raw value is kept as-is and only
+  // normalized to a number where it's actually used (hasRequiredConfig, handleStart's config).
+  const [season, setSeason] = useState<number | string>(initialPracticeConfig?.season ?? new Date().getFullYear())
   const [checking, setChecking] = useState(true)
   const [preflightError, setPreflightError] = useState<string | null>(null)
   const [showFormWhileTracking, setShowFormWhileTracking] = useState(false)
@@ -196,7 +201,10 @@ export function PracticeDraftScreen() {
 
 
   const isValidUrl = /^https:\/\//.test(roomUrl.trim())
-  const hasRequiredConfig = leagueId.trim() && teamId.trim() && season > 0
+  // Matches the Season NumberInput's own min={2000}: Force start bypasses native form
+  // constraint validation entirely, so this JS-level gate is the only thing stopping a
+  // sub-2000 value from reaching startPracticeSyncJob/setDraftConfig.
+  const hasRequiredConfig = leagueId.trim() && teamId.trim() && Number(season) >= 2000
   const formVisible = !checking && (!tracking || showFormWhileTracking)
 
   function updateRoomUrl(value: string) {
@@ -221,7 +229,9 @@ export function PracticeDraftScreen() {
        const config: DraftConfig = {
          league_id: leagueId.trim(),
          team_id: teamId.trim(),
-         season,
+         // hasRequiredConfig already guards both buttons that call this on Number(season) >= 2000,
+         // so this is always a valid year by the time handleStart runs.
+         season: Number(season),
          mode: 'practice',
        }
 
@@ -384,53 +394,65 @@ export function PracticeDraftScreen() {
 
       {formVisible && (
         <form onSubmit={handleStart}>
-          <label>
-            Practice draft room URL
-            <input
+          <Stack gap="sm" mb="md">
+            <TextInput
+              label="Practice draft room URL"
               value={roomUrl}
-              onChange={(e) => updateRoomUrl(e.target.value)}
+              onChange={(e) => updateRoomUrl(e.currentTarget.value)}
               placeholder="https://fantasy.espn.com/football/draft?..."
+              error={roomUrl.trim().length > 0 && !isValidUrl ? 'Must be a full https:// URL.' : undefined}
               required
             />
-          </label>
-          <label>
-            Practice league ID
-            <input value={leagueId} onChange={(e) => setLeagueId(e.target.value)} required />
-          </label>
-          <label>
-            Your practice team ID
-            <input value={teamId} onChange={(e) => setTeamId(e.target.value)} required />
-          </label>
-          <label>
-            Season
-            <input type="number" min="2000" value={season} onChange={(e) => setSeason(Number(e.target.value))} required />
-          </label>
-          <div className="button-row">
-            <button type="submit" disabled={busy || !isValidUrl || !hasRequiredConfig}>
-              Start practice sync
-            </button>
-            {/* The escape hatch. A previous run can be left wedged by a Job stuck Terminating
-                or by a control plane that stopped answering long enough to strand one, and
-                without this the 409 is a dead end with nothing to reattach to. */}
-            <button
-              type="button"
-              className="secondary"
-              disabled={busy || !isValidUrl || !hasRequiredConfig}
-              onClick={(e) => handleStart(e, true)}
-            >
-              Force start (end any existing run)
-            </button>
-          </div>
+            <TextInput
+              label="Practice league ID"
+              value={leagueId}
+              onChange={(e) => setLeagueId(e.currentTarget.value)}
+              required
+            />
+            <TextInput
+              label="Your practice team ID"
+              value={teamId}
+              onChange={(e) => setTeamId(e.currentTarget.value)}
+              required
+            />
+            <NumberInput
+              label="Season"
+              min={2000}
+              value={season}
+              onChange={setSeason}
+              allowDecimal={false}
+              required
+            />
+            <Group>
+              <Button type="submit" loading={busy} disabled={!isValidUrl || !hasRequiredConfig}>
+                Start practice sync
+              </Button>
+              {/* The escape hatch. A previous run can be left wedged by a Job stuck Terminating
+                  or by a control plane that stopped answering long enough to strand one, and
+                  without this the 409 is a dead end with nothing to reattach to. */}
+              <Button
+                type="button"
+                variant="outline"
+                color="orange"
+                loading={busy}
+                disabled={!isValidUrl || !hasRequiredConfig}
+                onClick={(e) => handleStart(e, true)}
+              >
+                Force start (end any existing run)
+              </Button>
+            </Group>
+          </Stack>
         </form>
       )}
 
       {!checking && tracking && (
         <div className="practice-status">
           <p>
-            <span
+            <Badge
               role="status"
               aria-live="polite"
-              className={`health-badge health-${jobState === 'Failed' ? 'degraded' : jobState === 'Active' && roomConnected ? 'healthy' : 'stale'}`}
+              size="lg"
+              color={jobState === 'Failed' ? 'red' : jobState === 'Active' && roomConnected ? 'green' : 'yellow'}
             >
               {jobState
                 ? jobState === 'Active'
@@ -439,29 +461,27 @@ export function PracticeDraftScreen() {
                     : 'Job running - connecting to room...'
                   : JOB_STATE_LABEL[jobState]
                 : 'Connecting…'}
-            </span>
+            </Badge>
           </p>
-          <div className="button-row">
-            <button disabled={busy} onClick={handleEnd}>
+          <Group className="button-row">
+            <Button variant="default" loading={busy} onClick={handleEnd}>
               End practice run
-            </button>
+            </Button>
             {/* "End practice run" is the clean exit, but it depends on the same Kubernetes
                 calls that may be the reason the run is wedged in the first place. This reveals
                 the form so a new room can be forced in without a working teardown. */}
             {!showFormWhileTracking && (
-              <button type="button" className="secondary" onClick={() => setShowFormWhileTracking(true)}>
+              <Button type="button" variant="outline" color="orange" onClick={() => setShowFormWhileTracking(true)}>
                 Start a different room…
-              </button>
+              </Button>
             )}
-          </div>
-          <label className="practice-toggle">
-            <input
-              type="checkbox"
-              checked={showInterventions}
-              onChange={(e) => handleToggleInterventions(e.target.checked)}
-            />
-            Show intervention controls
-          </label>
+          </Group>
+          <Switch
+            className="practice-toggle"
+            label="Show intervention controls"
+            checked={showInterventions}
+            onChange={(e) => handleToggleInterventions(e.currentTarget.checked)}
+          />
         </div>
       )}
 
@@ -475,9 +495,9 @@ export function PracticeDraftScreen() {
           {needsDraftSyncRetry && (
             <p className="banner banner-warning" role="status" aria-live="polite">
               Draft listener is not confirmed yet. Retry start to resume picks/recommendations.
-              <button type="button" onClick={handleRetryDraftSyncStart} disabled={busy || !practiceConfig}>
+              <Button size="xs" variant="default" loading={busy} onClick={handleRetryDraftSyncStart} disabled={!practiceConfig}>
                 Retry draft listener start
-              </button>
+              </Button>
             </p>
           )}
           {hasMismatchedStream && (
@@ -529,18 +549,30 @@ export function PracticeDraftScreen() {
             held={held}
             setHeld={setHeld}
             holdEnabled={showInterventions}
+            loading={activeStatus === null}
           />
           <div className="dashboard-grid">
             <div className="dashboard-main">
-              <PickFeed picks={activeStatus?.recent_picks ?? []} myTeamId={practiceConfig.team_id} status={activeStatus} />
-              <TeamPositionGrid teamIds={activeStatus?.team_ids} teamAggregates={activeStatus?.team_aggregates} myTeamId={practiceConfig.team_id} />
-              <RosterVsLeaguePanel status={activeStatus} myTeamId={practiceConfig.team_id} />
+              <PickFeed
+                picks={activeStatus?.recent_picks ?? []}
+                myTeamId={practiceConfig.team_id}
+                status={activeStatus}
+                loading={activeStatus === null}
+              />
+              <TeamPositionGrid
+                teamIds={activeStatus?.team_ids}
+                teamAggregates={activeStatus?.team_aggregates}
+                myTeamId={practiceConfig.team_id}
+                loading={activeStatus === null}
+              />
+              <RosterVsLeaguePanel status={activeStatus} myTeamId={practiceConfig.team_id} loading={activeStatus === null} />
               <DiagnosticsPanel
                 status={activeStatus}
                 connectionState={streamMatchesPracticeConfig ? connectionState : 'connecting'}
                 reconnectCount={streamMatchesPracticeConfig ? reconnectCount : 0}
                 stale={streamStale}
                 entries={diagnostics}
+                loading={activeStatus === null}
               />
             </div>
             <div className="dashboard-side">
@@ -548,6 +580,7 @@ export function PracticeDraftScreen() {
                 recommendation={activeStatus?.recommendation ?? {}}
                 pickNumber={nextPickNumber}
                 isMyTurn={isMyTurn}
+                loading={activeStatus === null}
                 onDraftPlayer={(playerId, name, position, proTeam) => {
                   if (nextPickNumber === undefined) return Promise.reject(new Error('No active pick to draft against.'))
                   return triggerDraftPick(practiceConfig, playerId, name, position, proTeam, {
@@ -576,6 +609,7 @@ export function PracticeDraftScreen() {
             teamRosters={activeStatus?.team_rosters ?? {}}
             teamAggregates={activeStatus?.team_aggregates ?? {}}
             myTeamId={practiceConfig.team_id}
+            loading={activeStatus === null}
           />
         </div>
       )}

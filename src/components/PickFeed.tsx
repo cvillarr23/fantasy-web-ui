@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Skeleton, UnstyledButton } from '@mantine/core'
 import type { DraftPickSummary, DraftStatusResponse } from '../api/types'
 import { usePlayerDetailsCache } from '../hooks/usePlayerDetailsCache'
 import { PlayerSummaryPopover } from './PlayerSummaryPopover'
@@ -7,6 +8,7 @@ interface Props {
   picks: DraftPickSummary[]
   myTeamId: string
   status: DraftStatusResponse | null
+  loading?: boolean
 }
 
 function formatDisplayTime(value: string | null | undefined): string {
@@ -16,7 +18,19 @@ function formatDisplayTime(value: string | null | undefined): string {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
 
-export function PickFeed({ picks, myTeamId, status }: Props) {
+function SkeletonPickList() {
+  return (
+    <ol>
+      {Array.from({ length: 4 }).map((_, i) => (
+        <li key={i} className="pick-row">
+          <Skeleton height={14} width="100%" />
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+export function PickFeed({ picks, myTeamId, status, loading = false }: Props) {
   const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null)
   const myTeamPicks = useMemo(() => picks.filter((pick) => pick.team_id === myTeamId), [picks, myTeamId])
   const playerIds = useMemo(() => picks.map((pick) => pick.player_id), [picks])
@@ -49,8 +63,7 @@ export function PickFeed({ picks, myTeamId, status }: Props) {
           const isSuspectedAutodraft = pick.team_id === myTeamId && pick.was_autodrafted === true
           return (
             <li key={pick.pick_number} className={`pick-row ${pick.team_id === myTeamId ? 'my-pick' : ''}`}>
-              <button
-                type="button"
+              <UnstyledButton
                 className="pick-row-button"
                 onClick={() => setExpandedPlayerId(pick.player_id)}
                 disabled={!pick.player_id}
@@ -71,7 +84,7 @@ export function PickFeed({ picks, myTeamId, status }: Props) {
                     ⚠ ESPN autodraft
                   </span>
                 )}
-              </button>
+              </UnstyledButton>
             </li>
           )
         })}
@@ -92,11 +105,11 @@ export function PickFeed({ picks, myTeamId, status }: Props) {
       <div className="pick-feed-sections">
         <article className="pick-section">
           <h3>League picks</h3>
-          {renderPickList(picks, 'No picks yet.')}
+          {loading ? <SkeletonPickList /> : renderPickList(picks, 'No picks yet.')}
         </article>
         <article className="pick-section">
           <h3>Your team picks</h3>
-          {renderPickList(myTeamPicks, 'Your team has not picked yet.')}
+          {loading ? <SkeletonPickList /> : renderPickList(myTeamPicks, 'Your team has not picked yet.')}
         </article>
       </div>
       {expandedPlayerId && (

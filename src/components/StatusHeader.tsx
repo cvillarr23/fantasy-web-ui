@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Button, Skeleton } from '@mantine/core'
 import { pauseDraft } from '../api/client'
 import type { DraftStatusResponse } from '../api/types'
 
@@ -21,6 +22,9 @@ interface Props {
   // in-UI recovery, so the button itself is gated by the same toggle. The countdown still
   // renders either way; only the ability to pause is what's gated.
   holdEnabled: boolean
+  // True while waiting on the first status snapshot - distinct from `stale`/reconnecting,
+  // which already have their own banner/badge treatment further up the tree.
+  loading?: boolean
 }
 
 function getConnectionLabel(
@@ -62,6 +66,7 @@ export function StatusHeader({
   held,
   setHeld,
   holdEnabled,
+  loading = false,
 }: Props) {
   const [now, setNow] = useState(() => Date.now())
   const [holdBusy, setHoldBusy] = useState(false)
@@ -96,6 +101,20 @@ export function StatusHeader({
     } finally {
       setHoldBusy(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <header className="status-header">
+        <Skeleton height={22} width={70} radius="xl" />
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div className="status-field" key={i}>
+            <Skeleton height={10} width={60} mb={6} />
+            <Skeleton height={14} width={80} />
+          </div>
+        ))}
+      </header>
+    )
   }
 
   return (
@@ -145,9 +164,9 @@ export function StatusHeader({
               {autoPublishIn !== null && <span className="countdown">Auto-publish in: {autoPublishIn}s</span>}
               {espnClockIn === null && autoPublishIn === null && <span>No auto-publish scheduled yet</span>}
               {holdEnabled && (
-                <button onClick={handleHold} disabled={holdBusy}>
+                <Button size="xs" onClick={handleHold} loading={holdBusy}>
                   Hold this pick
-                </button>
+                </Button>
               )}
             </>
           )}
