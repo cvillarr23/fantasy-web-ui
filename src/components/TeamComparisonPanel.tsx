@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Button, Skeleton, UnstyledButton } from '@mantine/core'
 import type { DraftPickSummary, TeamAggregate } from '../api/types'
 import { usePlayerDetailsCache } from '../hooks/usePlayerDetailsCache'
 import { PlayerSummaryPopover } from './PlayerSummaryPopover'
@@ -8,6 +9,7 @@ interface Props {
   teamRosters: Record<string, DraftPickSummary[]>
   teamAggregates: Record<string, TeamAggregate>
   myTeamId: string
+  loading?: boolean
 }
 
 // A pick's scarcity/matchup multiplier only gets a badge once it's far enough from neutral
@@ -15,7 +17,23 @@ interface Props {
 const SCARCITY_BADGE_THRESHOLD = 1.05
 const MATCHUP_BADGE_DELTA = 0.1
 
-export function TeamComparisonPanel({ teamIds: teamIdsFromStatus, teamRosters, teamAggregates, myTeamId }: Props) {
+function SkeletonTeamColumns() {
+  return (
+    <div className="team-comparison-columns">
+      {Array.from({ length: 3 }).map((_, i) => (
+        <article className="team-column" key={i}>
+          <Skeleton height={16} width="60%" mb={10} />
+          <Skeleton height={12} width="90%" mb={12} />
+          <Skeleton height={12} width="100%" mb={6} />
+          <Skeleton height={12} width="100%" mb={6} />
+          <Skeleton height={12} width="100%" />
+        </article>
+      ))}
+    </div>
+  )
+}
+
+export function TeamComparisonPanel({ teamIds: teamIdsFromStatus, teamRosters, teamAggregates, myTeamId, loading = false }: Props) {
   const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null)
   const [collapsed, setCollapsed] = useState(false)
 
@@ -54,12 +72,14 @@ export function TeamComparisonPanel({ teamIds: teamIdsFromStatus, teamRosters, t
       <div className="diagnostics-header">
         <h2>Team comparison</h2>
         <div className="diagnostics-actions">
-          <button type="button" onClick={handleToggle} aria-expanded={!collapsed}>
+          <Button size="xs" variant="default" onClick={handleToggle} aria-expanded={!collapsed}>
             {collapsed ? 'Show' : 'Hide'}
-          </button>
+          </Button>
         </div>
       </div>
-      {teamIds.length === 0 ? (
+      {loading ? (
+        <SkeletonTeamColumns />
+      ) : teamIds.length === 0 ? (
         <p className="muted">No team data yet.</p>
       ) : (
         !collapsed && (
@@ -170,8 +190,7 @@ function TeamColumn({
             const matchupBadge = pick.matchup_coefficient != null && Math.abs(pick.matchup_coefficient - 1) > MATCHUP_BADGE_DELTA
             return (
               <li key={pick.pick_number} className="pick-row">
-                <button
-                  type="button"
+                <UnstyledButton
                   className="pick-row-button"
                   onClick={() => pick.player_id && onSelectPlayer(pick.player_id)}
                   disabled={!pick.player_id}
@@ -191,7 +210,7 @@ function TeamColumn({
                       matchup {pick.matchup_coefficient!.toFixed(2)}x
                     </span>
                   )}
-                </button>
+                </UnstyledButton>
               </li>
             )
           })}

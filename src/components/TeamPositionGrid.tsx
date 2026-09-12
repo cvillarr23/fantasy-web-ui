@@ -1,3 +1,4 @@
+import { Skeleton, Table } from '@mantine/core'
 import type { DraftStatusResponse } from '../api/types'
 
 type TeamAggregates = NonNullable<DraftStatusResponse['team_aggregates']>
@@ -33,9 +34,10 @@ interface Props {
   teamIds?: string[]
   teamAggregates: TeamAggregates | undefined
   myTeamId: string
+  loading?: boolean
 }
 
-export function TeamPositionGrid({ teamIds, teamAggregates, myTeamId }: Props) {
+export function TeamPositionGrid({ teamIds, teamAggregates, myTeamId, loading = false }: Props) {
   const entries = Object.entries(teamAggregates ?? {}) as TeamAggregateEntry[]
   const knownTeamIds = new Set(entries.map(([teamId]) => teamId))
   // team_ids (from draft_slots) is the source of truth once the backend sends it - it's what
@@ -56,6 +58,34 @@ export function TeamPositionGrid({ teamIds, teamAggregates, myTeamId }: Props) {
     ...sortedEntries.filter(([teamId]) => teamId !== myTeamId),
   ]
 
+  if (loading) {
+    return (
+      <section className="team-position-grid" aria-label="Team comparison by position counts">
+        <h2>Team comparison</h2>
+        <Table>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Team</Table.Th>
+              {POSITION_COLUMNS.map((position) => (
+                <Table.Th key={position.label}>{position.label}</Table.Th>
+              ))}
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {Array.from({ length: 4 }).map((_, row) => (
+              <Table.Tr key={row}>
+                <Table.Th><Skeleton height={12} width={70} /></Table.Th>
+                {POSITION_COLUMNS.map((position) => (
+                  <Table.Td key={position.label}><Skeleton height={12} width={20} mx="auto" /></Table.Td>
+                ))}
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      </section>
+    )
+  }
+
   if (orderedEntries.length === 0) return null
 
   const rows = orderedEntries.map(([teamId, aggregate]) => ({
@@ -68,34 +98,34 @@ export function TeamPositionGrid({ teamIds, teamAggregates, myTeamId }: Props) {
   return (
     <section className="team-position-grid" aria-label="Team comparison by position counts">
       <h2>Team comparison</h2>
-      <table>
-        <thead>
-          <tr>
-            <th scope="col">Team</th>
+      <Table>
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th scope="col">Team</Table.Th>
             {POSITION_COLUMNS.map((position) => (
-              <th key={position.label} scope="col">{position.label}</th>
+              <Table.Th key={position.label} scope="col">{position.label}</Table.Th>
             ))}
-          </tr>
-        </thead>
-        <tbody>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
           {rows.map((row) => {
             const isMyTeam = row.teamId === myTeamId
             return (
-              <tr key={row.teamId} className={isMyTeam ? 'my-team-row' : undefined}>
-                <th scope="row">{isMyTeam ? 'Your team' : `Team ${row.teamId}`}</th>
+              <Table.Tr key={row.teamId} className={isMyTeam ? 'my-team-row' : undefined}>
+                <Table.Th scope="row">{isMyTeam ? 'Your team' : `Team ${row.teamId}`}</Table.Th>
                 {row.counts.map((count, index) => {
                   const isGap = count < medians[index]
                   return (
-                    <td key={POSITION_COLUMNS[index].label} className={isGap ? 'gap-cell' : undefined}>
+                    <Table.Td key={POSITION_COLUMNS[index].label} className={isGap ? 'gap-cell' : undefined}>
                       {count}
-                    </td>
+                    </Table.Td>
                   )
                 })}
-              </tr>
+              </Table.Tr>
             )
           })}
-        </tbody>
-      </table>
+        </Table.Tbody>
+      </Table>
     </section>
   )
 }

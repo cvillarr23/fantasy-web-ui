@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Button, Skeleton } from '@mantine/core'
 import { isPickTooLateError } from '../api/client'
 import { useToast } from '../hooks/useToast'
 import type { DraftRecommendation } from '../api/types'
@@ -10,9 +11,22 @@ interface Props {
   pickNumber: number | undefined
   isMyTurn: boolean
   onDraftPlayer: (espnPlayerId: string, name: string, position: string, proTeam: string) => Promise<unknown>
+  loading?: boolean
 }
 
-export function RecommendationPanel({ recommendation, pickNumber, isMyTurn, onDraftPlayer }: Props) {
+function SkeletonCandidateRows() {
+  return (
+    <ol>
+      {Array.from({ length: 3 }).map((_, i) => (
+        <li key={i} className="candidate-row">
+          <Skeleton height={14} width="100%" />
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+export function RecommendationPanel({ recommendation, pickNumber, isMyTurn, onDraftPlayer, loading = false }: Props) {
   const candidates = recommendation.top_candidates ?? []
   const suggestion = recommendation.espn_suggestion
   const [busy, setBusy] = useState(false)
@@ -34,49 +48,57 @@ export function RecommendationPanel({ recommendation, pickNumber, isMyTurn, onDr
     <section className="recommendation-panel">
       <div className="recommendation-column">
         <h2>System's top picks</h2>
-        {candidates.length === 0 && <p className="muted">No recommendation yet.</p>}
-        <ol>
-          {candidates.map((c) => {
-            const espnId = c.espn_id
-            return (
-            <li key={c.player_id} className="candidate-row">
-              <span className="candidate-name">{c.name}</span>
-              <span className="candidate-position">{c.position}</span>
-              <span className="candidate-score">VORP {c.vorp_score.toFixed(1)}</span>
-              {/* The click bot addresses ESPN's DOM by ESPN's own player id, so a player
-                  missing from the crosswalk genuinely cannot be drafted from here. Blocking
-                  is the only safe option: player_id is a different namespace that overlaps
-                  numerically, so falling back to it would draft someone else entirely.
-                  The reason is rendered as text rather than a title on a disabled button:
-                  tooltips on disabled controls are unreliable across browsers, and a disabled
-                  button is not focusable, so keyboard and screen-reader users cannot reach the
-                  explanation at all. (The disabled+title button elsewhere in InterventionControls
-                  is only a "not built yet" placeholder, where losing the hint costs nothing.) */}
-              {!espnId ? (
-                <span className="candidate-unavailable" role="note">
-                  Draft in ESPN directly — no ESPN id for {c.name} in our crosswalk.
-                </span>
-              ) : pickNumber === undefined ? (
-                <span className="candidate-unavailable" role="note">
-                  No active pick number yet — publishing is disabled until one is known.
-                </span>
-              ) : !isMyTurn ? (
-                <span className="candidate-unavailable" role="note">
-                  Not your turn yet — wait for the clock to reach your team.
-                </span>
-              ) : (
-                <button disabled={busy} onClick={() => handleDraft(espnId, c.name, c.position, c.team)}>
-                  Draft this player
-                </button>
-              )}
-            </li>
-            )
-          })}
-        </ol>
+        {loading ? (
+          <SkeletonCandidateRows />
+        ) : (
+          <>
+            {candidates.length === 0 && <p className="muted">No recommendation yet.</p>}
+            <ol>
+              {candidates.map((c) => {
+                const espnId = c.espn_id
+                return (
+                <li key={c.player_id} className="candidate-row">
+                  <span className="candidate-name">{c.name}</span>
+                  <span className="candidate-position">{c.position}</span>
+                  <span className="candidate-score">VORP {c.vorp_score.toFixed(1)}</span>
+                  {/* The click bot addresses ESPN's DOM by ESPN's own player id, so a player
+                      missing from the crosswalk genuinely cannot be drafted from here. Blocking
+                      is the only safe option: player_id is a different namespace that overlaps
+                      numerically, so falling back to it would draft someone else entirely.
+                      The reason is rendered as text rather than a title on a disabled button:
+                      tooltips on disabled controls are unreliable across browsers, and a disabled
+                      button is not focusable, so keyboard and screen-reader users cannot reach the
+                      explanation at all. (The disabled+title button elsewhere in InterventionControls
+                      is only a "not built yet" placeholder, where losing the hint costs nothing.) */}
+                  {!espnId ? (
+                    <span className="candidate-unavailable" role="note">
+                      Draft in ESPN directly — no ESPN id for {c.name} in our crosswalk.
+                    </span>
+                  ) : pickNumber === undefined ? (
+                    <span className="candidate-unavailable" role="note">
+                      No active pick number yet — publishing is disabled until one is known.
+                    </span>
+                  ) : !isMyTurn ? (
+                    <span className="candidate-unavailable" role="note">
+                      Not your turn yet — wait for the clock to reach your team.
+                    </span>
+                  ) : (
+                    <Button size="xs" loading={busy} onClick={() => handleDraft(espnId, c.name, c.position, c.team)}>
+                      Draft this player
+                    </Button>
+                  )}
+                </li>
+                )
+              })}
+            </ol>
+          </>
+        )}
       </div>
       <div className="recommendation-column">
         <h2>ESPN's suggested pick</h2>
-        {pickNumber === undefined ? (
+        {loading ? (
+          <SkeletonCandidateRows />
+        ) : pickNumber === undefined ? (
           <p className="muted">No active pick — nothing to compare yet.</p>
         ) : !suggestion ? (
           <p className="muted">ESPN hasn't published a suggestion for this pick yet.</p>
@@ -100,8 +122,9 @@ export function RecommendationPanel({ recommendation, pickNumber, isMyTurn, onDr
                   backend never resolves a suggestion without one), so unlike the left
                   column's crosswalk gap, drafting here is never blocked - only gated on
                   pickNumber, already guaranteed by the branch above. */}
-              <button
-                disabled={busy}
+              <Button
+                size="xs"
+                loading={busy}
                 onClick={() =>
                   handleDraft(
                     suggestion.espn_player_id,
@@ -112,7 +135,7 @@ export function RecommendationPanel({ recommendation, pickNumber, isMyTurn, onDr
                 }
               >
                 Draft this player
-              </button>
+              </Button>
             </li>
           </ol>
         )}

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Button, TextInput } from '@mantine/core'
 import { searchPlayers } from '../api/client'
 import type { PlayerSearchResult } from '../api/types'
 
@@ -55,18 +56,18 @@ export function PlayerPicker({ onSelect, selected, onClear }: Props) {
         <span className="candidate-position">{selected.position}</span>
         <span className="pick-team">{selected.team}</span>
         <PlayerStats player={selected} />
-        <button type="button" onClick={onClear}>Change</button>
+        <Button variant="subtle" size="xs" onClick={onClear}>Change</Button>
       </div>
     )
   }
 
   return (
     <div className="player-picker">
-      <input
+      <TextInput
         placeholder="Search player by name…"
         value={query}
         onChange={(e) => {
-          setQuery(e.target.value)
+          setQuery(e.currentTarget.value)
           setOpen(true)
         }}
         onFocus={() => setOpen(true)}

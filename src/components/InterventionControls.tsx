@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Button, Switch, Tooltip } from '@mantine/core'
 import { isPickTooLateError, pauseDraft, resumeDraft, setAutoPublishEnabled, triggerDraftPick } from '../api/client'
 import { PlayerPicker } from './PlayerPicker'
 import { useToast } from '../hooks/useToast'
@@ -143,15 +144,13 @@ export function InterventionControls({
     <section className="intervention-controls">
       <h2>Intervene</h2>
       <div className={`auto-publish-kill-switch${autoPublishEnabled ? '' : ' auto-publish-kill-switch-off'}`}>
-        <label className="auto-publish-toggle">
-          <input
-            type="checkbox"
-            checked={autoPublishEnabled}
-            disabled={autoPublishBusy}
-            onChange={toggleAutoPublish}
-          />
-          Auto-publish picks
-        </label>
+        <Switch
+          className="auto-publish-toggle"
+          label="Auto-publish picks"
+          checked={autoPublishEnabled}
+          disabled={autoPublishBusy}
+          onChange={toggleAutoPublish}
+        />
         {autoPublishDisabledBy === 'circuit_breaker' ? (
           <p className="status-message circuit-breaker-notice">
             ⚠ Auto-disabled after repeated pick failures — will retry automatically on the
@@ -165,12 +164,20 @@ export function InterventionControls({
         ) : null}
       </div>
       <div className="button-row">
-        <button disabled={busy} onClick={() => run(async () => { await pauseDraft(leagueId, pickNumber); setHeld(true) }, 'Pause')}>
+        <Button
+          variant="default"
+          loading={busy}
+          onClick={() => run(async () => { await pauseDraft(leagueId, pickNumber); setHeld(true) }, 'Pause')}
+        >
           Hold our next auto-pick
-        </button>
-        <button disabled={busy} onClick={() => run(async () => { await resumeDraft(leagueId, pickNumber); setHeld(false) }, 'Resume')}>
+        </Button>
+        <Button
+          variant="default"
+          loading={busy}
+          onClick={() => run(async () => { await resumeDraft(leagueId, pickNumber); setHeld(false) }, 'Resume')}
+        >
           Release our next auto-pick
-        </button>
+        </Button>
       </div>
       <p className="muted">
         Pauses/resumes only <em>our own</em> system's auto-publish for the upcoming pick —
@@ -178,9 +185,11 @@ export function InterventionControls({
         {held && ' Currently held.'}
       </p>
       <div className="button-row">
-        <button disabled title="Not available yet — pending fantasy-browser-worker#32">
-          Toggle ESPN autodraft (not available yet)
-        </button>
+        <Tooltip label="Not available yet — pending fantasy-browser-worker#32">
+          <Button variant="default" disabled>
+            Toggle ESPN autodraft (not available yet)
+          </Button>
+        </Tooltip>
       </div>
 
       <form
@@ -211,9 +220,9 @@ export function InterventionControls({
             by ESPN's id, so this one has to be drafted in ESPN directly.
           </p>
         )}
-        <button type="submit" disabled={busy || !manualPlayer?.espn_id || pickNumber === undefined}>
+        <Button type="submit" loading={busy} disabled={!manualPlayer?.espn_id || pickNumber === undefined}>
           {isMyTurn ? 'Publish manual pick' : queued ? 'Cancel queue' : 'Queue for my turn'}
-        </button>
+        </Button>
         {pickNumber === undefined ? (
           <p className="status-message">No active pick number yet — publishing is disabled until one is known.</p>
         ) : (

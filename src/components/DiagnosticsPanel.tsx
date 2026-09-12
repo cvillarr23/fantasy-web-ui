@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Button, Skeleton } from '@mantine/core'
 import type { DraftStatusResponse } from '../api/types'
 import type { DiagnosticsLogEntry } from '../hooks/useDiagnosticsLog'
 import { formatDiagnosticsDetail, formatDiagnosticsEntry } from '../hooks/useDiagnosticsLog'
@@ -11,6 +12,7 @@ interface Props {
   reconnectCount: number
   stale: boolean
   entries: DiagnosticsLogEntry[]
+  loading?: boolean
 }
 
 function loadCollapsed(): boolean {
@@ -36,7 +38,7 @@ function summarizeRecentError(error: Record<string, unknown>): string {
   return formatDiagnosticsDetail(error)
 }
 
-export function DiagnosticsPanel({ status, connectionState, reconnectCount, stale, entries }: Props) {
+export function DiagnosticsPanel({ status, connectionState, reconnectCount, stale, entries, loading = false }: Props) {
   const [collapsed, setCollapsed] = useState(loadCollapsed)
   const [copyMessage, setCopyMessage] = useState<string | null>(null)
   const recentErrors = status?.recent_errors ?? []
@@ -78,19 +80,23 @@ export function DiagnosticsPanel({ status, connectionState, reconnectCount, stal
       <div className="diagnostics-header">
         <div>
           <h2>Diagnostics</h2>
-          <p className="diagnostics-summary">
-            Listener {status?.listener_state ?? '—'} · Job {status?.job_state ?? '—'} · Health {status?.pipeline_health ?? '—'} ·{' '}
-            Connection {stale ? 'stale' : connectionState} · Reconnects {reconnectCount} · Last listener event{' '}
-            {formatDisplayTime(status?.listener_last_event_at)}
-          </p>
+          {loading ? (
+            <Skeleton height={12} width="80%" />
+          ) : (
+            <p className="diagnostics-summary">
+              Listener {status?.listener_state ?? '—'} · Job {status?.job_state ?? '—'} · Health {status?.pipeline_health ?? '—'} ·{' '}
+              Connection {stale ? 'stale' : connectionState} · Reconnects {reconnectCount} · Last listener event{' '}
+              {formatDisplayTime(status?.listener_last_event_at)}
+            </p>
+          )}
         </div>
         <div className="diagnostics-actions">
-          <button type="button" onClick={handleCopy} disabled={entries.length === 0 && !status}>
+          <Button size="xs" variant="default" onClick={handleCopy} disabled={entries.length === 0 && !status}>
             Copy
-          </button>
-          <button type="button" onClick={handleToggle} aria-expanded={!collapsed}>
+          </Button>
+          <Button size="xs" variant="default" onClick={handleToggle} aria-expanded={!collapsed}>
             {collapsed ? 'Show' : 'Hide'}
-          </button>
+          </Button>
         </div>
       </div>
       {copyMessage && <p className="diagnostics-copy-status">{copyMessage}</p>}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Alert, Button, NumberInput, Stack, TextInput } from '@mantine/core'
 import { setDraftConfig, startDraftSync } from '../api/client'
 import type { DraftConfig } from '../api/types'
 
@@ -47,24 +48,32 @@ export function ConfigScreen({ initial, onConfigured }: Props) {
     <div className="config-screen">
       <h1>Draft day setup</h1>
       <form onSubmit={handleSubmit}>
-        <label>
-          League ID
-          <input value={leagueId} onChange={(e) => setLeagueId(e.target.value)} required />
-        </label>
-        <label>
-          Your team ID
-          <input value={teamId} onChange={(e) => setTeamId(e.target.value)} required />
-        </label>
-        <label>
-          Season
-          <input type="number" value={season} onChange={(e) => setSeason(Number(e.target.value))} required />
-        </label>
-        <button type="submit" disabled={busy}>Save config &amp; continue to dashboard</button>
+        <Stack gap="sm" mb="md">
+          <TextInput
+            label="League ID"
+            value={leagueId}
+            onChange={(e) => setLeagueId(e.currentTarget.value)}
+            required
+          />
+          <TextInput
+            label="Your team ID"
+            value={teamId}
+            onChange={(e) => setTeamId(e.currentTarget.value)}
+            required
+          />
+          <NumberInput
+            label="Season"
+            value={season}
+            onChange={(value) => setSeason(typeof value === 'number' ? value : Number(value) || season)}
+            required
+          />
+          <Button type="submit" loading={busy}>Save config &amp; continue to dashboard</Button>
+        </Stack>
       </form>
-      <button disabled={busy} onClick={handleStart}>
+      <Button variant="default" loading={busy} onClick={handleStart}>
         {started ? 'Draft-sync job started ✓' : 'Start draft-sync job'}
-      </button>
-      {error && <p className="error">{error}</p>}
+      </Button>
+      {error && <Alert color="red" mt="md">{error}</Alert>}
     </div>
   )
 }
