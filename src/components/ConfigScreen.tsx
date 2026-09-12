@@ -23,13 +23,21 @@ export function ConfigScreen({ initial, onConfigured }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    const seasonValue = Number(season)
+    // Reject rather than silently substituting the previously loaded season: this used to
+    // fall back to `initial.season` on any invalid input, which could save/start a different
+    // season than the one currently shown without telling the operator.
+    if (!Number.isFinite(seasonValue) || seasonValue <= 0) {
+      setError('Season must be a valid year.')
+      return
+    }
     setBusy(true)
     setError(null)
     try {
       const config: DraftConfig = {
         league_id: leagueId.trim(),
         team_id: teamId.trim(),
-        season: Number(season) || initial.season,
+        season: seasonValue,
         mode: 'live',
       }
       await setDraftConfig(config)

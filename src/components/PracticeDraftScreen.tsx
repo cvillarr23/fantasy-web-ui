@@ -201,7 +201,10 @@ export function PracticeDraftScreen() {
 
 
   const isValidUrl = /^https:\/\//.test(roomUrl.trim())
-  const hasRequiredConfig = leagueId.trim() && teamId.trim() && Number(season) > 0
+  // Matches the Season NumberInput's own min={2000}: Force start bypasses native form
+  // constraint validation entirely, so this JS-level gate is the only thing stopping a
+  // sub-2000 value from reaching startPracticeSyncJob/setDraftConfig.
+  const hasRequiredConfig = leagueId.trim() && teamId.trim() && Number(season) >= 2000
   const formVisible = !checking && (!tracking || showFormWhileTracking)
 
   function updateRoomUrl(value: string) {
@@ -226,7 +229,7 @@ export function PracticeDraftScreen() {
        const config: DraftConfig = {
          league_id: leagueId.trim(),
          team_id: teamId.trim(),
-         // hasRequiredConfig already guards both buttons that call this on Number(season) > 0,
+         // hasRequiredConfig already guards both buttons that call this on Number(season) >= 2000,
          // so this is always a valid year by the time handleStart runs.
          season: Number(season),
          mode: 'practice',
