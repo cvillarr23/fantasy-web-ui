@@ -10,28 +10,9 @@ import { StatusHeader } from './StatusHeader'
 import { TeamComparisonPanel } from './TeamComparisonPanel'
 import { TeamPositionGrid } from './TeamPositionGrid'
 import { useDraftStream } from '../hooks/useDraftStream'
+import { CONFIG_STORAGE_KEY, loadStoredConfig } from '../hooks/useDraftConfig'
 import { triggerDraftPick } from '../api/client'
 import type { DraftConfig } from '../api/types'
-
-const CONFIG_STORAGE_KEY = 'fantasy-web-ui.draft-config'
-
-function loadStoredConfig(): DraftConfig {
-  try {
-    const raw = window.localStorage.getItem(CONFIG_STORAGE_KEY)
-    if (raw) {
-      const parsed = JSON.parse(raw) as Partial<DraftConfig>
-      return {
-        league_id: parsed.league_id ?? '',
-        team_id: parsed.team_id ?? '',
-        season: parsed.season ?? new Date().getFullYear(),
-        mode: parsed.mode ?? 'live',
-      }
-    }
-  } catch {
-    // Corrupt/absent storage - fall through to defaults.
-  }
-  return { league_id: '', team_id: '', season: new Date().getFullYear(), mode: 'live' }
-}
 
 function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigure: () => void }) {
   const { status, connected, connectionState, reconnectCount, lastHeartbeatAt, lastPickAt, stale, diagnostics } = useDraftStream(
