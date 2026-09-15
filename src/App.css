@@ -98,7 +98,7 @@
   .dashboard-main { grid-template-columns: 1fr; }
 }
 
-.pick-feed, .diagnostics-panel, .recommendation-panel, .intervention-controls, .team-comparison-panel, .roster-comparison-panel, .team-position-grid {
+.pick-feed, .diagnostics-panel, .recommendation-panel, .intervention-controls, .team-comparison-panel, .roster-comparison-panel, .team-position-grid, .roster-deficits-grid, .lineup-swap-builder {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 16px;
@@ -135,6 +135,64 @@
   background: rgba(234, 179, 8, 0.14);
   color: var(--warn);
   font-weight: 700;
+}
+
+.roster-deficits-grid {
+  margin-bottom: 24px;
+}
+.roster-deficits-grid h2 {
+  margin-top: 0;
+}
+.roster-deficits-grid table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.roster-deficits-grid th,
+.roster-deficits-grid td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+.roster-deficits-grid th[scope='row'] {
+  text-align: left;
+  font-weight: 600;
+}
+.roster-deficits-grid .my-team-row {
+  background: var(--accent-bg);
+}
+.roster-deficits-grid .my-team-row th[scope='row'] {
+  color: var(--accent);
+}
+.roster-deficits-grid .gap-cell {
+  background: rgba(234, 179, 8, 0.14);
+  color: var(--warn);
+  font-weight: 700;
+}
+
+.lineup-swap-row {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.lineup-swap-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.lineup-swap-pending-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+}
+.lineup-swap-pending-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
 }
 
 .team-comparison-panel {

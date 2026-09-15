@@ -1,4 +1,4 @@
-import type { DraftConfig, DraftStatusResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus } from './types'
+import type { DraftConfig, DraftStatusResponse, LineupSwapInstruction, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -241,4 +241,24 @@ export function getPracticeSyncJobStatus(): Promise<PracticeSyncJobStatus> {
 
 export function endPracticeSyncJob(): Promise<{ status: string; job_name: string }> {
   return request('/v1/draft/practice/sync-job', { method: 'DELETE' }, TEARDOWN_TIMEOUT_MS)
+}
+
+export function getRosterDeficits(season: number, week: number): Promise<RosterDeficitsResponse> {
+  const params = new URLSearchParams({ season: String(season), week: String(week) })
+  return request(`/v1/roster/deficits?${params}`)
+}
+
+// Publishes to the lineup_updates queue (see fantasy-core-pipeline's /v1/trigger/lineup).
+// fantasy-browser-worker's lineup_bot.js consumes this and actually submits the swap to
+// ESPN's REST API - this is a real, live write, not a dry run (DRY_RUN defaults to false).
+//
+// Unlike triggerDraftPick, there's no SSE stream confirming a lineup swap landed - a 202
+// here only means the queue accepted the message, not that ESPN's roster actually changed.
+// lineup_bot.js verifies its own writes and dumps failure context to disk on error, but none
+// of that is visible from this UI.
+export function triggerLineupSwap(teamId: string, swaps: LineupSwapInstruction[]): Promise<unknown> {
+  return request('/v1/trigger/lineup', {
+    method: 'POST',
+    body: JSON.stringify({ team_id: teamId, optimized_swaps: swaps }),
+  })
 }

@@ -180,3 +180,30 @@ export interface PracticeSyncJobStatus {
   job_state: 'Active' | 'Succeeded' | 'Failed' | 'Unknown'
   room_connected: boolean
 }
+
+// Mirrors fantasy-core-pipeline's src/api/roster.py and src/api/routes.py
+// (LineupTriggerPayload/SwapInstruction).
+
+export interface RosterPositionDeficit {
+  rostered: number
+  starters_required: number
+  deficit: number
+  net_vorp: number
+}
+
+export interface RosterDeficitsResponse {
+  season: number
+  week: number
+  roster_snapshot: string
+  /** Keyed by team_id, then by position ('QB'/'RB'/'WR'/'TE' only - compute_roster_deficits
+   * filters to SKILL_POSITIONS, no K or D/ST rows). Every team_id in league_rosters is
+   * pre-seeded here even with zero players at a position, so there's no need for a separate
+   * team_ids fallback list the way the draft-pick comparison panels need one. */
+  teams: Record<string, Record<string, RosterPositionDeficit>>
+}
+
+export interface LineupSwapInstruction {
+  drop_player_id: string
+  add_player_id: string
+  slot: string
+}
