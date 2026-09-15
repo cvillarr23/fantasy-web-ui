@@ -92,6 +92,18 @@ async function request<T>(path: string, init?: RequestInit, timeoutMs: number = 
       ...init,
       signal,
     })
+    if (response.status === 401) {
+      // oauth2-proxy fronts this app and /v1/* at the same origin (fantasy-infra#29) - a 401
+      // here means the session expired mid-use, after the SPA already loaded. Redirect to its
+      // sign-in page with rd= so login returns the user where they were, and never resolve the
+      // promise rather than throwing ApiError: ~15 call sites catch ApiError and render it into
+      // UI state, and a thrown 401 would flash an error in the instant before the page unloads.
+      // Unlike ApiTimeoutError's never-settles concern above, this is safe - the page itself is
+      // being torn down by the redirect, so nothing is left waiting on the hung promise.
+      const rd = window.location.pathname + window.location.search
+      window.location.href = `/oauth2/sign_in?rd=${encodeURIComponent(rd)}`
+      return new Promise<T>(() => {})
+    }
     if (!response.ok) {
       const body = await response.text()
       throw new ApiError(response.status, extractErrorMessage(body, response.statusText))
