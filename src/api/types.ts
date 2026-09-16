@@ -207,3 +207,14 @@ export interface LineupSwapInstruction {
   add_player_id: string
   slot: string
 }
+
+// Mirrors fantasy-core-pipeline's REST wrapper for evaluate_proposed_trade
+// (POST /v1/trade/evaluate).
+export interface TradeEvaluationResponse {
+  incoming_total: number
+  outgoing_total: number
+  delta_vorp: number
+  /** player_ids from the request that evaluate_proposed_trade couldn't resolve to a
+   * weekly_stats row - their VORP is excluded from both totals, not treated as zero. */
+  missing_player_ids: string[]
+}
