@@ -1,4 +1,4 @@
-import type { DraftConfig, DraftStatusResponse, LineupSwapInstruction, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse } from './types'
+import type { DraftConfig, DraftStatusResponse, LineupSwapInstruction, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, TradeEvaluationResponse } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -272,5 +272,25 @@ export function triggerLineupSwap(teamId: string, swaps: LineupSwapInstruction[]
   return request('/v1/trigger/lineup', {
     method: 'POST',
     body: JSON.stringify({ team_id: teamId, optimized_swaps: swaps }),
+  })
+}
+
+// Calls fantasy-core-pipeline's evaluate_proposed_trade - a read-only VORP comparison, unlike
+// triggerDraftPick/triggerLineupSwap this never reaches the browser worker or ESPN, so it
+// addresses players by the internal (Sleeper) player_id, not espn_id.
+export function evaluateTrade(
+  incomingPlayerIds: string[],
+  outgoingPlayerIds: string[],
+  season: number,
+  week: number,
+): Promise<TradeEvaluationResponse> {
+  return request('/v1/trade/evaluate', {
+    method: 'POST',
+    body: JSON.stringify({
+      incoming_player_ids: incomingPlayerIds,
+      outgoing_player_ids: outgoingPlayerIds,
+      season,
+      week,
+    }),
   })
 }

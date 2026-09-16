@@ -98,7 +98,7 @@
   .dashboard-main { grid-template-columns: 1fr; }
 }
 
-.pick-feed, .diagnostics-panel, .recommendation-panel, .intervention-controls, .team-comparison-panel, .roster-comparison-panel, .team-position-grid, .roster-deficits-grid, .lineup-swap-builder {
+.pick-feed, .diagnostics-panel, .recommendation-panel, .intervention-controls, .team-comparison-panel, .roster-comparison-panel, .team-position-grid, .roster-deficits-grid, .lineup-swap-builder, .trade-builder {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 16px;
@@ -194,6 +194,46 @@
   padding: 6px 10px;
   border-bottom: 1px solid var(--border);
 }
+
+.trade-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 24px;
+  margin-bottom: 16px;
+}
+.trade-side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.trade-side-add-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.trade-side-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.trade-side-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.trade-result {
+  margin-top: 16px;
+}
+.trade-result-totals {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-weight: 500;
+}
+.trade-delta-positive { color: var(--accent); }
+.trade-delta-negative { color: var(--warn); }
 
 .team-comparison-panel {
   margin-top: 24px;
