@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Alert, Button, NumberInput, Stack, Text } from '@mantine/core'
 import { Link } from 'react-router-dom'
 import { getRosterDeficits } from '../api/client'
+import { useCurrentWeek } from '../hooks/useCurrentWeek'
 import { loadStoredConfig } from '../hooks/useDraftConfig'
 import { LineupSwapBuilder } from './LineupSwapBuilder'
 import { RosterDeficitsGrid } from './RosterDeficitsGrid'
@@ -18,6 +19,13 @@ export function LineupPage() {
   const [deficits, setDeficits] = useState<RosterDeficitsResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const currentWeek = useCurrentWeek()
+
+  // Seed the field once the current week resolves, but only while it's still untouched -
+  // never overwrite a week the user already typed.
+  useEffect(() => {
+    if (currentWeek !== null && week === '') setWeek(currentWeek)
+  }, [currentWeek])
 
   const weekValue = Number(week)
   const validWeek = Number.isFinite(weekValue) && weekValue > 0

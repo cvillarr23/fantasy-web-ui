@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Alert, Badge, Button, NumberInput, Stack, Table, Text, Tooltip } from '@mantine/core'
 import { Link } from 'react-router-dom'
 import { ApiError, getMatchup } from '../api/client'
+import { useCurrentWeek } from '../hooks/useCurrentWeek'
 import { loadStoredConfig } from '../hooks/useDraftConfig'
 import type { MatchupResponse, MatchupTeamSide, PlayerLine } from '../api/types'
 
@@ -103,6 +104,11 @@ export function MatchupPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notFound, setNotFound] = useState(false)
+  const currentWeek = useCurrentWeek()
+
+  useEffect(() => {
+    if (currentWeek !== null && week === '') setWeek(currentWeek)
+  }, [currentWeek])
 
   const weekValue = Number(week)
   const validWeek = Number.isFinite(weekValue) && weekValue > 0
