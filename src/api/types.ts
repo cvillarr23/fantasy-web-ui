@@ -253,9 +253,12 @@ export interface LineupPlayerLine {
   position: string
   jersey: string | null
   slot: string
+  pro_team: string
+  injury_status: string | null
   headshot_url: string
   deficit_flag: boolean
   suggested_swap: { bench_for: string; add_player_id: string } | null
+  net_vorp: number | null
 }
 
 export interface LineupRosterResponse {

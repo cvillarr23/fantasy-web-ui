@@ -17,6 +17,28 @@ interface PendingSwap {
   slot: string
 }
 
+// ESPN's injuryStatus is a free-form string, not a closed enum in espn_api - map the
+// common values to a short badge label/color, and fall back to showing the raw string
+// for anything unrecognized rather than silently hiding it.
+const INJURY_BADGES: Record<string, { label: string; color: string }> = {
+  QUESTIONABLE: { label: 'Q', color: 'yellow' },
+  DOUBTFUL: { label: 'D', color: 'orange' },
+  OUT: { label: 'O', color: 'red' },
+  INJURY_RESERVE: { label: 'IR', color: 'red' },
+  SUSPENSION: { label: 'SUSP', color: 'red' },
+  DAY_TO_DAY: { label: 'DTD', color: 'yellow' },
+}
+
+function InjuryBadge({ status }: { status: string | null }) {
+  if (!status || status === 'ACTIVE') return null
+  const badge = INJURY_BADGES[status] ?? { label: status, color: 'yellow' }
+  return (
+    <Tooltip label={status.replaceAll('_', ' ')}>
+      <Badge color={badge.color} size="xs">{badge.label}</Badge>
+    </Tooltip>
+  )
+}
+
 function DraggablePlayerCard({ line }: { line: LineupPlayerLine }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: line.player_id,
@@ -42,8 +64,14 @@ function DraggablePlayerCard({ line }: { line: LineupPlayerLine }) {
     >
       <PlayerAvatar name={line.name} headshotUrl={line.headshot_url} />
       <div className="lineup-player-card-info">
-        <span>{line.name}</span>
-        <span className="lineup-player-card-meta">{line.position} #{line.jersey ?? '—'}</span>
+        <span className="lineup-player-card-name">
+          {line.name}
+          <InjuryBadge status={line.injury_status} />
+        </span>
+        <span className="lineup-player-card-meta">
+          {line.position} · {line.pro_team}
+          {line.net_vorp !== null && <> · VORP {line.net_vorp.toFixed(1)}</>}
+        </span>
       </div>
     </div>
   )
