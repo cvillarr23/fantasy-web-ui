@@ -29,8 +29,12 @@ const INJURY_BADGES: Record<string, { label: string; color: string }> = {
   DAY_TO_DAY: { label: 'DTD', color: 'yellow' },
 }
 
+// D/ST units report 'NORMAL' instead of 'ACTIVE' (they're not a person who gets injured) -
+// confirmed live, not documented anywhere in espn_api.
+const HEALTHY_STATUSES = new Set(['ACTIVE', 'NORMAL'])
+
 function InjuryBadge({ status }: { status: string | null }) {
-  if (!status || status === 'ACTIVE') return null
+  if (!status || HEALTHY_STATUSES.has(status)) return null
   const badge = INJURY_BADGES[status] ?? { label: status, color: 'yellow' }
   return (
     <Tooltip label={status.replaceAll('_', ' ')}>
