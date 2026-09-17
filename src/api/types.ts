@@ -243,6 +243,26 @@ export interface LineupSwapInstruction {
   slot: string
 }
 
+// Mirrors fantasy-core-pipeline's GET /v1/matchup/roster response models. Distinct from
+// PlayerLine (used by /v1/matchup) - no points/projected_points, since this view isn't
+// tied to a scoring period, it's "what's on my roster right now."
+export interface LineupPlayerLine {
+  player_id: string
+  espn_id: string
+  name: string
+  position: string
+  jersey: string | null
+  slot: string
+  headshot_url: string
+  deficit_flag: boolean
+  suggested_swap: { bench_for: string; add_player_id: string } | null
+}
+
+export interface LineupRosterResponse {
+  starters: LineupPlayerLine[]
+  bench: LineupPlayerLine[]
+}
+
 // Mirrors fantasy-core-pipeline's REST wrapper for evaluate_proposed_trade
 // (POST /v1/trade/evaluate).
 export interface TradeEvaluationResponse {

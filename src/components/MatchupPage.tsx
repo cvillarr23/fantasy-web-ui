@@ -4,32 +4,14 @@ import { Link } from 'react-router-dom'
 import { ApiError, getMatchup } from '../api/client'
 import { useCurrentWeek } from '../hooks/useCurrentWeek'
 import { loadStoredConfig } from '../hooks/useDraftConfig'
+import { PlayerAvatar } from './PlayerAvatar'
 import type { MatchupResponse, MatchupTeamSide, PlayerLine } from '../api/types'
-
-function PlayerAvatar({ line }: { line: PlayerLine }) {
-  const [broken, setBroken] = useState(false)
-  const initials = line.name.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()
-
-  if (broken) {
-    return <span className="player-avatar player-avatar-fallback">{initials}</span>
-  }
-  return (
-    <img
-      className="player-avatar"
-      src={line.headshot_url}
-      alt=""
-      width={32}
-      height={32}
-      onError={() => setBroken(true)}
-    />
-  )
-}
 
 function PlayerRow({ line }: { line: PlayerLine }) {
   return (
     <Table.Tr>
       <Table.Td>{line.slot}</Table.Td>
-      <Table.Td><PlayerAvatar line={line} /></Table.Td>
+      <Table.Td><PlayerAvatar name={line.name} headshotUrl={line.headshot_url} /></Table.Td>
       <Table.Td>
         {line.name}
         {line.deficit_flag && (
