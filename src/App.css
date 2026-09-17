@@ -742,3 +742,68 @@
   font-family: monospace;
   font-size: 13px;
 }
+
+.matchup-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+@media (max-width: 900px) {
+  .matchup-columns { grid-template-columns: 1fr; }
+}
+.matchup-team-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+}
+.matchup-team-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.matchup-team-header h3 {
+  margin: 0;
+}
+.matchup-team-label {
+  font-size: 12px;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.matchup-team-logo {
+  border-radius: 6px;
+  object-fit: cover;
+}
+.matchup-team-score {
+  margin-left: auto;
+  text-align: right;
+}
+.matchup-score-actual {
+  font-size: 22px;
+  font-weight: 700;
+}
+.matchup-score-projected {
+  font-size: 12px;
+  color: var(--text);
+}
+.matchup-team-card table {
+  width: 100%;
+  font-size: 13px;
+}
+.player-avatar {
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+}
+.player-avatar-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+}

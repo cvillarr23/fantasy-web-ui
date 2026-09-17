@@ -1,4 +1,4 @@
-import type { DraftConfig, DraftStatusResponse, LineupSwapInstruction, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, TradeEvaluationResponse } from './types'
+import type { DraftConfig, DraftStatusResponse, LineupSwapInstruction, MatchupResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, TradeEvaluationResponse } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -258,6 +258,17 @@ export function endPracticeSyncJob(): Promise<{ status: string; job_name: string
 export function getRosterDeficits(season: number, week: number): Promise<RosterDeficitsResponse> {
   const params = new URLSearchParams({ season: String(season), week: String(week) })
   return request(`/v1/roster/deficits?${params}`)
+}
+
+// Live ESPN fetch (see matchup_service.py) - no historical data, always "this week as ESPN
+// sees it right now". 404s on a bye week or before the season/matchup exists.
+export function getMatchup(season: number, week: number): Promise<MatchupResponse> {
+  const params = new URLSearchParams({ season: String(season), week: String(week) })
+  return request(`/v1/matchup?${params}`)
+}
+
+export function getTeamNames(): Promise<Record<string, string>> {
+  return request('/v1/league/teams')
 }
 
 // Publishes to the lineup_updates queue (see fantasy-core-pipeline's /v1/trigger/lineup).

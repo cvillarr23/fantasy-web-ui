@@ -1,4 +1,5 @@
 import { Skeleton, Table, Tooltip } from '@mantine/core'
+import { useTeamNames } from '../hooks/useTeamNames'
 import type { RosterDeficitsResponse, RosterPositionDeficit } from '../api/types'
 
 // compute_roster_deficits filters to SKILL_POSITIONS only - no K or D/ST rows ever come back
@@ -12,6 +13,8 @@ interface Props {
 }
 
 export function RosterDeficitsGrid({ deficits, myTeamId, loading = false }: Props) {
+  const teamNames = useTeamNames()
+
   if (loading) {
     return (
       <section className="roster-deficits-grid" aria-label="Roster deficits by team and position">
@@ -68,7 +71,7 @@ export function RosterDeficitsGrid({ deficits, myTeamId, loading = false }: Prop
             const isMyTeam = teamId === myTeamId
             return (
               <Table.Tr key={teamId} className={isMyTeam ? 'my-team-row' : undefined}>
-                <Table.Th scope="row">{isMyTeam ? 'Your team' : `Team ${teamId}`}</Table.Th>
+                <Table.Th scope="row">{isMyTeam ? 'Your team' : (teamNames[teamId] ?? `Team ${teamId}`)}</Table.Th>
                 {POSITION_COLUMNS.map((position) => {
                   const cell: RosterPositionDeficit | undefined = positions[position]
                   const rostered = cell?.rostered ?? 0

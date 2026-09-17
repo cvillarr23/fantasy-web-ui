@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Skeleton, UnstyledButton } from '@mantine/core'
 import type { DraftPickSummary, DraftStatusResponse } from '../api/types'
 import { usePlayerDetailsCache } from '../hooks/usePlayerDetailsCache'
+import { useTeamNames } from '../hooks/useTeamNames'
 import { PlayerSummaryPopover } from './PlayerSummaryPopover'
 
 interface Props {
@@ -35,6 +36,7 @@ export function PickFeed({ picks, myTeamId, status, loading = false }: Props) {
   const myTeamPicks = useMemo(() => picks.filter((pick) => pick.team_id === myTeamId), [picks, myTeamId])
   const playerIds = useMemo(() => picks.map((pick) => pick.player_id), [picks])
   const playerDetailsById = usePlayerDetailsCache(playerIds)
+  const teamNames = useTeamNames()
   // was_autodrafted is only ever set (true/false) once the backend listener actually
   // processes a pick - if that listener isn't running at all, the column silently stays
   // NULL forever, indistinguishable in the badge below from a legitimate opponent pick.
@@ -57,7 +59,7 @@ export function PickFeed({ picks, myTeamId, status, loading = false }: Props) {
             details?.name ?? pick.name ?? (pick.espn_player_id ? `ESPN player ${pick.espn_player_id}` : 'Unknown player')
           const displayPosition = details?.position ?? pick.position
           const proTeam = details?.team
-          const draftingTeam = pick.team_id === myTeamId ? 'Your team' : `Team ${pick.team_id}`
+          const draftingTeam = pick.team_id === myTeamId ? 'Your team' : (teamNames[pick.team_id] ?? `Team ${pick.team_id}`)
           // was_autodrafted is only meaningful on our own team's picks - it's null for every
           // opponent pick, so the myTeamId check guards against a false positive there.
           const isSuspectedAutodraft = pick.team_id === myTeamId && pick.was_autodrafted === true

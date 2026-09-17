@@ -1,4 +1,5 @@
 import { Skeleton, Table } from '@mantine/core'
+import { useTeamNames } from '../hooks/useTeamNames'
 import type { DraftStatusResponse } from '../api/types'
 
 type TeamAggregates = NonNullable<DraftStatusResponse['team_aggregates']>
@@ -38,6 +39,7 @@ interface Props {
 }
 
 export function TeamPositionGrid({ teamIds, teamAggregates, myTeamId, loading = false }: Props) {
+  const teamNames = useTeamNames()
   const entries = Object.entries(teamAggregates ?? {}) as TeamAggregateEntry[]
   const knownTeamIds = new Set(entries.map(([teamId]) => teamId))
   // team_ids (from draft_slots) is the source of truth once the backend sends it - it's what
@@ -112,7 +114,7 @@ export function TeamPositionGrid({ teamIds, teamAggregates, myTeamId, loading = 
             const isMyTeam = row.teamId === myTeamId
             return (
               <Table.Tr key={row.teamId} className={isMyTeam ? 'my-team-row' : undefined}>
-                <Table.Th scope="row">{isMyTeam ? 'Your team' : `Team ${row.teamId}`}</Table.Th>
+                <Table.Th scope="row">{isMyTeam ? 'Your team' : (teamNames[row.teamId] ?? `Team ${row.teamId}`)}</Table.Th>
                 {row.counts.map((count, index) => {
                   const isGap = count < medians[index]
                   return (

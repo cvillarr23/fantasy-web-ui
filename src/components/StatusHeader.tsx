@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button, Skeleton } from '@mantine/core'
 import { pauseDraft } from '../api/client'
+import { useTeamNames } from '../hooks/useTeamNames'
 import type { DraftStatusResponse } from '../api/types'
 
 interface Props {
@@ -73,7 +74,8 @@ export function StatusHeader({
   const [holdError, setHoldError] = useState<string | null>(null)
   const health = status?.pipeline_health ?? 'unknown'
   const onTheClock = status?.on_the_clock_team_id ?? null
-  const onTheClockLabel = onTheClock === null ? '—' : isMyTurn ? 'Your team' : `Team ${onTheClock}`
+  const teamNames = useTeamNames()
+  const onTheClockLabel = onTheClock === null ? '—' : isMyTurn ? 'Your team' : (teamNames[onTheClock] ?? `Team ${onTheClock}`)
   // ESPN's own autodraft toggle being on for our seat means it fills that pick instantly,
   // regardless of any clock - no auto-publish hold delay can ever win that race (confirmed
   // live 2026-08-28, league 298899823). Surfaced as a standing warning (not tied to isMyTurn)
