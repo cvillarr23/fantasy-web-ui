@@ -5,6 +5,7 @@ import { getRosterDeficits } from '../api/client'
 import { useCurrentWeek } from '../hooks/useCurrentWeek'
 import { loadStoredConfig } from '../hooks/useDraftConfig'
 import { LineupEditor } from './LineupEditor'
+import { RoadmapBanner } from './RoadmapBanner'
 import { RosterDeficitsGrid } from './RosterDeficitsGrid'
 import type { RosterDeficitsResponse } from '../api/types'
 
@@ -57,6 +58,10 @@ export function LineupPage() {
 
   return (
     <div className="dashboard">
+      <RoadmapBanner
+        title="VORP/news-driven lineup suggestions are planned"
+        issueUrl="https://github.com/cvillarr23/fantasy-web-ui/issues/79"
+      />
       <NumberInput
         label="Week"
         placeholder="e.g. 3"

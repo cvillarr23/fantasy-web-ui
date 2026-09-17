@@ -19,7 +19,15 @@ function App() {
           <Route path="lineup" element={<LineupPage />} />
           <Route path="matchup" element={<MatchupPage />} />
           <Route path="trades" element={<TradePage />} />
-          <Route path="waivers" element={<ComingSoonPage title="Waiver Manager" />} />
+          <Route
+            path="waivers"
+            element={
+              <ComingSoonPage
+                title="Waiver Manager"
+                issueUrl="https://github.com/cvillarr23/fantasy-web-ui/issues/77"
+              />
+            }
+          />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -1,12 +1,15 @@
 import { Badge, Skeleton, Stack, Table, Text, Title } from '@mantine/core'
+import { RoadmapBanner } from './RoadmapBanner'
 
 interface Props {
   title: string
+  issueUrl?: string
 }
 
-export function ComingSoonPage({ title }: Props) {
+export function ComingSoonPage({ title, issueUrl }: Props) {
   return (
     <div className="dashboard">
+      {issueUrl && <RoadmapBanner title={`${title} is planned`} issueUrl={issueUrl} />}
       <Stack gap="md" mt="xl" align="center">
         <Badge variant="light" color="grape" size="lg">Coming soon</Badge>
         <Title order={1}>{title}</Title>

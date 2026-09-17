@@ -1,6 +1,7 @@
 import { Button, Stack, Text } from '@mantine/core'
 import { Link } from 'react-router-dom'
 import { loadStoredConfig } from '../hooks/useDraftConfig'
+import { RoadmapBanner } from './RoadmapBanner'
 import { TradeBuilder } from './TradeBuilder'
 
 export function TradePage() {
@@ -22,6 +23,10 @@ export function TradePage() {
 
   return (
     <div className="dashboard">
+      <RoadmapBanner
+        title="AI-suggested trades with opponent-schedule handicapping are planned"
+        issueUrl="https://github.com/cvillarr23/fantasy-web-ui/issues/78"
+      />
       <TradeBuilder config={config} />
     </div>
   )
