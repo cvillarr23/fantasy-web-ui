@@ -12,6 +12,14 @@ interface Props {
   loading?: boolean
 }
 
+function HelpIcon({ label }: { label: string }) {
+  return (
+    <Tooltip label={label} multiline maw={280}>
+      <span className="help-icon" aria-label="What this means">?</span>
+    </Tooltip>
+  )
+}
+
 export function RosterDeficitsGrid({ deficits, myTeamId, loading = false }: Props) {
   const teamNames = useTeamNames()
 
@@ -56,7 +64,10 @@ export function RosterDeficitsGrid({ deficits, myTeamId, loading = false }: Prop
 
   return (
     <section className="roster-deficits-grid" aria-label="Roster deficits by team and position">
-      <h2>Roster deficits{deficits ? ` — season ${deficits.season}, week ${deficits.week}` : ''}</h2>
+      <h2>
+        Roster deficits{deficits ? ` — season ${deficits.season}, week ${deficits.week}` : ''}{' '}
+        <HelpIcon label="Each cell shows players rostered / starters required at that position. A highlighted cell means you don't have enough players rostered to fill your required starting slots — a real deficit, not just thin bench depth." />
+      </h2>
       <Table>
         <Table.Thead>
           <Table.Tr>
@@ -80,7 +91,15 @@ export function RosterDeficitsGrid({ deficits, myTeamId, loading = false }: Prop
                   const netVorp = cell?.net_vorp ?? 0
                   return (
                     <Table.Td key={position} className={hasGap ? 'gap-cell' : undefined}>
-                      <Tooltip label={`Net VORP: ${netVorp.toFixed(1)}`}>
+                      <Tooltip
+                        multiline
+                        maw={240}
+                        label={
+                          `${rostered} rostered / ${required} required to start`
+                          + (hasGap ? ' — deficit, not enough rostered' : '')
+                          + ` · Net VORP ${netVorp.toFixed(1)} (value over a replacement-level player at this position)`
+                        }
+                      >
                         <span>{rostered}/{required}</span>
                       </Tooltip>
                     </Table.Td>
