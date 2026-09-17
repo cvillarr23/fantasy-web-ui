@@ -271,6 +271,10 @@ export function getTeamNames(): Promise<Record<string, string>> {
   return request('/v1/league/teams')
 }
 
+export function getCurrentWeek(): Promise<{ week: number }> {
+  return request('/v1/league/current-week')
+}
+
 // Publishes to the lineup_updates queue (see fantasy-core-pipeline's /v1/trigger/lineup).
 // fantasy-browser-worker's lineup_bot.js consumes this and actually submits the swap to
 // ESPN's REST API - this is a real, live write, not a dry run (DRY_RUN defaults to false).
