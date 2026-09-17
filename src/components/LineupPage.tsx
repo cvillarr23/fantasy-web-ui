@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { getRosterDeficits } from '../api/client'
 import { useCurrentWeek } from '../hooks/useCurrentWeek'
 import { loadStoredConfig } from '../hooks/useDraftConfig'
-import { LineupSwapBuilder } from './LineupSwapBuilder'
+import { LineupEditor } from './LineupEditor'
 import { RosterDeficitsGrid } from './RosterDeficitsGrid'
 import type { RosterDeficitsResponse } from '../api/types'
 
@@ -70,7 +70,7 @@ export function LineupPage() {
       {(loading || deficits) && (
         <RosterDeficitsGrid deficits={deficits} myTeamId={config.team_id} loading={loading} />
       )}
-      <LineupSwapBuilder config={config} />
+      <LineupEditor config={config} />
     </div>
   )
 }

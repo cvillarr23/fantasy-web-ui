@@ -1,4 +1,4 @@
-import type { DraftConfig, DraftStatusResponse, LineupSwapInstruction, MatchupResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, TradeEvaluationResponse } from './types'
+import type { DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, TradeEvaluationResponse } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -269,6 +269,13 @@ export function getMatchup(season: number, week: number): Promise<MatchupRespons
 
 export function getTeamNames(): Promise<Record<string, string>> {
   return request('/v1/league/teams')
+}
+
+// Sourced from Team.roster (not box_scores()), so it works on a bye week - see
+// get_current_team_roster in matchup_service.py.
+export function getLineupRoster(season: number): Promise<LineupRosterResponse> {
+  const params = new URLSearchParams({ season: String(season) })
+  return request(`/v1/matchup/roster?${params}`)
 }
 
 export function getCurrentWeek(): Promise<{ week: number }> {
