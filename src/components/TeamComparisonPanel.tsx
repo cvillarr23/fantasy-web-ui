@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Button, Skeleton, UnstyledButton } from '@mantine/core'
 import type { DraftPickSummary, TeamAggregate } from '../api/types'
 import { usePlayerDetailsCache } from '../hooks/usePlayerDetailsCache'
+import { useTeamNames } from '../hooks/useTeamNames'
 import { PlayerSummaryPopover } from './PlayerSummaryPopover'
 
 interface Props {
@@ -58,6 +59,7 @@ export function TeamComparisonPanel({ teamIds: teamIdsFromStatus, teamRosters, t
     [teamRosters],
   )
   const playerDetailsById = usePlayerDetailsCache(allPlayerIds)
+  const teamNames = useTeamNames()
 
   const valueAlertTeamId = teamIds.find((teamId) => teamAggregates[teamId]?.most_recent_pick_value_alert)
 
@@ -91,6 +93,7 @@ export function TeamComparisonPanel({ teamIds: teamIdsFromStatus, teamRosters, t
                 aggregate={teamAggregates[valueAlertTeamId]}
                 roster={teamRosters[valueAlertTeamId]}
                 playerDetailsById={playerDetailsById}
+                teamNames={teamNames}
               />
             )}
             <div className="team-comparison-columns">
@@ -102,6 +105,7 @@ export function TeamComparisonPanel({ teamIds: teamIdsFromStatus, teamRosters, t
                   roster={teamRosters[teamId] ?? []}
                   aggregate={teamAggregates[teamId]}
                   playerDetailsById={playerDetailsById}
+                  teamNames={teamNames}
                   onSelectPlayer={setExpandedPlayerId}
                 />
               ))}
@@ -122,15 +126,17 @@ function ValueAlertBanner({
   aggregate,
   roster,
   playerDetailsById,
+  teamNames,
 }: {
   teamId: string
   myTeamId: string
   aggregate: TeamAggregate
   roster: DraftPickSummary[]
   playerDetailsById: Record<string, { name: string }>
+  teamNames: Record<string, string>
 }) {
   const latestPick = roster[roster.length - 1]
-  const teamLabel = teamId === myTeamId ? 'Your team' : `Team ${teamId}`
+  const teamLabel = teamId === myTeamId ? 'Your team' : (teamNames[teamId] ?? `Team ${teamId}`)
   const playerName = latestPick
     ? (latestPick.player_id ? playerDetailsById[latestPick.player_id]?.name : undefined) ?? latestPick.name ?? 'this player'
     : 'this player'
@@ -154,6 +160,7 @@ function TeamColumn({
   aggregate,
   playerDetailsById,
   onSelectPlayer,
+  teamNames,
 }: {
   teamId: string
   isMyTeam: boolean
@@ -161,13 +168,14 @@ function TeamColumn({
   aggregate: TeamAggregate | undefined
   playerDetailsById: Record<string, { name: string; team: string; position: string }>
   onSelectPlayer: (playerId: string) => void
+  teamNames: Record<string, string>
 }) {
   const positionCounts = aggregate?.position_counts ?? {}
   const positions = Object.keys(positionCounts).sort()
 
   return (
     <article className={`team-column ${isMyTeam ? 'my-team-column' : ''}`}>
-      <h3>{isMyTeam ? 'Your team' : `Team ${teamId}`}</h3>
+      <h3>{isMyTeam ? 'Your team' : (teamNames[teamId] ?? `Team ${teamId}`)}</h3>
       <div className="team-aggregate-strip">
         <span className="candidate-score">VORP {(aggregate?.total_vorp ?? 0).toFixed(1)}</span>
         <span className="candidate-score">Proj {(aggregate?.total_projected_points ?? 0).toFixed(1)} pts</span>

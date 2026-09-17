@@ -3,6 +3,7 @@ import { ComingSoonPage } from './components/ComingSoonPage'
 import { DraftDayPage } from './components/DraftDayPage'
 import { Layout } from './components/Layout'
 import { LineupPage } from './components/LineupPage'
+import { MatchupPage } from './components/MatchupPage'
 import { PracticeDraftScreen } from './components/PracticeDraftScreen'
 import { TradePage } from './components/TradePage'
 import './App.css'
@@ -16,6 +17,7 @@ function App() {
           <Route path="draft" element={<DraftDayPage />} />
           <Route path="practice" element={<PracticeDraftScreen />} />
           <Route path="lineup" element={<LineupPage />} />
+          <Route path="matchup" element={<MatchupPage />} />
           <Route path="trades" element={<TradePage />} />
           <Route path="waivers" element={<ComingSoonPage title="Waiver Manager" />} />
         </Route>

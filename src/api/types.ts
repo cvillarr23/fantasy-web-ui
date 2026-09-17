@@ -202,6 +202,41 @@ export interface RosterDeficitsResponse {
   teams: Record<string, Record<string, RosterPositionDeficit>>
 }
 
+// Mirrors fantasy-core-pipeline's src/api/matchup.py response models exactly.
+export interface PlayerLine {
+  player_id: string
+  espn_id: string
+  name: string
+  position: string
+  jersey: string | null
+  slot: string
+  points: number
+  projected_points: number
+  headshot_url: string
+  deficit_flag: boolean
+  suggested_swap: { bench_for: string } | null
+}
+
+export interface MatchupTeamInfo {
+  name: string
+  logo_url: string
+  score: number
+  projected: number
+}
+
+export interface MatchupTeamSide {
+  team: MatchupTeamInfo
+  starters: PlayerLine[]
+  bench: PlayerLine[]
+}
+
+export interface MatchupResponse {
+  season: number
+  week: number
+  our_team: MatchupTeamSide
+  opponent: MatchupTeamSide
+}
+
 export interface LineupSwapInstruction {
   drop_player_id: string
   add_player_id: string
