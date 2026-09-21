@@ -59,7 +59,7 @@ export function LineupPage() {
   return (
     <div className="dashboard">
       <RoadmapBanner
-        title="VORP/news-driven lineup suggestions are planned"
+        title="News/rumor-driven lineup signals are planned"
         issueUrl="https://github.com/cvillarr23/fantasy-web-ui/issues/79"
       />
       <NumberInput

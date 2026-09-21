@@ -3,6 +3,8 @@ import { DndContext, useDraggable, useDroppable, type DragEndEvent } from '@dnd-
 import { Alert, Badge, Button, Text, Tooltip } from '@mantine/core'
 import { getLineupRoster, triggerLineupSwap } from '../api/client'
 import { useToast } from '../hooks/useToast'
+import { InjuryBadge } from './InjuryBadge'
+import { LineupSuggestionPanel } from './LineupSuggestionPanel'
 import { PlayerAvatar } from './PlayerAvatar'
 import type { DraftConfig, LineupPlayerLine, LineupRosterResponse } from '../api/types'
 
@@ -15,32 +17,6 @@ interface PendingSwap {
   dropPlayer: LineupPlayerLine
   addPlayer: LineupPlayerLine
   slot: string
-}
-
-// ESPN's injuryStatus is a free-form string, not a closed enum in espn_api - map the
-// common values to a short badge label/color, and fall back to showing the raw string
-// for anything unrecognized rather than silently hiding it.
-const INJURY_BADGES: Record<string, { label: string; color: string }> = {
-  QUESTIONABLE: { label: 'Q', color: 'yellow' },
-  DOUBTFUL: { label: 'D', color: 'orange' },
-  OUT: { label: 'O', color: 'red' },
-  INJURY_RESERVE: { label: 'IR', color: 'red' },
-  SUSPENSION: { label: 'SUSP', color: 'red' },
-  DAY_TO_DAY: { label: 'DTD', color: 'yellow' },
-}
-
-// D/ST units report 'NORMAL' instead of 'ACTIVE' (they're not a person who gets injured) -
-// confirmed live, not documented anywhere in espn_api.
-const HEALTHY_STATUSES = new Set(['ACTIVE', 'NORMAL'])
-
-function InjuryBadge({ status }: { status: string | null }) {
-  if (!status || HEALTHY_STATUSES.has(status)) return null
-  const badge = INJURY_BADGES[status] ?? { label: status, color: 'yellow' }
-  return (
-    <Tooltip label={status.replaceAll('_', ' ')}>
-      <Badge color={badge.color} size="xs">{badge.label}</Badge>
-    </Tooltip>
-  )
 }
 
 function DraggablePlayerCard({ line }: { line: LineupPlayerLine }) {
@@ -195,6 +171,10 @@ export function LineupEditor({ config }: Props) {
         run. Drag a bench player onto a starting slot to stage a swap, review the list, then
         submit them together.
       </p>
+      <LineupSuggestionPanel
+        roster={roster}
+        onApply={(starter, benchPlayer) => stageSwap(starter, benchPlayer, starter.slot)}
+      />
       <DndContext onDragEnd={handleDragEnd}>
         <div className="lineup-editor-columns">
           <div className="lineup-editor-starters">
