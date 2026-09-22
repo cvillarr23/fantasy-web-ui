@@ -1,29 +1,34 @@
 import { useEffect, useState } from 'react'
-import { Alert, Button, NumberInput, Stack, Text } from '@mantine/core'
-import { Link } from 'react-router-dom'
-import { getRosterDeficits } from '../api/client'
+import { Alert, Button, Group, Stack, Text } from '@mantine/core'
+import { Link, useSearchParams } from 'react-router-dom'
+import { getMatchup, getRosterDeficits } from '../api/client'
 import { useCurrentWeek } from '../hooks/useCurrentWeek'
 import { loadStoredConfig } from '../hooks/useDraftConfig'
 import { LineupEditor } from './LineupEditor'
 import { RoadmapBanner } from './RoadmapBanner'
 import { RosterDeficitsGrid } from './RosterDeficitsGrid'
-import type { RosterDeficitsResponse } from '../api/types'
+import { WeekSelector } from './WeekSelector'
+import type { MatchupResponse, RosterDeficitsResponse } from '../api/types'
 
 export function LineupPage() {
   const config = loadStoredConfig()
   const isConfigured = Boolean(config.league_id && config.team_id)
 
-  // number | string, same reasoning as ConfigScreen's season field: NumberInput passes
-  // intermediate values ('' while clearing, a partial typed digit) that aren't a valid week
-  // yet, and snapping those back mid-edit would fight the user's typing.
-  const [week, setWeek] = useState<number | string>('')
+  const [searchParams] = useSearchParams()
+  const weekFromUrl = Number(searchParams.get('week'))
+  // number | string: '' is the "not yet resolved" state before either the URL param or
+  // useCurrentWeek() seeds a real value.
+  const [week, setWeek] = useState<number | string>(
+    Number.isFinite(weekFromUrl) && weekFromUrl > 0 ? weekFromUrl : '',
+  )
   const [deficits, setDeficits] = useState<RosterDeficitsResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [matchup, setMatchup] = useState<MatchupResponse | null>(null)
   const currentWeek = useCurrentWeek()
 
   // Seed the field once the current week resolves, but only while it's still untouched -
-  // never overwrite a week the user already typed.
+  // never overwrite a week the user already typed or arrived with via URL.
   useEffect(() => {
     if (currentWeek !== null && week === '') setWeek(currentWeek)
   }, [currentWeek])
@@ -36,10 +41,23 @@ export function LineupPage() {
     let cancelled = false
     setLoading(true)
     setError(null)
+    setDeficits(null)
     getRosterDeficits(config.season, weekValue)
       .then((response) => { if (!cancelled) setDeficits(response) })
       .catch((err) => { if (!cancelled) setError(String(err)) })
       .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [isConfigured, config.season, weekValue, validWeek])
+
+  // Best-effort matchup context banner - omitted entirely on a bye week (404) rather than
+  // shown as an error, since lineup editing must keep working when there's no opponent.
+  useEffect(() => {
+    if (!isConfigured || !validWeek) return
+    let cancelled = false
+    setMatchup(null)
+    getMatchup(config.season, weekValue)
+      .then((response) => { if (!cancelled) setMatchup(response) })
+      .catch(() => { /* no opponent this week (bye) or matchup unavailable - banner just stays hidden */ })
     return () => { cancelled = true }
   }, [isConfigured, config.season, weekValue, validWeek])
 
@@ -62,15 +80,14 @@ export function LineupPage() {
         title="News/rumor-driven lineup signals are planned"
         issueUrl="https://github.com/cvillarr23/fantasy-web-ui/issues/79"
       />
-      <NumberInput
-        label="Week"
-        placeholder="e.g. 3"
-        value={week}
-        onChange={setWeek}
-        allowDecimal={false}
-        maw={160}
-        mb="md"
-      />
+      <Group justify="space-between" align="center" mb="md">
+        <WeekSelector week={week} onChange={setWeek} />
+        {matchup && (
+          <Button component={Link} to={`/matchup?week=${weekValue}`} variant="subtle" size="xs">
+            View matchup vs {matchup.opponent.team.name}
+          </Button>
+        )}
+      </Group>
       {error && <Alert color="red" mb="md">{error}</Alert>}
       {(loading || deficits) && (
         <RosterDeficitsGrid deficits={deficits} myTeamId={config.team_id} loading={loading} />

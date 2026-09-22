@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Alert, Badge, Button, NumberInput, Stack, Table, Text, Tooltip } from '@mantine/core'
-import { Link } from 'react-router-dom'
+import { Alert, Badge, Button, Group, Stack, Table, Text, Tooltip } from '@mantine/core'
+import { Link, useSearchParams } from 'react-router-dom'
 import { ApiError, getMatchup } from '../api/client'
 import { useCurrentWeek } from '../hooks/useCurrentWeek'
 import { loadStoredConfig } from '../hooks/useDraftConfig'
 import { PlayerAvatar } from './PlayerAvatar'
+import { WeekSelector } from './WeekSelector'
 import type { MatchupResponse, MatchupTeamSide, PlayerLine } from '../api/types'
 
 function PlayerRow({ line }: { line: PlayerLine }) {
@@ -81,7 +82,11 @@ export function MatchupPage() {
   const config = loadStoredConfig()
   const isConfigured = Boolean(config.league_id && config.team_id)
 
-  const [week, setWeek] = useState<number | string>('')
+  const [searchParams] = useSearchParams()
+  const weekFromUrl = Number(searchParams.get('week'))
+  const [week, setWeek] = useState<number | string>(
+    Number.isFinite(weekFromUrl) && weekFromUrl > 0 ? weekFromUrl : '',
+  )
   const [matchup, setMatchup] = useState<MatchupResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -101,13 +106,15 @@ export function MatchupPage() {
     setLoading(true)
     setError(null)
     setNotFound(false)
+    // Clear stale content immediately so a week change never looks like a no-op while the
+    // new request is in flight, or if it fails with a non-404 error.
+    setMatchup(null)
     getMatchup(config.season, weekValue)
       .then((response) => { if (!cancelled) setMatchup(response) })
       .catch((err) => {
         if (cancelled) return
         if (err instanceof ApiError && err.status === 404) {
           setNotFound(true)
-          setMatchup(null)
         } else {
           setError(String(err))
         }
@@ -131,15 +138,12 @@ export function MatchupPage() {
 
   return (
     <div className="dashboard">
-      <NumberInput
-        label="Week"
-        placeholder="e.g. 3"
-        value={week}
-        onChange={setWeek}
-        allowDecimal={false}
-        maw={160}
-        mb="md"
-      />
+      <Group justify="space-between" align="center" mb="md">
+        <WeekSelector week={week} onChange={setWeek} />
+        <Button component={Link} to={`/lineup?week=${weekValue}`} variant="subtle" size="xs">
+          Edit lineup for this week
+        </Button>
+      </Group>
       {error && <Alert color="red" mb="md">{error}</Alert>}
       {notFound && (
         <Alert color="gray" mb="md">No matchup found for this week (bye week, or the season hasn't reached it yet).</Alert>
