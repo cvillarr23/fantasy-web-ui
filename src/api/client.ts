@@ -45,6 +45,28 @@ const DEFAULT_TIMEOUT_MS = 15_000
  * go (15 polls x 2s server-side), so it is legitimately slow rather than hung. */
 export const TEARDOWN_TIMEOUT_MS = 45_000
 
+/** How long to wait for `window.location.href = ...` to actually navigate away before
+ * assuming it's stuck (slow, popup-blocked, or a no-op in an iframe) and showing a fallback
+ * message instead of leaving every caller's spinner frozen forever. */
+const SESSION_EXPIRED_REDIRECT_FALLBACK_MS = 1_500
+
+const SESSION_EXPIRED_BANNER_ID = 'session-expired-banner'
+
+/** Shown only if the redirect from a 401 hasn't navigated away within
+ * SESSION_EXPIRED_REDIRECT_FALLBACK_MS. Plain DOM APIs, not React: this module has no
+ * framework dependency, and the promise that triggers this is deliberately never
+ * resolving/rejecting, so no component's own error rendering can be reached to show it. */
+function showSessionExpiredBanner(): void {
+  if (document.getElementById(SESSION_EXPIRED_BANNER_ID)) return
+  const banner = document.createElement('div')
+  banner.id = SESSION_EXPIRED_BANNER_ID
+  banner.textContent = 'Session expired — redirecting to sign-in…'
+  banner.style.cssText =
+    'position:fixed;top:0;left:0;right:0;z-index:2147483647;padding:12px 16px;' +
+    'background:#fa5252;color:#fff;font:14px/1.4 system-ui,sans-serif;text-align:center;'
+  document.body.appendChild(banner)
+}
+
 /** Thrown when a request is aborted for exceeding its timeout. Status 0 distinguishes it from
  * any real HTTP response, so callers can tell "the backend said no" from "the backend never
  * answered" - they usually warrant different recovery. */
@@ -99,9 +121,11 @@ async function request<T>(path: string, init?: RequestInit, timeoutMs: number = 
       // promise rather than throwing ApiError: ~15 call sites catch ApiError and render it into
       // UI state, and a thrown 401 would flash an error in the instant before the page unloads.
       // Unlike ApiTimeoutError's never-settles concern above, this is safe - the page itself is
-      // being torn down by the redirect, so nothing is left waiting on the hung promise.
+      // being torn down by the redirect, so nothing is left waiting on the hung promise. The
+      // fallback timer below covers the case where the redirect doesn't take.
       const rd = window.location.pathname + window.location.search
       window.location.href = `/oauth2/sign_in?rd=${encodeURIComponent(rd)}`
+      setTimeout(showSessionExpiredBanner, SESSION_EXPIRED_REDIRECT_FALLBACK_MS)
       return new Promise<T>(() => {})
     }
     if (!response.ok) {
