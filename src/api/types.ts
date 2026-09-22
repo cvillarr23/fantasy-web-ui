@@ -276,3 +276,52 @@ export interface TradeEvaluationResponse {
    * weekly_stats row - their VORP is excluded from both totals, not treated as zero. */
   missing_player_ids: string[]
 }
+
+// Mirrors fantasy-core-pipeline's src/schemas/stats.py (GET /v1/stats/vorp). One row per
+// player-week - there is no season-aggregate field, callers that need a season total sum
+// vorp_score across weeks client-side.
+export interface VorpStat {
+  player_id: string
+  name: string
+  position: string
+  team: string | null
+  season: number
+  week: number
+  projected_points: number | null
+  actual_points: number | null
+  matchup_coefficient: number | null
+  adjusted_projected_points: number | null
+  vorp_base: number | null
+  scarcity_multiplier: number | null
+  defense_matchup_multiplier: number | null
+  vorp_score: number | null
+}
+
+// Mirrors fantasy-core-pipeline's backtest_results table, exposed via src/api/backtest.py
+// (GET /v1/backtest/results, GET /v1/backtest/results/{season}).
+export interface BacktestResultSummary {
+  season: number
+  run_at: string
+  our_lineup_points: number
+  optimal_lineup_points: number
+  naive_baseline_points: number
+  our_waiver_points: number
+  no_moves_points: number
+  our_draft_points: number
+  pure_adp_draft_points: number
+}
+
+export interface BacktestWeekBreakdown {
+  week: number
+  our_lineup_points: number
+  optimal_lineup_points: number
+  naive_baseline_points: number
+  our_waiver_points: number
+  no_moves_points: number
+}
+
+export interface BacktestResultDetail extends BacktestResultSummary {
+  summary_json: {
+    weeks: BacktestWeekBreakdown[]
+  }
+}

@@ -1,4 +1,4 @@
-import type { DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, TradeEvaluationResponse } from './types'
+import type { BacktestResultDetail, BacktestResultSummary, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, TradeEvaluationResponse, VorpStat } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -324,6 +324,31 @@ export function triggerLineupSwap(teamId: string, swaps: LineupSwapInstruction[]
 // Calls fantasy-core-pipeline's evaluate_proposed_trade - a read-only VORP comparison, unlike
 // triggerDraftPick/triggerLineupSwap this never reaches the browser worker or ESPN, so it
 // addresses players by the internal (Sleeper) player_id, not espn_id.
+export interface VorpStatsQuery {
+  season: number
+  week?: number
+  position?: string
+  sort?: 'vorp' | 'projected_points' | 'actual_points' | 'week'
+  limit?: number
+}
+
+export function getVorpStats(query: VorpStatsQuery): Promise<VorpStat[]> {
+  const params = new URLSearchParams({ season: String(query.season) })
+  if (query.week !== undefined) params.set('week', String(query.week))
+  if (query.position) params.set('position', query.position)
+  if (query.sort) params.set('sort', query.sort)
+  if (query.limit !== undefined) params.set('limit', String(query.limit))
+  return request(`/v1/stats/vorp?${params}`)
+}
+
+export function getBacktestResults(): Promise<BacktestResultSummary[]> {
+  return request('/v1/backtest/results')
+}
+
+export function getBacktestResultDetail(season: number): Promise<BacktestResultDetail> {
+  return request(`/v1/backtest/results/${encodeURIComponent(String(season))}`)
+}
+
 export function evaluateTrade(
   incomingPlayerIds: string[],
   outgoingPlayerIds: string[],

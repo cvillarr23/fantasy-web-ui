@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { AnalyticsPage } from './components/AnalyticsPage'
 import { ComingSoonPage } from './components/ComingSoonPage'
 import { DraftDayPage } from './components/DraftDayPage'
 import { Layout } from './components/Layout'
@@ -19,6 +20,7 @@ function App() {
           <Route path="lineup" element={<LineupPage />} />
           <Route path="matchup" element={<MatchupPage />} />
           <Route path="trades" element={<TradePage />} />
+          <Route path="analytics" element={<AnalyticsPage />} />
           <Route
             path="waivers"
             element={
