@@ -8,6 +8,7 @@ const NAV_LINKS = [
   { to: '/matchup', label: 'Matchup' },
   { to: '/trades', label: 'Trades' },
   { to: '/waivers', label: 'Waivers' },
+  { to: '/analytics', label: 'Analytics' },
 ]
 
 // Plain nav links (not Mantine's Tabs) are deliberate: these switch the whole page via the
