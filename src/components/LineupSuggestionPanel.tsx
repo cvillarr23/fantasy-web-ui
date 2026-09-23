@@ -1,5 +1,6 @@
 import { Badge, Button, Text } from '@mantine/core'
 import { InjuryBadge } from './InjuryBadge'
+import { RumorBadge } from './RumorBadge'
 import type { LineupPlayerLine, LineupRosterResponse } from '../api/types'
 
 interface Suggestion {
@@ -44,11 +45,21 @@ export function LineupSuggestionPanel({ roster, onApply }: Props) {
                 <span>
                   {starter.name} ({starter.slot})
                   <InjuryBadge status={starter.injury_status} />
+                  <RumorBadge
+                    sentiment={starter.rumor_sentiment}
+                    confidence={starter.rumor_confidence}
+                    suggestedAction={starter.rumor_suggested_action}
+                  />
                 </span>
                 <span aria-hidden="true"> → </span>
                 <span>
                   {benchPlayer.name}
                   <InjuryBadge status={benchPlayer.injury_status} />
+                  <RumorBadge
+                    sentiment={benchPlayer.rumor_sentiment}
+                    confidence={benchPlayer.rumor_confidence}
+                    suggestedAction={benchPlayer.rumor_suggested_action}
+                  />
                 </span>
               </span>
               <Badge color={vorpDelta > 0 ? 'green' : 'gray'} size="sm">

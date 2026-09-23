@@ -259,6 +259,9 @@ export interface LineupPlayerLine {
   deficit_flag: boolean
   suggested_swap: { bench_for: string; add_player_id: string } | null
   net_vorp: number | null
+  rumor_sentiment: string | null
+  rumor_confidence: number | null
+  rumor_suggested_action: string | null
 }
 
 export interface LineupRosterResponse {

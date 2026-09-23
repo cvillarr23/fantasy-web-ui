@@ -5,7 +5,6 @@ import { getMatchup, getRosterDeficits } from '../api/client'
 import { useCurrentWeek } from '../hooks/useCurrentWeek'
 import { loadStoredConfig } from '../hooks/useDraftConfig'
 import { LineupEditor } from './LineupEditor'
-import { RoadmapBanner } from './RoadmapBanner'
 import { RosterDeficitsGrid } from './RosterDeficitsGrid'
 import { WeekSelector } from './WeekSelector'
 import type { MatchupResponse, RosterDeficitsResponse } from '../api/types'
@@ -76,10 +75,6 @@ export function LineupPage() {
 
   return (
     <div className="dashboard">
-      <RoadmapBanner
-        title="News/rumor-driven lineup signals are planned"
-        issueUrl="https://github.com/cvillarr23/fantasy-web-ui/issues/79"
-      />
       <Group justify="space-between" align="center" mb="md">
         <WeekSelector week={week} onChange={setWeek} />
         {matchup && (
