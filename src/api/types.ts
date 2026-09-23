@@ -280,6 +280,35 @@ export interface TradeEvaluationResponse {
   missing_player_ids: string[]
 }
 
+// Mirrors fantasy-core-pipeline's src/schemas/chat.py (POST /v1/chat/query). Read-only Q&A -
+// stateless per-request, no conversation history on the backend, so there is no thread/session id.
+export interface ChatTradeProposal {
+  incoming_player_ids: string[]
+  outgoing_player_ids: string[]
+}
+
+export interface ChatQueryRequest {
+  question: string
+  season: number
+  week: number
+  team_id: string
+  trade_proposal?: ChatTradeProposal
+}
+
+export interface ChatGrounding {
+  roster_deficits: Record<string, unknown>
+  /** Present only when the question implied a trade_proposal was evaluated; null otherwise. */
+  trade_evaluation: Record<string, unknown> | null
+}
+
+export interface ChatQueryResponse {
+  answer: string
+  provider: string
+  model: string
+  latency_ms: number
+  grounding: ChatGrounding
+}
+
 // Mirrors fantasy-core-pipeline's src/schemas/stats.py (GET /v1/stats/vorp). One row per
 // player-week - there is no season-aggregate field, callers that need a season total sum
 // vorp_score across weeks client-side.

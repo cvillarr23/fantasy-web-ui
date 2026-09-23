@@ -1,4 +1,4 @@
-import type { BacktestResultDetail, BacktestResultSummary, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, TradeEvaluationResponse, VorpStat } from './types'
+import type { BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, TradeEvaluationResponse, VorpStat } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -364,4 +364,22 @@ export function evaluateTrade(
       week,
     }),
   })
+}
+
+export function queryChat(
+  question: string,
+  season: number,
+  week: number,
+  teamId: string,
+): Promise<ChatQueryResponse> {
+  return request('/v1/chat/query', {
+    method: 'POST',
+    body: JSON.stringify({ question, season, week, team_id: teamId }),
+  })
+}
+
+/** True when a 503 from POST /v1/chat/query means no LLM provider is currently reachable -
+ * an expected, retry-later condition, not a bug. */
+export function isNoProviderError(err: unknown): boolean {
+  return err instanceof ApiError && err.status === 503
 }
