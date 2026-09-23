@@ -1,0 +1,121 @@
+import { useEffect, useState } from 'react'
+import { Alert, Button, Group, Skeleton, Stack, Text, Textarea } from '@mantine/core'
+import { Link } from 'react-router-dom'
+import { ApiError, isNoProviderError, queryChat } from '../api/client'
+import { useCurrentWeek } from '../hooks/useCurrentWeek'
+import { loadStoredConfig } from '../hooks/useDraftConfig'
+import { WeekSelector } from './WeekSelector'
+import type { ChatQueryResponse } from '../api/types'
+
+export function ChatPage() {
+  const config = loadStoredConfig()
+  const isConfigured = Boolean(config.league_id && config.team_id)
+
+  const [week, setWeek] = useState<number | string>('')
+  const currentWeek = useCurrentWeek()
+  // Seed the field once the current week resolves, but only while it's still untouched -
+  // never overwrite a week the user already picked.
+  useEffect(() => {
+    if (currentWeek !== null && week === '') setWeek(currentWeek)
+  }, [currentWeek])
+  const weekValue = Number(week)
+  const validWeek = Number.isFinite(weekValue) && weekValue > 0
+
+  const [question, setQuestion] = useState('')
+  const [askedQuestion, setAskedQuestion] = useState<string | null>(null)
+  const [response, setResponse] = useState<ChatQueryResponse | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [noProvider, setNoProvider] = useState(false)
+
+  if (!isConfigured) {
+    return (
+      <div className="dashboard">
+        <Stack gap="md" mt="xl" align="center">
+          <Text ta="center" maw={480}>
+            No league configured yet. Set up your league and team on the Draft Day page first.
+          </Text>
+          <Button component={Link} to="/draft" variant="default">Go to Draft Day</Button>
+        </Stack>
+      </div>
+    )
+  }
+
+  const canSubmit = question.trim().length > 0 && validWeek && !loading
+
+  async function handleSubmit() {
+    if (!canSubmit) return
+    const asked = question.trim()
+    setLoading(true)
+    setError(null)
+    setNoProvider(false)
+    setResponse(null)
+    try {
+      const result = await queryChat(asked, config.season, weekValue, config.team_id)
+      setResponse(result)
+      setAskedQuestion(asked)
+      setQuestion('')
+    } catch (err) {
+      if (isNoProviderError(err)) setNoProvider(true)
+      else setError(err instanceof ApiError ? err.message : String(err))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="dashboard">
+      <Stack gap="md" maw={720}>
+        <Group justify="space-between" align="center">
+          <WeekSelector week={week} onChange={setWeek} />
+        </Group>
+        <Text size="sm" c="dimmed">
+          Ask a question about your roster or matchup. Each question is answered independently
+          — there's no follow-up memory between questions yet.
+        </Text>
+        <Textarea
+          placeholder="e.g. Who are my weakest starters this week?"
+          value={question}
+          onChange={(e) => setQuestion(e.currentTarget.value)}
+          minRows={3}
+          disabled={loading}
+        />
+        <Group justify="flex-end">
+          <Button onClick={handleSubmit} disabled={!canSubmit} loading={loading}>
+            Ask
+          </Button>
+        </Group>
+
+        {noProvider && (
+          <Alert color="yellow" title="No AI provider available">
+            No AI provider available right now — try again shortly.
+            <Group mt="xs">
+              <Button size="xs" variant="light" onClick={handleSubmit} disabled={loading}>
+                Retry
+              </Button>
+            </Group>
+          </Alert>
+        )}
+        {error && <Alert color="red">{error}</Alert>}
+
+        {loading && (
+          <Stack gap="xs">
+            <Skeleton height={14} width="90%" />
+            <Skeleton height={14} width="75%" />
+            <Skeleton height={14} width="60%" />
+          </Stack>
+        )}
+
+        {!loading && response && (
+          <Stack gap="xs">
+            {askedQuestion && <Text fw={600}>{askedQuestion}</Text>}
+            <Text style={{ whiteSpace: 'pre-wrap' }}>{response.answer}</Text>
+            <Text size="xs" c="dimmed">
+              {response.provider} / {response.model} · {response.latency_ms}ms
+            </Text>
+          </Stack>
+        )}
+      </Stack>
+    </div>
+  )
+}
