@@ -326,6 +326,36 @@ export function triggerLineupSwap(teamId: string, swaps: LineupSwapInstruction[]
   })
 }
 
+// Publishes to the waiver_actions queue (fantasy-core-pipeline's /v1/trigger/waiver);
+// waiver_sniper.js consumes this and submits the claim to ESPN - a real, live write.
+// idempotency_key is fresh per call, same as triggerDraftPick.
+export function triggerWaiverClaim(
+  config: DraftConfig,
+  addPlayerId: string,
+  addPlayerName: string,
+  dropPlayerId: string,
+  dropPlayerName: string,
+): Promise<unknown> {
+  return request('/v1/trigger/waiver', {
+    method: 'POST',
+    body: JSON.stringify({
+      team_id: config.team_id,
+      league_id: config.league_id,
+      add_player_id: addPlayerId,
+      add_player_name: addPlayerName,
+      drop_player_id: dropPlayerId,
+      drop_player_name: dropPlayerName,
+      idempotency_key: crypto.randomUUID(),
+    }),
+  })
+}
+
+/** True when a 409 from POST /v1/trigger/waiver means a claim for this cycle was already
+ * submitted. Scoped to this endpoint only, same caveat as isAlreadyActiveError above. */
+export function isClaimAlreadyActiveError(err: unknown): boolean {
+  return err instanceof ApiError && err.status === 409
+}
+
 // Calls fantasy-core-pipeline's evaluate_proposed_trade - a read-only VORP comparison, unlike
 // triggerDraftPick/triggerLineupSwap this never reaches the browser worker or ESPN, so it
 // addresses players by the internal (Sleeper) player_id, not espn_id.
