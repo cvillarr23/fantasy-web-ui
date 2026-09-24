@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { getRosterDeficits, getWaiverRecommendations } from '../api/client'
 import { useCurrentWeek } from '../hooks/useCurrentWeek'
 import { loadStoredConfig } from '../hooks/useDraftConfig'
+import { RoadmapBanner } from './RoadmapBanner'
 import { RosterDeficitsGrid } from './RosterDeficitsGrid'
 import { WaiverRecommendationPanel } from './WaiverRecommendationPanel'
 import { WeekSelector } from './WeekSelector'
@@ -67,12 +68,16 @@ export function WaiverPage() {
 
   return (
     <div className="dashboard">
+      <RoadmapBanner
+        title="Waiver Manager improvements are planned"
+        issueUrl="https://github.com/cvillarr23/fantasy-web-ui/issues/77"
+      />
       <WeekSelector week={week} onChange={setWeek} />
       {error && <Alert color="red" mb="md">{error}</Alert>}
       {(loading || deficits) && (
         <RosterDeficitsGrid deficits={deficits} myTeamId={config.team_id} loading={loading} />
       )}
-      <WaiverRecommendationPanel recommendations={recommendations} />
+      <WaiverRecommendationPanel recommendations={recommendations} config={config} />
     </div>
   )
 }
