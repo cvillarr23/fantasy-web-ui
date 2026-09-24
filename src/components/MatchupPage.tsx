@@ -1,35 +1,34 @@
 import { useEffect, useState } from 'react'
-import { Alert, Badge, Button, Group, Stack, Table, Text, Tooltip } from '@mantine/core'
+import { Alert, Button, Group, Stack, Table, Text } from '@mantine/core'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ApiError, getMatchup } from '../api/client'
 import { useCurrentWeek } from '../hooks/useCurrentWeek'
 import { loadStoredConfig } from '../hooks/useDraftConfig'
-import { PlayerAvatar } from './PlayerAvatar'
+import { DeficitBadge, SwapBadge } from './DeficitBadge'
+import { PlayerCard } from './PlayerCard'
 import { WeekSelector } from './WeekSelector'
 import type { MatchupResponse, MatchupTeamSide, PlayerLine } from '../api/types'
 
 function PlayerRow({ line }: { line: PlayerLine }) {
   return (
-    <Table.Tr>
-      <Table.Td>{line.slot}</Table.Td>
-      <Table.Td><PlayerAvatar name={line.name} headshotUrl={line.headshot_url} /></Table.Td>
-      <Table.Td>
-        {line.name}
-        {line.deficit_flag && (
-          <Tooltip label="This position is a structural deficit on your roster">
-            <Badge color="yellow" size="xs" ml={6}>thin</Badge>
-          </Tooltip>
-        )}
-        {line.suggested_swap && (
-          <Tooltip label={`Optimizer would start ${line.suggested_swap.bench_for} instead`}>
-            <Badge color="blue" size="xs" ml={6}>swap?</Badge>
-          </Tooltip>
-        )}
-      </Table.Td>
-      <Table.Td>{line.position}</Table.Td>
-      <Table.Td>{line.jersey ?? '—'}</Table.Td>
-      <Table.Td>{line.points.toFixed(1)} / {line.projected_points.toFixed(1)}</Table.Td>
-    </Table.Tr>
+    <PlayerCard
+      variant="tableRow"
+      before={line.slot}
+      player={{
+        id: line.player_id,
+        name: line.name,
+        position: line.position,
+        headshotUrl: line.headshot_url,
+        jersey: line.jersey,
+      }}
+      badges={
+        <>
+          <DeficitBadge isDeficit={line.deficit_flag} />
+          <SwapBadge benchFor={line.suggested_swap?.bench_for} />
+        </>
+      }
+      stats={`${line.points.toFixed(1)} / ${line.projected_points.toFixed(1)}`}
+    />
   )
 }
 

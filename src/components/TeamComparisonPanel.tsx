@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
-import { Button, Skeleton, UnstyledButton } from '@mantine/core'
+import { Button, Skeleton } from '@mantine/core'
 import type { DraftPickSummary, TeamAggregate } from '../api/types'
 import { usePlayerDetailsCache } from '../hooks/usePlayerDetailsCache'
 import { useTeamNames } from '../hooks/useTeamNames'
+import { MatchupBadge, ScarcityBadge } from './DraftSignalBadges'
+import { PlayerCard } from './PlayerCard'
 import { PlayerSummaryPopover } from './PlayerSummaryPopover'
 
 interface Props {
@@ -194,32 +196,25 @@ function TeamColumn({
             const displayName =
               details?.name ?? pick.name ?? (pick.espn_player_id ? `ESPN player ${pick.espn_player_id}` : 'Unknown player')
             const displayPosition = details?.position ?? pick.position
-            const scarcityBadge = pick.scarcity_multiplier != null && pick.scarcity_multiplier > SCARCITY_BADGE_THRESHOLD
-            const matchupBadge = pick.matchup_coefficient != null && Math.abs(pick.matchup_coefficient - 1) > MATCHUP_BADGE_DELTA
+            const isScarce = pick.scarcity_multiplier != null && pick.scarcity_multiplier > SCARCITY_BADGE_THRESHOLD
+            const hasMatchupBadge = pick.matchup_coefficient != null && Math.abs(pick.matchup_coefficient - 1) > MATCHUP_BADGE_DELTA
             return (
-              <li key={pick.pick_number} className="pick-row">
-                <UnstyledButton
-                  className="pick-row-button"
-                  onClick={() => pick.player_id && onSelectPlayer(pick.player_id)}
-                  disabled={!pick.player_id}
-                  aria-label={`Pick ${pick.pick_number}: ${displayName}. Show player summary.`}
-                >
-                  <span className="pick-number">#{pick.pick_number}</span>
-                  <span className="pick-name">{displayName}</span>
-                  {displayPosition && <span className="pick-position">{displayPosition}</span>}
-                  {pick.vorp_score != null && <span className="candidate-score">VORP {pick.vorp_score.toFixed(1)}</span>}
-                  {scarcityBadge && (
-                    <span className="badge-scarcity" title="Current pipeline value, not a snapshot from pick time">
-                      scarcity-driven
-                    </span>
-                  )}
-                  {matchupBadge && (
-                    <span className="badge-matchup" title="Current pipeline value, not a snapshot from pick time">
-                      matchup {pick.matchup_coefficient!.toFixed(2)}x
-                    </span>
-                  )}
-                </UnstyledButton>
-              </li>
+              <PlayerCard
+                key={pick.pick_number}
+                variant="listItem"
+                onClick={() => pick.player_id && onSelectPlayer(pick.player_id)}
+                disabled={!pick.player_id}
+                ariaLabel={`Pick ${pick.pick_number}: ${displayName}. Show player summary.`}
+                before={<span className="pick-number">#{pick.pick_number}</span>}
+                player={{ id: pick.player_id ?? '', name: displayName, position: displayPosition }}
+                after={pick.vorp_score != null ? <span className="candidate-score">VORP {pick.vorp_score.toFixed(1)}</span> : null}
+                badges={
+                  <>
+                    <ScarcityBadge isScarce={isScarce} />
+                    <MatchupBadge coefficient={hasMatchupBadge ? pick.matchup_coefficient : null} />
+                  </>
+                }
+              />
             )
           })}
         </ol>

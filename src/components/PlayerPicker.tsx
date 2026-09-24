@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Button, TextInput } from '@mantine/core'
 import { searchPlayers } from '../api/client'
+import { PlayerCard } from './PlayerCard'
 import type { PlayerSearchResult } from '../api/types'
 
 interface Props {
@@ -52,10 +53,11 @@ export function PlayerPicker({ onSelect, selected, onClear }: Props) {
   if (selected) {
     return (
       <div className="player-picker-selected">
-        <span className="candidate-name">{selected.name}</span>
-        <span className="candidate-position">{selected.position}</span>
-        <span className="pick-team">{selected.team}</span>
-        <PlayerStats player={selected} />
+        <PlayerCard
+          variant="row"
+          player={{ id: selected.player_id, name: selected.name, position: selected.position, team: selected.team }}
+          stats={<PlayerStats player={selected} />}
+        />
         <Button variant="subtle" size="xs" onClick={onClear}>Change</Button>
       </div>
     )
@@ -85,10 +87,11 @@ export function PlayerPicker({ onSelect, selected, onClear }: Props) {
                 setOpen(false)
               }}
             >
-              <span className="candidate-name">{p.name}</span>
-              <span className="candidate-position">{p.position}</span>
-              <span className="pick-team">{p.team}</span>
-              <PlayerStats player={p} />
+              <PlayerCard
+                variant="row"
+                player={{ id: p.player_id, name: p.name, position: p.position, team: p.team }}
+                stats={<PlayerStats player={p} />}
+              />
             </li>
           ))}
         </ul>

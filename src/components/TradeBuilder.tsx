@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Alert, Button, NumberInput, Text } from '@mantine/core'
 import { evaluateTrade } from '../api/client'
+import { PlayerCard } from './PlayerCard'
 import { PlayerPicker } from './PlayerPicker'
 import { useToast } from '../hooks/useToast'
 import type { DraftConfig, PlayerSearchResult, TradeEvaluationResponse } from '../api/types'
@@ -37,7 +38,7 @@ function TradeSideColumn({ side }: { side: Side }) {
         <ul className="trade-side-list">
           {side.players.map((p) => (
             <li key={p.player_id}>
-              <span>{p.name} ({p.position}, {p.team})</span>
+              <PlayerCard variant="row" player={{ id: p.player_id, name: p.name, position: p.position, team: p.team }} />
               <Button variant="subtle" size="xs" onClick={() => side.remove(p.player_id)}>✕</Button>
             </li>
           ))}

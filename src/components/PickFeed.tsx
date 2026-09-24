@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react'
-import { Skeleton, UnstyledButton } from '@mantine/core'
+import { Skeleton } from '@mantine/core'
 import type { DraftPickSummary, DraftStatusResponse } from '../api/types'
 import { usePlayerDetailsCache } from '../hooks/usePlayerDetailsCache'
 import { useTeamNames } from '../hooks/useTeamNames'
+import { AutodraftBadge } from './AutodraftBadge'
+import { PlayerCard } from './PlayerCard'
 import { PlayerSummaryPopover } from './PlayerSummaryPopover'
 
 interface Props {
@@ -64,30 +66,20 @@ export function PickFeed({ picks, myTeamId, status, loading = false }: Props) {
           // opponent pick, so the myTeamId check guards against a false positive there.
           const isSuspectedAutodraft = pick.team_id === myTeamId && pick.was_autodrafted === true
           return (
-            <li key={pick.pick_number} className={`pick-row ${pick.team_id === myTeamId ? 'my-pick' : ''}`}>
-              <UnstyledButton
-                className="pick-row-button"
-                onClick={() => setExpandedPlayerId(pick.player_id)}
-                disabled={!pick.player_id}
-                aria-label={`Pick ${pick.pick_number}: ${displayName}, picked by ${draftingTeam}${
-                  isSuspectedAutodraft ? ', ESPN autodraft' : ''
-                }. Show player summary.`}
-              >
-                <span className="pick-number">#{pick.pick_number}</span>
-                <span className="pick-name">{displayName}</span>
-                {displayPosition && <span className="pick-position">{displayPosition}</span>}
-                {proTeam && <span className="pick-pro-team">{proTeam}</span>}
-                <span className="pick-team">picked by {draftingTeam}</span>
-                {isSuspectedAutodraft && (
-                  <span
-                    className="badge-autodraft"
-                    title="Our system's attempted pick was never confirmed - ESPN autodrafted for us instead."
-                  >
-                    ⚠ ESPN autodraft
-                  </span>
-                )}
-              </UnstyledButton>
-            </li>
+            <PlayerCard
+              key={pick.pick_number}
+              variant="listItem"
+              className={pick.team_id === myTeamId ? 'my-pick' : ''}
+              onClick={() => setExpandedPlayerId(pick.player_id)}
+              disabled={!pick.player_id}
+              ariaLabel={`Pick ${pick.pick_number}: ${displayName}, picked by ${draftingTeam}${
+                isSuspectedAutodraft ? ', ESPN autodraft' : ''
+              }. Show player summary.`}
+              before={<span className="pick-number">#{pick.pick_number}</span>}
+              player={{ id: pick.player_id ?? '', name: displayName, position: displayPosition, team: proTeam }}
+              after={<span className="pick-team">picked by {draftingTeam}</span>}
+              badges={isSuspectedAutodraft ? <AutodraftBadge isSuspected /> : undefined}
+            />
           )
         })}
       </ol>
