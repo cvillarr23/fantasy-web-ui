@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Button, Skeleton } from '@mantine/core'
 import { isPickTooLateError } from '../api/client'
+import { PlayerCard } from './PlayerCard'
 import { useToast } from '../hooks/useToast'
 import type { DraftRecommendation } from '../api/types'
 
@@ -58,9 +59,11 @@ export function RecommendationPanel({ recommendation, pickNumber, isMyTurn, onDr
                 const espnId = c.espn_id
                 return (
                 <li key={c.player_id} className="candidate-row">
-                  <span className="candidate-name">{c.name}</span>
-                  <span className="candidate-position">{c.position}</span>
-                  <span className="candidate-score">VORP {c.vorp_score.toFixed(1)}</span>
+                  <PlayerCard
+                    variant="row"
+                    player={{ id: c.player_id, name: c.name, position: c.position }}
+                    stats={`VORP ${c.vorp_score.toFixed(1)}`}
+                  />
                   {/* The click bot addresses ESPN's DOM by ESPN's own player id, so a player
                       missing from the crosswalk genuinely cannot be drafted from here. Blocking
                       is the only safe option: player_id is a different namespace that overlaps
@@ -107,17 +110,16 @@ export function RecommendationPanel({ recommendation, pickNumber, isMyTurn, onDr
         ) : (
           <ol>
             <li className="candidate-row">
-              <span className="candidate-name">{suggestion.name ?? `ESPN id ${suggestion.espn_player_id}`}</span>
-              {suggestion.position && <span className="candidate-position">{suggestion.position}</span>}
-              {/* Reviewer-caught (PR #49): team is already passed to the publish callback
-                  below but was never rendered, so two same-named/same-position players
-                  couldn't be told apart before triggering a live draft action. */}
-              {suggestion.team && <span className="candidate-team">{suggestion.team}</span>}
-              {/* Unlike the left column, VORP absence here isn't a hidden row - the issue
-                  asks to keep the row and just blank the score when there's no VORP match. */}
-              {suggestion.vorp_score !== null && (
-                <span className="candidate-score">VORP {suggestion.vorp_score.toFixed(1)}</span>
-              )}
+              <PlayerCard
+                variant="row"
+                player={{
+                  id: suggestion.espn_player_id,
+                  name: suggestion.name ?? `ESPN id ${suggestion.espn_player_id}`,
+                  position: suggestion.position,
+                  team: suggestion.team,
+                }}
+                stats={suggestion.vorp_score !== null ? `VORP ${suggestion.vorp_score.toFixed(1)}` : null}
+              />
               {/* espn_player_id is always present whenever this object exists at all (the
                   backend never resolves a suggestion without one), so unlike the left
                   column's crosswalk gap, drafting here is never blocked - only gated on

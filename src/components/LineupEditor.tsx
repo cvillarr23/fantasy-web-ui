@@ -5,7 +5,7 @@ import { getLineupRoster, triggerLineupSwap } from '../api/client'
 import { useToast } from '../hooks/useToast'
 import { InjuryBadge } from './InjuryBadge'
 import { LineupSuggestionPanel } from './LineupSuggestionPanel'
-import { PlayerAvatar } from './PlayerAvatar'
+import { PlayerCard } from './PlayerCard'
 import { RumorBadge } from './RumorBadge'
 import type { DraftConfig, LineupPlayerLine, LineupRosterResponse } from '../api/types'
 
@@ -34,32 +34,30 @@ function DraggablePlayerCard({ line }: { line: LineupPlayerLine }) {
     : undefined
 
   return (
-    <div
-      ref={setNodeRef}
+    <PlayerCard
+      variant="card"
+      innerRef={setNodeRef}
       style={style}
-      {...listeners}
-      {...attributes}
-      className="lineup-player-card"
-      role="button"
-      tabIndex={0}
-    >
-      <PlayerAvatar name={line.name} headshotUrl={line.headshot_url} />
-      <div className="lineup-player-card-info">
-        <span className="lineup-player-card-name">
-          {line.name}
+      dragHandleProps={{ ...listeners, ...attributes }}
+      player={{
+        id: line.player_id,
+        name: line.name,
+        position: line.position,
+        team: line.pro_team,
+        headshotUrl: line.headshot_url,
+      }}
+      badges={
+        <>
           <InjuryBadge status={line.injury_status} />
           <RumorBadge
             sentiment={line.rumor_sentiment}
             confidence={line.rumor_confidence}
             suggestedAction={line.rumor_suggested_action}
           />
-        </span>
-        <span className="lineup-player-card-meta">
-          {line.position} · {line.pro_team}
-          {line.net_vorp !== null && <> · VORP {line.net_vorp.toFixed(1)}</>}
-        </span>
-      </div>
-    </div>
+        </>
+      }
+      stats={line.net_vorp !== null ? `VORP ${line.net_vorp.toFixed(1)}` : null}
+    />
   )
 }
 

@@ -1,4 +1,4 @@
-import { Badge, Tooltip } from '@mantine/core'
+import { BadgeSlot } from './BadgeSlot'
 
 // sentiment is a schema-free string on the backend (see fantasy-core-pipeline's README:
 // rumor_signals) - fall back to the raw string for anything unrecognized, same approach
@@ -20,9 +20,5 @@ export function RumorBadge({ sentiment, confidence, suggestedAction }: Props) {
   const confidenceLabel = confidence !== null ? `${Math.round(confidence * 100)}% confidence` : null
   const tooltip = [confidenceLabel, suggestedAction?.replaceAll('_', ' ')].filter(Boolean).join(' · ')
 
-  return (
-    <Tooltip label={tooltip || badge.label}>
-      <Badge color={badge.color} size="xs" variant="light">{badge.label}</Badge>
-    </Tooltip>
-  )
+  return <BadgeSlot label={badge.label} tooltip={tooltip || badge.label} color={badge.color} />
 }

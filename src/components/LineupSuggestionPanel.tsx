@@ -1,5 +1,6 @@
 import { Badge, Button, Text } from '@mantine/core'
 import { InjuryBadge } from './InjuryBadge'
+import { PlayerCard } from './PlayerCard'
 import { RumorBadge } from './RumorBadge'
 import type { LineupPlayerLine, LineupRosterResponse } from '../api/types'
 
@@ -42,25 +43,36 @@ export function LineupSuggestionPanel({ roster, onApply }: Props) {
           {suggestions.map(({ starter, benchPlayer, vorpDelta }) => (
             <li key={starter.player_id} className="lineup-suggestion-row">
               <span className="lineup-suggestion-players">
-                <span>
-                  {starter.name} ({starter.slot})
-                  <InjuryBadge status={starter.injury_status} />
-                  <RumorBadge
-                    sentiment={starter.rumor_sentiment}
-                    confidence={starter.rumor_confidence}
-                    suggestedAction={starter.rumor_suggested_action}
-                  />
-                </span>
+                <PlayerCard
+                  variant="row"
+                  player={{ id: starter.player_id, name: starter.name }}
+                  meta={`(${starter.slot})`}
+                  badges={
+                    <>
+                      <InjuryBadge status={starter.injury_status} />
+                      <RumorBadge
+                        sentiment={starter.rumor_sentiment}
+                        confidence={starter.rumor_confidence}
+                        suggestedAction={starter.rumor_suggested_action}
+                      />
+                    </>
+                  }
+                />
                 <span aria-hidden="true"> → </span>
-                <span>
-                  {benchPlayer.name}
-                  <InjuryBadge status={benchPlayer.injury_status} />
-                  <RumorBadge
-                    sentiment={benchPlayer.rumor_sentiment}
-                    confidence={benchPlayer.rumor_confidence}
-                    suggestedAction={benchPlayer.rumor_suggested_action}
-                  />
-                </span>
+                <PlayerCard
+                  variant="row"
+                  player={{ id: benchPlayer.player_id, name: benchPlayer.name }}
+                  badges={
+                    <>
+                      <InjuryBadge status={benchPlayer.injury_status} />
+                      <RumorBadge
+                        sentiment={benchPlayer.rumor_sentiment}
+                        confidence={benchPlayer.rumor_confidence}
+                        suggestedAction={benchPlayer.rumor_suggested_action}
+                      />
+                    </>
+                  }
+                />
               </span>
               <Badge color={vorpDelta > 0 ? 'green' : 'gray'} size="sm">
                 VORP {vorpDelta >= 0 ? '+' : ''}{vorpDelta.toFixed(1)}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Alert, Group, Select, Skeleton, Table, Text } from '@mantine/core'
 import { getVorpStats } from '../api/client'
+import { PlayerCard } from './PlayerCard'
 import type { VorpStat } from '../api/types'
 
 const POSITION_OPTIONS = ['All', 'QB', 'RB', 'WR', 'TE', 'K', 'D/ST']
@@ -142,14 +143,17 @@ export function VorpBrowserPanel({ season }: Props) {
           </Table.Thead>
           <Table.Tbody>
             {weekRows.map((row) => (
-              <Table.Tr key={`${row.player_id}-${row.week}`}>
-                <Table.Td>{row.name}</Table.Td>
-                <Table.Td>{row.position}</Table.Td>
-                <Table.Td>{row.team ?? '—'}</Table.Td>
-                <Table.Td>{row.projected_points?.toFixed(1) ?? '—'}</Table.Td>
-                <Table.Td>{row.actual_points?.toFixed(1) ?? '—'}</Table.Td>
-                <Table.Td>{row.vorp_score?.toFixed(1) ?? '—'}</Table.Td>
-              </Table.Tr>
+              <PlayerCard
+                key={`${row.player_id}-${row.week}`}
+                variant="tableRow"
+                player={{ id: row.player_id, name: row.name, position: row.position }}
+                columns={[
+                  row.team ?? '—',
+                  row.projected_points?.toFixed(1) ?? '—',
+                  row.actual_points?.toFixed(1) ?? '—',
+                  row.vorp_score?.toFixed(1) ?? '—',
+                ]}
+              />
             ))}
           </Table.Tbody>
         </Table>
@@ -167,13 +171,12 @@ export function VorpBrowserPanel({ season }: Props) {
           </Table.Thead>
           <Table.Tbody>
             {seasonRows.map((row) => (
-              <Table.Tr key={row.player_id}>
-                <Table.Td>{row.name}</Table.Td>
-                <Table.Td>{row.position}</Table.Td>
-                <Table.Td>{row.team ?? '—'}</Table.Td>
-                <Table.Td>{row.weeksPlayed}</Table.Td>
-                <Table.Td>{row.totalVorp.toFixed(1)}</Table.Td>
-              </Table.Tr>
+              <PlayerCard
+                key={row.player_id}
+                variant="tableRow"
+                player={{ id: row.player_id, name: row.name, position: row.position }}
+                columns={[row.team ?? '—', row.weeksPlayed, row.totalVorp.toFixed(1)]}
+              />
             ))}
           </Table.Tbody>
         </Table>

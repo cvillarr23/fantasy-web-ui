@@ -1,4 +1,4 @@
-import { Badge, Tooltip } from '@mantine/core'
+import { BadgeSlot } from './BadgeSlot'
 
 // ESPN's injuryStatus is a free-form string, not a closed enum in espn_api - map the
 // common values to a short badge label/color, and fall back to showing the raw string
@@ -19,9 +19,5 @@ export const HEALTHY_STATUSES = new Set(['ACTIVE', 'NORMAL'])
 export function InjuryBadge({ status }: { status: string | null }) {
   if (!status || HEALTHY_STATUSES.has(status)) return null
   const badge = INJURY_BADGES[status] ?? { label: status, color: 'yellow' }
-  return (
-    <Tooltip label={status.replaceAll('_', ' ')}>
-      <Badge color={badge.color} size="xs">{badge.label}</Badge>
-    </Tooltip>
-  )
+  return <BadgeSlot label={badge.label} tooltip={status.replaceAll('_', ' ')} color={badge.color} variant="filled" />
 }
