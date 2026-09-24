@@ -1,4 +1,4 @@
-import { Skeleton, Table, Tooltip } from '@mantine/core'
+import { Alert, Skeleton, Table, Tooltip } from '@mantine/core'
 import { useTeamNames } from '../hooks/useTeamNames'
 import type { RosterDeficitsResponse, RosterPositionDeficit } from '../api/types'
 
@@ -52,7 +52,14 @@ export function RosterDeficitsGrid({ deficits, myTeamId, loading = false }: Prop
   }
 
   const entries = Object.entries(deficits?.teams ?? {})
-  if (entries.length === 0) return null
+  if (entries.length === 0) {
+    return (
+      <section className="roster-deficits-grid" aria-label="Roster deficits by team and position">
+        <h2>Roster deficits</h2>
+        <Alert color="gray">No roster data yet for this league/week.</Alert>
+      </section>
+    )
+  }
 
   // Every team_id in league_rosters is already pre-seeded by compute_roster_deficits, even
   // with zero players at a position - no separate zero-team fallback needed here.
