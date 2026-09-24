@@ -1,13 +1,13 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AnalyticsPage } from './components/AnalyticsPage'
 import { ChatPage } from './components/ChatPage'
-import { ComingSoonPage } from './components/ComingSoonPage'
 import { DraftDayPage } from './components/DraftDayPage'
 import { Layout } from './components/Layout'
 import { LineupPage } from './components/LineupPage'
 import { MatchupPage } from './components/MatchupPage'
 import { PracticeDraftScreen } from './components/PracticeDraftScreen'
 import { TradePage } from './components/TradePage'
+import { WaiverPage } from './components/WaiverPage'
 import './App.css'
 
 function App() {
@@ -23,15 +23,7 @@ function App() {
           <Route path="trades" element={<TradePage />} />
           <Route path="chat" element={<ChatPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
-          <Route
-            path="waivers"
-            element={
-              <ComingSoonPage
-                title="Waiver Manager"
-                issueUrl="https://github.com/cvillarr23/fantasy-web-ui/issues/77"
-              />
-            }
-          />
+          <Route path="waivers" element={<WaiverPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
