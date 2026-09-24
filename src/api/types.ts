@@ -269,6 +269,31 @@ export interface LineupRosterResponse {
   bench: LineupPlayerLine[]
 }
 
+// Mirrors fantasy-core-pipeline's GET /v1/waiver/recommendations response models.
+export interface WaiverPlayerSummary {
+  espn_id: string | null
+  name: string
+  pro_team: string
+  injury_status: string | null
+  net_vorp: number
+}
+
+export interface WaiverRecommendation {
+  position: string
+  vorp_delta: number
+  free_agent: WaiverPlayerSummary
+  bench_player: WaiverPlayerSummary
+  rumor_sentiment: string | null
+  rumor_confidence: number | null
+  rumor_suggested_action: string | null
+}
+
+export interface WaiverRecommendationsResponse {
+  season: number
+  week: number
+  recommendations: WaiverRecommendation[]
+}
+
 // Mirrors fantasy-core-pipeline's REST wrapper for evaluate_proposed_trade
 // (POST /v1/trade/evaluate).
 export interface TradeEvaluationResponse {

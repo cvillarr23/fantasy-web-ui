@@ -1,4 +1,4 @@
-import type { BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, TradeEvaluationResponse, VorpStat } from './types'
+import type { BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, TradeEvaluationResponse, VorpStat, WaiverRecommendationsResponse } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -282,6 +282,11 @@ export function endPracticeSyncJob(): Promise<{ status: string; job_name: string
 export function getRosterDeficits(season: number, week: number): Promise<RosterDeficitsResponse> {
   const params = new URLSearchParams({ season: String(season), week: String(week) })
   return request(`/v1/roster/deficits?${params}`)
+}
+
+export function getWaiverRecommendations(season: number, week: number): Promise<WaiverRecommendationsResponse> {
+  const params = new URLSearchParams({ season: String(season), week: String(week) })
+  return request(`/v1/waiver/recommendations?${params}`)
 }
 
 // Live ESPN fetch (see matchup_service.py) - no historical data, always "this week as ESPN
