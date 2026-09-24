@@ -257,7 +257,7 @@ export interface LineupPlayerLine {
   injury_status: string | null
   headshot_url: string
   deficit_flag: boolean
-  suggested_swap: { bench_for: string; add_player_id: string } | null
+  suggested_swap: { bench_for: string; add_player_id: string; explanation?: string | null } | null
   net_vorp: number | null
   rumor_sentiment: string | null
   rumor_confidence: number | null

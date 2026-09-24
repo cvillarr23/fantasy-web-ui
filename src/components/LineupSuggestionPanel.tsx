@@ -1,5 +1,5 @@
 import { Badge, Button, Text } from '@mantine/core'
-import { InjuryBadge } from './InjuryBadge'
+import { HEALTHY_STATUSES, InjuryBadge } from './InjuryBadge'
 import { PlayerCard } from './PlayerCard'
 import { RumorBadge } from './RumorBadge'
 import type { LineupPlayerLine, LineupRosterResponse } from '../api/types'
@@ -8,11 +8,21 @@ interface Suggestion {
   starter: LineupPlayerLine
   benchPlayer: LineupPlayerLine
   vorpDelta: number
+  explanation?: string | null
 }
 
 interface Props {
   roster: LineupRosterResponse
   onApply: (starter: LineupPlayerLine, benchPlayer: LineupPlayerLine) => void
+}
+
+// Statuses that make sitting the starter close to mandatory, regardless of VORP delta.
+const SEVERE_STATUSES = new Set(['OUT', 'INJURY_RESERVE', 'SUSPENSION', 'DOUBTFUL'])
+
+function injurySeverity(status: string | null): number {
+  if (!status || HEALTHY_STATUSES.has(status)) return 0
+  if (SEVERE_STATUSES.has(status)) return 2
+  return 1 // QUESTIONABLE, DAY_TO_DAY, or any other flagged-but-unrecognized status
 }
 
 function buildSuggestions(roster: LineupRosterResponse): Suggestion[] {
@@ -25,9 +35,13 @@ function buildSuggestions(roster: LineupRosterResponse): Suggestion[] {
       starter,
       benchPlayer,
       vorpDelta: (benchPlayer.net_vorp ?? 0) - (starter.net_vorp ?? 0),
+      explanation: starter.suggested_swap.explanation,
     })
   }
-  return suggestions.sort((a, b) => b.vorpDelta - a.vorpDelta)
+  return suggestions.sort((a, b) => {
+    const severityDiff = injurySeverity(b.starter.injury_status) - injurySeverity(a.starter.injury_status)
+    return severityDiff !== 0 ? severityDiff : b.vorpDelta - a.vorpDelta
+  })
 }
 
 export function LineupSuggestionPanel({ roster, onApply }: Props) {
@@ -40,7 +54,7 @@ export function LineupSuggestionPanel({ roster, onApply }: Props) {
         <Text c="dimmed" size="sm">No suggested changes this week.</Text>
       ) : (
         <ul className="lineup-suggestion-list">
-          {suggestions.map(({ starter, benchPlayer, vorpDelta }) => (
+          {suggestions.map(({ starter, benchPlayer, vorpDelta, explanation }) => (
             <li key={starter.player_id} className="lineup-suggestion-row">
               <span className="lineup-suggestion-players">
                 <PlayerCard
@@ -80,6 +94,11 @@ export function LineupSuggestionPanel({ roster, onApply }: Props) {
               <Button size="xs" variant="light" onClick={() => onApply(starter, benchPlayer)}>
                 Apply
               </Button>
+              {explanation && (
+                <Text c="dimmed" size="xs" className="lineup-suggestion-explanation">
+                  {explanation}
+                </Text>
+              )}
             </li>
           ))}
         </ul>
