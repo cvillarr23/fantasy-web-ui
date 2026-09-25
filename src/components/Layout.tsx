@@ -6,6 +6,7 @@ const NAV_LINKS = [
   { to: '/practice', label: 'Practice Draft' },
   { to: '/lineup', label: 'Lineup' },
   { to: '/matchup', label: 'Matchup' },
+  { to: '/scoreboard', label: 'Scoreboard' },
   { to: '/trades', label: 'Trades' },
   { to: '/chat', label: 'Chat' },
   { to: '/waivers', label: 'Waivers' },

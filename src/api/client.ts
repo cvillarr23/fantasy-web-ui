@@ -1,4 +1,4 @@
-import type { BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, TradeEvaluationResponse, VorpStat, WaiverRecommendationsResponse } from './types'
+import type { BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, ScoreboardResponse, TradeEvaluationResponse, VorpStat, WaiverRecommendationsResponse } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -294,6 +294,13 @@ export function getWaiverRecommendations(season: number, week: number): Promise<
 export function getMatchup(season: number, week: number): Promise<MatchupResponse> {
   const params = new URLSearchParams({ season: String(season), week: String(week) })
   return request(`/v1/matchup?${params}`)
+}
+
+// Every matchup in the league for a week, score-only - see get_league_scoreboard in
+// matchup_service.py. Unlike getMatchup, never 404s (an empty week just returns []).
+export function getScoreboard(season: number, week: number): Promise<ScoreboardResponse> {
+  const params = new URLSearchParams({ season: String(season), week: String(week) })
+  return request(`/v1/matchup/scoreboard?${params}`)
 }
 
 export function getTeamNames(): Promise<Record<string, string>> {
