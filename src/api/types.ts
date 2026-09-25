@@ -237,6 +237,27 @@ export interface MatchupResponse {
   opponent: MatchupTeamSide
 }
 
+// Mirrors fantasy-core-pipeline's GET /v1/matchup/scoreboard response models. Score-only
+// (no starters/bench) - ESPN's own Scoreboard tab shows every matchup at once, not rosters.
+export interface ScoreboardTeamInfo {
+  team_id: string
+  name: string
+  logo_url: string
+  score: number
+  projected: number
+}
+
+export interface ScoreboardMatchup {
+  home: ScoreboardTeamInfo | null
+  away: ScoreboardTeamInfo | null
+}
+
+export interface ScoreboardResponse {
+  season: number
+  week: number
+  matchups: ScoreboardMatchup[]
+}
+
 export interface LineupSwapInstruction {
   drop_player_id: string
   add_player_id: string

@@ -6,6 +6,7 @@ import { Layout } from './components/Layout'
 import { LineupPage } from './components/LineupPage'
 import { MatchupPage } from './components/MatchupPage'
 import { PracticeDraftScreen } from './components/PracticeDraftScreen'
+import { ScoreboardPage } from './components/ScoreboardPage'
 import { TradePage } from './components/TradePage'
 import { WaiverPage } from './components/WaiverPage'
 import './App.css'
@@ -20,6 +21,7 @@ function App() {
           <Route path="practice" element={<PracticeDraftScreen />} />
           <Route path="lineup" element={<LineupPage />} />
           <Route path="matchup" element={<MatchupPage />} />
+          <Route path="scoreboard" element={<ScoreboardPage />} />
           <Route path="trades" element={<TradePage />} />
           <Route path="chat" element={<ChatPage />} />
           <Route path="analytics" element={<AnalyticsPage />} />
