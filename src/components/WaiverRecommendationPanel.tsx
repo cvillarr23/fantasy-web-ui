@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Badge, Button, Modal, Stack, Text } from '@mantine/core'
-import { isClaimAlreadyActiveError, triggerWaiverClaim } from '../api/client'
+import { triggerWaiverClaim } from '../api/client'
 import { InjuryBadge } from './InjuryBadge'
 import { RumorBadge } from './RumorBadge'
 import { useToast } from '../hooks/useToast'
-import type { DraftConfig, WaiverRecommendation } from '../api/types'
+import type { DraftConfig, WaiverPlayerSummary, WaiverRecommendation } from '../api/types'
 
 interface Props {
   recommendations: WaiverRecommendation[]
@@ -14,10 +14,8 @@ interface Props {
 interface PendingClaim {
   key: string
   position: string
-  addId: string
-  addName: string
-  dropId: string
-  dropName: string
+  addPlayer: WaiverPlayerSummary
+  dropPlayer: WaiverPlayerSummary
 }
 
 export function WaiverRecommendationPanel({ recommendations, config }: Props) {
@@ -31,15 +29,10 @@ export function WaiverRecommendationPanel({ recommendations, config }: Props) {
     setSubmittingKey(claim.key)
     setPendingClaim(null)
     try {
-      await triggerWaiverClaim(config, claim.addId, claim.addName, claim.dropId, claim.dropName)
-      showToast('success', `Claim submitted: add ${claim.addName}, drop ${claim.dropName}.`)
+      const result = await triggerWaiverClaim(config, claim.addPlayer, claim.dropPlayer)
+      showToast('success', `Claim queued for ${claim.addPlayer.name}. Tracking ID: ${result.tracking_id}.`)
     } catch (err) {
-      showToast(
-        'error',
-        isClaimAlreadyActiveError(err)
-          ? 'Claim already submitted this week.'
-          : `Claim failed: ${String(err)}`,
-      )
+      showToast('error', `Claim failed: ${err instanceof Error ? err.message : String(err)}`)
     } finally {
       setSubmittingKey(null)
     }
@@ -54,7 +47,7 @@ export function WaiverRecommendationPanel({ recommendations, config }: Props) {
         <ul className="waiver-recommendation-list">
           {recommendations.map(({ position, vorp_delta, free_agent, bench_player, rumor_sentiment, rumor_confidence, rumor_suggested_action }) => {
             const key = `${position}-${free_agent.espn_id ?? free_agent.name}`
-            const canClaim = Boolean(free_agent.espn_id && bench_player.espn_id)
+            const canClaim = Boolean(free_agent.espn_id && free_agent.pro_team && bench_player.espn_id)
             return (
               <li key={key} className="waiver-recommendation-row">
                 <span className="waiver-recommendation-players">
@@ -84,10 +77,8 @@ export function WaiverRecommendationPanel({ recommendations, config }: Props) {
                     setPendingClaim({
                       key,
                       position,
-                      addId: free_agent.espn_id as string,
-                      addName: free_agent.name,
-                      dropId: bench_player.espn_id as string,
-                      dropName: bench_player.name,
+                      addPlayer: free_agent,
+                      dropPlayer: bench_player,
                     })
                   }
                 >
@@ -102,8 +93,8 @@ export function WaiverRecommendationPanel({ recommendations, config }: Props) {
         {pendingClaim && (
           <Stack gap="md">
             <Text size="sm">
-              Add <strong>{pendingClaim.addName}</strong> ({pendingClaim.position}), drop{' '}
-              <strong>{pendingClaim.dropName}</strong>. This submits a real ESPN waiver claim.
+              Add <strong>{pendingClaim.addPlayer.name}</strong> ({pendingClaim.position}), drop{' '}
+              <strong>{pendingClaim.dropPlayer.name}</strong>. This submits a real ESPN waiver claim.
             </Text>
             <Button onClick={handleConfirm}>Confirm claim</Button>
           </Stack>

@@ -15,9 +15,22 @@ server {
     # backend Service isn't resolvable at that exact moment - confirmed locally: the
     # literal form crash-loops outside the cluster with "host not found in upstream".
     resolver 10.152.183.152 valid=10s;
+    set $backend "${CORE_API_UPSTREAM}";
+
+    location = /v1/trigger/waiver {
+        limit_except POST { deny all; }
+        proxy_set_header X-API-Key "${TRIGGER_API_KEY}";
+        proxy_pass http://$backend$request_uri;
+        proxy_intercept_errors on;
+        error_page 401 = @waiver_auth_error;
+    }
+
+    location @waiver_auth_error {
+        default_type application/json;
+        return 502 '{"detail":"Claim service authentication failed. Contact an administrator."}';
+    }
 
     location /v1/ {
-        set $backend "fantasy-core-pipeline.default.svc.cluster.local:8000";
         # $request_uri (the literal incoming path+query, e.g. "/v1/health"), not a
         # trailing "/v1/" on proxy_pass itself - when proxy_pass's target contains a
         # variable, nginx does NOT do its usual location-prefix path merging, so a
