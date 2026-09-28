@@ -11,6 +11,11 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
+      '^/v1/trigger/waiver(?:\\?|$)': {
+        target: API_PROXY_TARGET,
+        changeOrigin: true,
+        headers: { 'X-API-Key': process.env.TRIGGER_API_KEY ?? '' },
+      },
       '/v1': {
         target: API_PROXY_TARGET,
         changeOrigin: true,

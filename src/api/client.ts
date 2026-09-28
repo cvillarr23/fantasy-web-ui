@@ -1,4 +1,4 @@
-import type { BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, ScoreboardResponse, TradeEvaluationResponse, VorpStat, WaiverRecommendationsResponse } from './types'
+import type { BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, ScoreboardResponse, TradeEvaluationResponse, VorpStat, WaiverPlayerSummary, WaiverRecommendationsResponse } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -14,6 +14,16 @@ function extractErrorMessage(body: string, fallback: string): string {
     const parsed = JSON.parse(body) as { detail?: unknown; message?: unknown }
     if (typeof parsed.detail === 'string' && parsed.detail.trim()) return parsed.detail
     if (typeof parsed.message === 'string' && parsed.message.trim()) return parsed.message
+    if (Array.isArray(parsed.detail)) {
+      const issues = parsed.detail.flatMap((item: unknown) => {
+        if (!item || typeof item !== 'object') return []
+        const { loc, msg } = item as { loc?: unknown; msg?: unknown }
+        if (!Array.isArray(loc) || typeof msg !== 'string') return []
+        const field = loc.filter((part): part is string => typeof part === 'string' && part !== 'body').join('.')
+        return [`${field || 'Request'}: ${msg}`]
+      })
+      if (issues.length) return issues.join('; ')
+    }
   } catch {
     // Non-JSON error response - return as-is.
   }
@@ -333,34 +343,32 @@ export function triggerLineupSwap(teamId: string, swaps: LineupSwapInstruction[]
   })
 }
 
-// Publishes to the waiver_actions queue (fantasy-core-pipeline's /v1/trigger/waiver);
-// waiver_sniper.js consumes this and submits the claim to ESPN - a real, live write.
-// idempotency_key is fresh per call, same as triggerDraftPick.
+// Acceptance means the queue received the claim; it does not confirm an ESPN transaction.
+export interface WaiverClaimResponse {
+  status: 'accepted'
+  queue: string
+  team_id: string
+  tracking_id: string
+}
+
 export function triggerWaiverClaim(
   config: DraftConfig,
-  addPlayerId: string,
-  addPlayerName: string,
-  dropPlayerId: string,
-  dropPlayerName: string,
-): Promise<unknown> {
+  addPlayer: WaiverPlayerSummary,
+  dropPlayer?: WaiverPlayerSummary,
+): Promise<WaiverClaimResponse> {
+  if (!addPlayer.espn_id) throw new Error('Claimed player has no ESPN ID.')
+  if (!addPlayer.pro_team) throw new Error('Claimed player has no NFL team.')
+  if (dropPlayer && !dropPlayer.espn_id) throw new Error('Drop player has no ESPN ID.')
   return request('/v1/trigger/waiver', {
     method: 'POST',
     body: JSON.stringify({
       team_id: config.team_id,
-      league_id: config.league_id,
-      add_player_id: addPlayerId,
-      add_player_name: addPlayerName,
-      drop_player_id: dropPlayerId,
-      drop_player_name: dropPlayerName,
-      idempotency_key: crypto.randomUUID(),
+      player_id: addPlayer.espn_id,
+      name: addPlayer.name,
+      team: addPlayer.pro_team,
+      ...(dropPlayer ? { drop_player_id: dropPlayer.espn_id } : {}),
     }),
   })
-}
-
-/** True when a 409 from POST /v1/trigger/waiver means a claim for this cycle was already
- * submitted. Scoped to this endpoint only, same caveat as isAlreadyActiveError above. */
-export function isClaimAlreadyActiveError(err: unknown): boolean {
-  return err instanceof ApiError && err.status === 409
 }
 
 // Calls fantasy-core-pipeline's evaluate_proposed_trade - a read-only VORP comparison, unlike
