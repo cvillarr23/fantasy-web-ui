@@ -10,6 +10,10 @@ import { WaiverRecommendationPanel } from './WaiverRecommendationPanel'
 import { WeekSelector } from './WeekSelector'
 import type { RosterDeficitsResponse, WaiverRecommendation } from '../api/types'
 
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err)
+}
+
 export function WaiverPage() {
   const config = loadStoredConfig()
   const isConfigured = Boolean(config.league_id && config.team_id)
@@ -22,7 +26,10 @@ export function WaiverPage() {
   const [deficits, setDeficits] = useState<RosterDeficitsResponse | null>(null)
   const [recommendations, setRecommendations] = useState<WaiverRecommendation[]>([])
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  // Tracked per call: one endpoint failing (e.g. recommendations' 503 when no pregame data
+  // is usable) must not hide what the other one returned.
+  const [deficitsError, setDeficitsError] = useState<string | null>(null)
+  const [recommendationsError, setRecommendationsError] = useState<string | null>(null)
   const currentWeek = useCurrentWeek()
 
   useEffect(() => {
@@ -36,19 +43,21 @@ export function WaiverPage() {
     if (!isConfigured || !validWeek) return
     let cancelled = false
     setLoading(true)
-    setError(null)
+    setDeficitsError(null)
+    setRecommendationsError(null)
     setDeficits(null)
     setRecommendations([])
-    Promise.all([
+    Promise.allSettled([
       getRosterDeficits(config.season, weekValue),
       getWaiverRecommendations(config.season, weekValue),
     ])
-      .then(([deficitsResponse, waiverResponse]) => {
+      .then(([deficitsResult, waiverResult]) => {
         if (cancelled) return
-        setDeficits(deficitsResponse)
-        setRecommendations(waiverResponse.recommendations)
+        if (deficitsResult.status === 'fulfilled') setDeficits(deficitsResult.value)
+        else setDeficitsError(errorMessage(deficitsResult.reason))
+        if (waiverResult.status === 'fulfilled') setRecommendations(waiverResult.value.recommendations)
+        else setRecommendationsError(errorMessage(waiverResult.reason))
       })
-      .catch((err) => { if (!cancelled) setError(String(err)) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [isConfigured, config.season, weekValue, validWeek])
@@ -73,11 +82,17 @@ export function WaiverPage() {
         issueUrl="https://github.com/cvillarr23/fantasy-web-ui/issues/77"
       />
       <WeekSelector week={week} onChange={setWeek} />
-      {error && <Alert color="red" mb="md">{error}</Alert>}
+      {deficitsError && <Alert color="red" mb="md">{deficitsError}</Alert>}
       {(loading || deficits) && (
         <RosterDeficitsGrid deficits={deficits} myTeamId={config.team_id} loading={loading} />
       )}
-      <WaiverRecommendationPanel recommendations={recommendations} config={config} />
+      {recommendationsError ? (
+        // Not the panel: its empty state ("No waiver upgrades this week.") would misread a
+        // failed load as "nothing worth claiming".
+        <Alert color="red" mb="md">{recommendationsError}</Alert>
+      ) : (
+        <WaiverRecommendationPanel recommendations={recommendations} config={config} />
+      )}
     </div>
   )
 }

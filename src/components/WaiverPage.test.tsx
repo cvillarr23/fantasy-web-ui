@@ -1,0 +1,100 @@
+import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { MantineProvider } from '@mantine/core'
+import { MemoryRouter } from 'react-router-dom'
+import { WaiverPage } from './WaiverPage'
+import { ApiError, getRosterDeficits, getWaiverRecommendations } from '../api/client'
+import { CONFIG_STORAGE_KEY } from '../hooks/useDraftConfig'
+import type { RosterDeficitsResponse, WaiverRecommendationsResponse } from '../api/types'
+
+vi.mock('../api/client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../api/client')>()
+  return {
+    ApiError: actual.ApiError,
+    getRosterDeficits: vi.fn(),
+    getWaiverRecommendations: vi.fn(),
+    getCurrentWeek: vi.fn().mockResolvedValue({ week: 5 }),
+    triggerWaiverClaim: vi.fn(),
+  }
+})
+
+// The grid fetches team names itself; the page only decides whether to render it.
+vi.mock('./RosterDeficitsGrid', () => ({
+  RosterDeficitsGrid: ({ deficits, loading }: { deficits: unknown; loading: boolean }) => (
+    <div data-testid="deficits-grid">{loading ? 'loading' : deficits ? 'deficits loaded' : 'empty'}</div>
+  ),
+}))
+
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation(() => ({
+    matches: false, addListener: vi.fn(), removeListener: vi.fn(),
+    addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
+  })),
+})
+
+const deficits = { season: 2026, week: 5, teams: [] } as unknown as RosterDeficitsResponse
+const recommendations: WaiverRecommendationsResponse = {
+  season: 2026, week: 5,
+  recommendations: [{
+    position: 'RB', vorp_delta: 8,
+    free_agent: { espn_id: '4046', name: 'Some Back', pro_team: 'KC', injury_status: null, net_vorp: 9 },
+    bench_player: { espn_id: '9999', name: 'Bench Back', pro_team: 'NO', injury_status: null, net_vorp: 1 },
+    rumor_sentiment: null, rumor_confidence: null, rumor_suggested_action: null,
+  }],
+}
+
+beforeEach(() => {
+  window.localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ league_id: '123', team_id: '8', season: 2026, mode: 'live' }))
+})
+
+afterEach(() => { cleanup(); vi.clearAllMocks(); window.localStorage.clear() })
+
+function renderPage() {
+  render(
+    <MantineProvider>
+      <MemoryRouter initialEntries={['/waivers?week=5']}>
+        <WaiverPage />
+      </MemoryRouter>
+    </MantineProvider>,
+  )
+}
+
+it('keeps roster deficits visible when recommendations are unavailable', async () => {
+  vi.mocked(getRosterDeficits).mockResolvedValue(deficits)
+  vi.mocked(getWaiverRecommendations).mockRejectedValue(
+    new ApiError(503, 'Waiver recommendations unavailable: stale weekly_stats.vorp_score'),
+  )
+
+  renderPage()
+
+  expect(await screen.findByText('deficits loaded')).toBeTruthy()
+  expect(await screen.findByText(/Waiver recommendations unavailable: stale weekly_stats.vorp_score/)).toBeTruthy()
+  // A failed load must not read as "nothing worth claiming".
+  expect(screen.queryByText('No waiver upgrades this week.')).toBeNull()
+})
+
+it('keeps recommendations visible when roster deficits fail', async () => {
+  vi.mocked(getRosterDeficits).mockRejectedValue(new ApiError(500, 'Failed to compute roster deficits: boom'))
+  vi.mocked(getWaiverRecommendations).mockResolvedValue(recommendations)
+
+  renderPage()
+
+  expect(await screen.findByText(/Some Back/)).toBeTruthy()
+  expect(await screen.findByText(/Failed to compute roster deficits: boom/)).toBeTruthy()
+  expect(screen.queryByTestId('deficits-grid')).toBeNull()
+})
+
+it('shows both sections and no errors when both calls succeed', async () => {
+  vi.mocked(getRosterDeficits).mockResolvedValue(deficits)
+  vi.mocked(getWaiverRecommendations).mockResolvedValue(recommendations)
+
+  renderPage()
+
+  expect(await screen.findByText('deficits loaded')).toBeTruthy()
+  expect(await screen.findByText(/Some Back/)).toBeTruthy()
+  // RoadmapBanner is itself an Alert, so check for error text rather than any alert.
+  await waitFor(() => expect(screen.queryByText(/unavailable|Failed to/i)).toBeNull())
+  expect(getRosterDeficits).toHaveBeenCalledWith(2026, 5)
+  expect(getWaiverRecommendations).toHaveBeenCalledWith(2026, 5)
+})
