@@ -10,7 +10,7 @@ import { StatusHeader } from './StatusHeader'
 import { TeamComparisonPanel } from './TeamComparisonPanel'
 import { TeamPositionGrid } from './TeamPositionGrid'
 import { useDraftStream } from '../hooks/useDraftStream'
-import { CONFIG_STORAGE_KEY, loadStoredConfig } from '../hooks/useDraftConfig'
+import { useDraftConfig } from '../hooks/useDraftConfig'
 import { triggerDraftPick } from '../api/client'
 import type { DraftConfig } from '../api/types'
 
@@ -136,21 +136,21 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
 }
 
 export function DraftDayPage() {
-  const [config, setConfig] = useState<DraftConfig | null>(() => {
-    const stored = loadStoredConfig()
-    return stored.league_id && stored.team_id ? stored : null
-  })
-  const [configuring, setConfiguring] = useState(config === null)
+  const { config, loading, setConfig } = useDraftConfig()
+  const isConfigured = Boolean(config.league_id && config.team_id)
+  const [reconfiguring, setReconfiguring] = useState(false)
 
   function handleConfigured(newConfig: DraftConfig) {
-    window.localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(newConfig))
+    // ConfigScreen already POSTed it to the server; just update the shared copy.
     setConfig(newConfig)
-    setConfiguring(false)
+    setReconfiguring(false)
   }
 
-  if (configuring || !config) {
-    return <ConfigScreen initial={config ?? loadStoredConfig()} onConfigured={handleConfigured} />
+  if (!isConfigured && loading) return null
+
+  if (reconfiguring || !isConfigured) {
+    return <ConfigScreen initial={config} onConfigured={handleConfigured} />
   }
 
-  return <Dashboard config={config} onReconfigure={() => setConfiguring(true)} />
+  return <Dashboard config={config} onReconfigure={() => setReconfiguring(true)} />
 }

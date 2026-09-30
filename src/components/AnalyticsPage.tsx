@@ -1,10 +1,10 @@
 import { Tabs } from '@mantine/core'
-import { loadStoredConfig } from '../hooks/useDraftConfig'
+import { useDraftConfig } from '../hooks/useDraftConfig'
 import { BacktestResultsPanel } from './BacktestResultsPanel'
 import { VorpBrowserPanel } from './VorpBrowserPanel'
 
 export function AnalyticsPage() {
-  const config = loadStoredConfig()
+  const { config } = useDraftConfig()
 
   return (
     <div className="dashboard">

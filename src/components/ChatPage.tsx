@@ -3,12 +3,12 @@ import { Alert, Button, Group, Skeleton, Stack, Text, Textarea } from '@mantine/
 import { Link } from 'react-router-dom'
 import { ApiError, isNoProviderError, queryChat } from '../api/client'
 import { useCurrentWeek } from '../hooks/useCurrentWeek'
-import { loadStoredConfig } from '../hooks/useDraftConfig'
+import { useDraftConfig } from '../hooks/useDraftConfig'
 import { WeekSelector } from './WeekSelector'
 import type { ChatQueryResponse } from '../api/types'
 
 export function ChatPage() {
-  const config = loadStoredConfig()
+  const { config, loading: configLoading } = useDraftConfig()
   const isConfigured = Boolean(config.league_id && config.team_id)
 
   const [week, setWeek] = useState<number | string>('')
@@ -29,13 +29,14 @@ export function ChatPage() {
   const [noProvider, setNoProvider] = useState(false)
 
   if (!isConfigured) {
+    if (configLoading) return null
     return (
       <div className="dashboard">
         <Stack gap="md" mt="xl" align="center">
           <Text ta="center" maw={480}>
-            No league configured yet. Set up your league and team on the Draft Day page first.
+            No league configured yet. Set your league and team in Settings first.
           </Text>
-          <Button component={Link} to="/draft" variant="default">Go to Draft Day</Button>
+          <Button component={Link} to="/settings" variant="default">Go to Settings</Button>
         </Stack>
       </div>
     )

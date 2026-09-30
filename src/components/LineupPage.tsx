@@ -3,14 +3,14 @@ import { Alert, Button, Group, Stack, Text } from '@mantine/core'
 import { Link, useSearchParams } from 'react-router-dom'
 import { getMatchup, getRosterDeficits } from '../api/client'
 import { useCurrentWeek } from '../hooks/useCurrentWeek'
-import { loadStoredConfig } from '../hooks/useDraftConfig'
+import { useDraftConfig } from '../hooks/useDraftConfig'
 import { LineupEditor } from './LineupEditor'
 import { RosterDeficitsGrid } from './RosterDeficitsGrid'
 import { WeekSelector } from './WeekSelector'
 import type { MatchupResponse, RosterDeficitsResponse } from '../api/types'
 
 export function LineupPage() {
-  const config = loadStoredConfig()
+  const { config, loading: configLoading } = useDraftConfig()
   const isConfigured = Boolean(config.league_id && config.team_id)
 
   const [searchParams] = useSearchParams()
@@ -61,13 +61,14 @@ export function LineupPage() {
   }, [isConfigured, config.season, weekValue, validWeek])
 
   if (!isConfigured) {
+    if (configLoading) return null
     return (
       <div className="dashboard">
         <Stack gap="md" mt="xl" align="center">
           <Text ta="center" maw={480}>
-            No league configured yet. Set up your league and team on the Draft Day page first.
+            No league configured yet. Set your league and team in Settings first.
           </Text>
-          <Button component={Link} to="/draft" variant="default">Go to Draft Day</Button>
+          <Button component={Link} to="/settings" variant="default">Go to Settings</Button>
         </Stack>
       </div>
     )
