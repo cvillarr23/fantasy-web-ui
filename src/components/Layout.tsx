@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { to: '/chat', label: 'Chat' },
   { to: '/waivers', label: 'Waivers' },
   { to: '/analytics', label: 'Analytics' },
+  { to: '/settings', label: 'Settings' },
 ]
 
 // Plain nav links (not Mantine's Tabs) are deliberate: these switch the whole page via the

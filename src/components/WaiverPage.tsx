@@ -3,7 +3,7 @@ import { Alert, Button, Stack, Text } from '@mantine/core'
 import { Link, useSearchParams } from 'react-router-dom'
 import { getRosterDeficits, getWaiverRecommendations } from '../api/client'
 import { useCurrentWeek } from '../hooks/useCurrentWeek'
-import { loadStoredConfig } from '../hooks/useDraftConfig'
+import { useDraftConfig } from '../hooks/useDraftConfig'
 import { RoadmapBanner } from './RoadmapBanner'
 import { RosterDeficitsGrid } from './RosterDeficitsGrid'
 import { WaiverRecommendationPanel } from './WaiverRecommendationPanel'
@@ -15,7 +15,7 @@ function errorMessage(err: unknown): string {
 }
 
 export function WaiverPage() {
-  const config = loadStoredConfig()
+  const { config, loading: configLoading } = useDraftConfig()
   const isConfigured = Boolean(config.league_id && config.team_id)
 
   const [searchParams] = useSearchParams()
@@ -63,13 +63,14 @@ export function WaiverPage() {
   }, [isConfigured, config.season, weekValue, validWeek])
 
   if (!isConfigured) {
+    if (configLoading) return null
     return (
       <div className="dashboard">
         <Stack gap="md" mt="xl" align="center">
           <Text ta="center" maw={480}>
-            No league configured yet. Set up your league and team on the Draft Day page first.
+            No league configured yet. Set your league and team in Settings first.
           </Text>
-          <Button component={Link} to="/draft" variant="default">Go to Draft Day</Button>
+          <Button component={Link} to="/settings" variant="default">Go to Settings</Button>
         </Stack>
       </div>
     )

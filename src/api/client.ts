@@ -158,6 +158,12 @@ export function getDraftStatus(leagueId: string, season: number, limit = 10): Pr
   return request(`/v1/draft/status?${params}`)
 }
 
+// The server copy is the source of truth for league/team settings so they follow the operator
+// across browsers/devices; 404 means no live config has been saved yet.
+export function getDraftConfig(): Promise<DraftConfig> {
+  return request('/v1/draft/config')
+}
+
 export function setDraftConfig(config: DraftConfig): Promise<unknown> {
   return request('/v1/draft/config', { method: 'POST', body: JSON.stringify(config) })
 }
