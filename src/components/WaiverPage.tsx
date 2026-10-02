@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Alert, Button, Stack, Text } from '@mantine/core'
+import { Alert, Button, Group, Stack, Text } from '@mantine/core'
 import { Link, useSearchParams } from 'react-router-dom'
 import { getRosterDeficits, getWaiverRecommendations } from '../api/client'
 import { useCurrentWeek } from '../hooks/useCurrentWeek'
@@ -7,6 +7,7 @@ import { useDraftConfig } from '../hooks/useDraftConfig'
 import { RoadmapBanner } from './RoadmapBanner'
 import { RosterDeficitsGrid } from './RosterDeficitsGrid'
 import { WaiverRecommendationPanel } from './WaiverRecommendationPanel'
+import { RosterQuickActions } from './RosterQuickActions'
 import { WeekSelector } from './WeekSelector'
 import type { RosterDeficitsResponse, WaiverRecommendation } from '../api/types'
 
@@ -82,7 +83,10 @@ export function WaiverPage() {
         title="Waiver Manager improvements are planned"
         issueUrl="https://github.com/cvillarr23/fantasy-web-ui/issues/77"
       />
-      <WeekSelector week={week} onChange={setWeek} />
+      <Group justify="space-between" mb="md">
+        <WeekSelector week={week} onChange={setWeek} />
+        <RosterQuickActions page="waivers" week={week} />
+      </Group>
       {deficitsError && <Alert color="red" mb="md">{deficitsError}</Alert>}
       {(loading || deficits) && (
         <RosterDeficitsGrid deficits={deficits} myTeamId={config.team_id} loading={loading} />

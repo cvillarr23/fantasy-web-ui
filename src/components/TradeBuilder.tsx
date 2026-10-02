@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { Alert, Button, NumberInput, Text } from '@mantine/core'
+import { Alert, Button, Group, NumberInput, Text } from '@mantine/core'
+import { useSearchParams } from 'react-router-dom'
+import { RosterQuickActions } from './RosterQuickActions'
 import { evaluateTrade } from '../api/client'
 import { PlayerCard } from './PlayerCard'
 import { PlayerPicker } from './PlayerPicker'
@@ -53,7 +55,11 @@ export function TradeBuilder({ config }: Props) {
   const [outgoing, setOutgoing] = useState<PlayerSearchResult[]>([])
   // number | string, same reasoning as LineupPage's week field - NumberInput passes
   // intermediate values that aren't a valid week yet.
-  const [week, setWeek] = useState<number | string>('')
+  const [searchParams] = useSearchParams()
+  const initialWeek = Number(searchParams.get('week'))
+  const [week, setWeek] = useState<number | string>(
+    Number.isInteger(initialWeek) && initialWeek > 0 ? initialWeek : '',
+  )
   const [result, setResult] = useState<TradeEvaluationResponse | null>(null)
   const [busy, setBusy] = useState(false)
   const { toast, showToast } = useToast()
@@ -89,7 +95,10 @@ export function TradeBuilder({ config }: Props) {
 
   return (
     <section className="trade-builder">
-      <h2>Evaluate a trade</h2>
+      <Group justify="space-between" mb="md">
+        <h2>Evaluate a trade</h2>
+        <RosterQuickActions page="trades" week={week} />
+      </Group>
       <NumberInput
         label="Week"
         placeholder="e.g. 3"
