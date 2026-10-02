@@ -88,7 +88,7 @@ export function LineupPage() {
       {(loading || deficits) && (
         <RosterDeficitsGrid deficits={deficits} myTeamId={config.team_id} loading={loading} />
       )}
-      <LineupEditor config={config} />
+      <LineupEditor key={`${config.league_id}:${config.team_id}:${config.season}`} config={config} week={week} />
     </div>
   )
 }
