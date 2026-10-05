@@ -30,10 +30,22 @@
   border-radius: 999px;
   font-size: 13px;
 }
-.health-healthy { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
-.health-degraded { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
-.health-stale { background: rgba(234, 179, 8, 0.2); color: #eab308; }
-.health-unknown { background: var(--code-bg); color: var(--text); }
+.health-healthy {
+  background: color-mix(in srgb, var(--incoming) 15%, transparent);
+  color: var(--incoming);
+}
+.health-degraded {
+  background: color-mix(in srgb, var(--error) 15%, transparent);
+  color: var(--error);
+}
+.health-stale {
+  background: color-mix(in srgb, var(--warn) 20%, transparent);
+  color: var(--warn);
+}
+.health-unknown {
+  background: var(--code-bg);
+  color: var(--text);
+}
 
 .status-field {
   display: flex;
@@ -60,8 +72,8 @@
   padding: 10px 12px;
   margin-top: 4px;
   border-radius: 8px;
-  border: 1px solid rgba(59, 130, 246, 0.4);
-  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid color-mix(in srgb, var(--projected) 40%, transparent);
+  background: color-mix(in srgb, var(--projected) 12%, transparent);
 }
 .pick-clock-band.held {
   border-color: var(--border);
@@ -132,7 +144,7 @@
   color: var(--accent);
 }
 .team-position-grid .gap-cell {
-  background: rgba(234, 179, 8, 0.14);
+  background: color-mix(in srgb, var(--warn) 14%, transparent);
   color: var(--warn);
   font-weight: 700;
 }
@@ -165,7 +177,7 @@
   color: var(--accent);
 }
 .roster-deficits-grid .gap-cell {
-  background: rgba(234, 179, 8, 0.14);
+  background: color-mix(in srgb, var(--warn) 14%, transparent);
   color: var(--warn);
   font-weight: 700;
 }
@@ -291,8 +303,8 @@
   margin: 0 0 12px;
   padding: 8px 10px;
   border-radius: 6px;
-  background: rgba(239, 68, 68, 0.12);
-  color: #ef4444;
+  background: color-mix(in srgb, var(--error) 12%, transparent);
+  color: var(--error);
   font-size: 13px;
 }
 
@@ -300,9 +312,9 @@
   margin: 0 0 12px;
   padding: 8px 10px;
   border-radius: 6px;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  color: #ef4444;
+  background: color-mix(in srgb, var(--error) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--error) 40%, transparent);
+  color: var(--error);
   font-weight: 600;
 }
 
@@ -395,14 +407,14 @@
   margin: 12px 0 0;
   padding: 8px 10px;
   border-radius: 6px;
-  background: rgba(239, 68, 68, 0.12);
-  color: #ef4444;
+  background: color-mix(in srgb, var(--error) 12%, transparent);
+  color: var(--error);
   font-size: 13px;
 }
 .diagnostics-recent-errors {
   margin-top: 12px;
   padding: 10px;
-  border: 1px solid rgba(239, 68, 68, 0.35);
+  border: 1px solid color-mix(in srgb, var(--error) 35%, transparent);
   border-radius: 6px;
 }
 .diagnostics-recent-errors h3 {
@@ -417,7 +429,7 @@
 .diagnostics-recent-errors li {
   font-size: 12px;
   line-height: 1.4;
-  color: #ef4444;
+  color: var(--error);
   overflow-wrap: anywhere;
 }
 .diagnostics-log {
@@ -438,10 +450,18 @@
   font-weight: 700;
   text-transform: uppercase;
 }
-.diagnostics-info .diagnostics-level { color: var(--accent); }
-.diagnostics-warn .diagnostics-level { color: #eab308; }
-.diagnostics-error .diagnostics-level { color: #ef4444; }
-.diagnostics-message { overflow-wrap: anywhere; }
+.diagnostics-info .diagnostics-level {
+  color: var(--accent);
+}
+.diagnostics-warn .diagnostics-level {
+  color: var(--warn);
+}
+.diagnostics-error .diagnostics-level {
+  color: var(--error);
+}
+.diagnostics-message {
+  overflow-wrap: anywhere;
+}
 .diagnostics-entry pre {
   grid-column: 1 / -1;
   margin: 4px 0 0;
@@ -530,14 +550,14 @@
   font-weight: 600;
 }
 .auto-publish-kill-switch-off .auto-publish-toggle {
-  color: #ef4444;
+  color: var(--error);
 }
 .circuit-breaker-notice {
   border-radius: 10px;
   padding: 6px 10px;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.4);
-  color: #ef4444;
+  background: color-mix(in srgb, var(--error) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--error) 40%, transparent);
+  color: var(--error);
 }
 .button-row { display: flex; gap: 8px; margin-bottom: 12px; }
 
@@ -583,8 +603,8 @@
   font-weight: 700;
   padding: 1px 6px;
   border-radius: 999px;
-  background: rgba(234, 179, 8, 0.2);
-  color: #eab308;
+  background: color-mix(in srgb, var(--warn) 20%, transparent);
+  color: var(--warn);
 }
 .player-picker-results li:hover { background: var(--code-bg); }
 .player-picker-empty {
@@ -617,26 +637,48 @@
   font-weight: 600;
 }
 .status-message.toast-success {
-  color: #22c55e;
-  background: rgba(34, 197, 94, 0.12);
-  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: var(--incoming);
+  background: color-mix(in srgb, var(--incoming) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--incoming) 40%, transparent);
 }
 .status-message.toast-error {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.12);
-  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: var(--error);
+  background: color-mix(in srgb, var(--error) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--error) 40%, transparent);
 }
 
-.subtitle { color: var(--text); opacity: 0.8; margin: 4px 0 12px; }
-.news-list { list-style: none; margin: 0; padding: 0; }
-.news-list li { padding: 8px 0; border-bottom: 1px solid var(--border); }
-.news-source { font-size: 12px; font-weight: 700; color: var(--accent); }
-.muted { opacity: 0.6; font-size: 14px; }
-.error { color: #ef4444; }
+.subtitle {
+  color: var(--text);
+  opacity: 0.8;
+  margin: 4px 0 12px;
+}
+.news-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.news-list li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.news-source {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.muted {
+  opacity: 0.6;
+  font-size: 14px;
+}
+.error {
+  color: var(--error);
+}
 /* Amber, not red: a failed preflight is a degraded-but-recoverable state the user can act on,
    which shouldn't read as loudly as a hard error. --warn is theme-aware because a single amber
-   cannot clear WCAG AA against both #fff and #16171d. */
-.warning { color: var(--warn); }
+   cannot clear WCAG AA against both var(--text-h) and var(--bg). */
+.warning {
+  color: var(--warn);
+}
 
 .app-nav {
   display: flex;
@@ -699,12 +741,12 @@
   gap: 12px;
 }
 .banner-info {
-  background: rgba(59, 130, 246, 0.12);
-  border-color: rgba(59, 130, 246, 0.4);
+  background: color-mix(in srgb, var(--projected) 12%, transparent);
+  border-color: color-mix(in srgb, var(--projected) 40%, transparent);
 }
 .banner-warning {
-  background: rgba(234, 179, 8, 0.14);
-  border-color: rgba(234, 179, 8, 0.45);
+  background: color-mix(in srgb, var(--warn) 14%, transparent);
+  border-color: color-mix(in srgb, var(--warn) 45%, transparent);
 }
 .banner button {
   white-space: nowrap;
@@ -899,4 +941,227 @@
   font-weight: 700;
   cursor: help;
   vertical-align: middle;
+}
+
+/* Shared product surfaces; colors are supplied by src/theme.ts. */
+.side-navigation {
+  padding: 20px 14px;
+  overflow-y: auto;
+}
+.side-navigation section {
+  margin-bottom: 20px;
+}
+.side-navigation a {
+  display: block;
+  padding: 10px 12px;
+  margin-top: 4px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text);
+}
+.side-navigation a:hover {
+  background: var(--raised);
+  color: var(--text-h);
+}
+.side-navigation a[aria-current] {
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-weight: 700;
+}
+.mobile-menu {
+  display: none;
+}
+.dashboard {
+  max-width: 1500px;
+  padding-top: 24px;
+}
+.dashboard > section,
+.matchup-team-card,
+.scoreboard-matchup-card {
+  background: var(--surface);
+}
+.dashboard table {
+  font-variant-numeric: tabular-nums;
+}
+.dashboard th {
+  color: var(--text);
+  font-size: 12px;
+  white-space: nowrap;
+  background: var(--raised);
+}
+.dashboard td {
+  color: var(--text-h);
+}
+.dashboard section,
+.dashboard-main,
+.dashboard-side,
+.matchup-columns > *,
+.lineup-editor-columns > * {
+  min-width: 0;
+}
+.vorp-browser-panel,
+.roster-deficits-grid,
+.team-position-grid,
+.matchup-team-card,
+.backtest-results-panel {
+  overflow-x: auto;
+}
+.score-pair {
+  display: flex;
+  gap: 12px;
+}
+.score-value {
+  display: inline-flex;
+  flex-direction: column;
+  min-width: 55px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.score-value small {
+  font-size: 10px;
+  font-weight: 500;
+}
+.score-value strong {
+  font-size: 16px;
+}
+.score-value.actual {
+  color: var(--text-h);
+}
+.score-value.projected {
+  color: var(--projected);
+  background: color-mix(in srgb, var(--projected) 8%, transparent);
+  padding: 2px 6px;
+  border-radius: 5px;
+}
+.move-sides {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.move-side {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+.move-side.incoming {
+  border-top: 3px solid var(--incoming);
+}
+.move-side.outgoing {
+  border-top: 3px solid var(--outgoing);
+}
+.move-side h3 {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+.move-side.incoming h3 {
+  color: var(--incoming);
+}
+.move-side.outgoing h3 {
+  color: var(--outgoing);
+}
+.waiver-recommendation-row {
+  display: block;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.waiver-recommendation-players {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.activity-item {
+  display: block;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-h);
+  text-decoration: none;
+  background: var(--surface);
+}
+.activity-item:hover {
+  border-color: var(--accent);
+}
+.timeline-event {
+  padding: 12px 16px;
+  border-left: 2px solid var(--accent-border);
+}
+.payload {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 400px;
+  overflow: auto;
+  background: var(--bg);
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+@media (max-width: 899px) {
+  .mobile-menu {
+    display: block;
+  }
+  .dashboard {
+    padding: 16px 12px 32px;
+  }
+  .move-sides,
+  .waiver-recommendation-players {
+    grid-template-columns: 1fr;
+  }
+  .dashboard h1 {
+    font-size: 28px;
+  }
+  .lineup-slot {
+    flex-wrap: wrap;
+  }
+}
+.waiver-recommendation-list {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0;
+}
+.waiver-recommendation-panel {
+  padding: 16px;
+  border-radius: 12px;
+}
+.secondary-panel {
+  margin-top: 24px;
+}
+.secondary-panel summary {
+  padding: 12px 0;
+  color: var(--text);
+  cursor: pointer;
+}
+@media (max-width: 899px) {
+  .waiver-recommendation-panel {
+    padding: 12px;
+  }
+  .waiver-recommendation-row {
+    padding: 10px;
+  }
+}
+.matchup-player-cards {
+  display: none;
+}
+.matchup-mobile-player {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+}
+@media (max-width: 899px) {
+  .desktop-matchup-table {
+    display: none;
+  }
+  .matchup-player-cards {
+    display: block;
+  }
 }

@@ -1,3 +1,4 @@
+import { setQueryScope } from '../api/queryClient'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ApiError, getDraftConfig, setDraftConfig } from '../api/client'
 import type { DraftConfig } from '../api/types'
@@ -11,6 +12,7 @@ export function DraftConfigProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   const setConfig = useCallback((next: DraftConfig) => {
+    setQueryScope(`${next.league_id}:${next.team_id}:${next.season}`)
     saveStoredConfig(next)
     setConfigState(next)
   }, [])

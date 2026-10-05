@@ -1,3 +1,4 @@
+import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useEffect, useState } from 'react'
 import { Alert, Group, Select, Skeleton, Table, Text } from '@mantine/core'
 import { getVorpStats } from '../api/client'
@@ -54,7 +55,9 @@ interface Props {
 }
 
 export function VorpBrowserPanel({ season }: Props) {
-  const [week, setWeek] = useState('All weeks')
+  const [selected, setSelected] = useSelectedWeek()
+  const [allWeeks, setAllWeeks] = useState(false)
+  const week = allWeeks ? 'All weeks' : String(selected)
   const [position, setPosition] = useState('All')
   const [sort, setSort] = useState<SortValue>('vorp')
   const [weekRows, setWeekRows] = useState<VorpStat[] | null>(null)
@@ -66,6 +69,7 @@ export function VorpBrowserPanel({ season }: Props) {
   const selectedWeek = week === 'All weeks' ? undefined : Number(week)
 
   useEffect(() => {
+    if (!allWeeks && !selected) return
     let cancelled = false
     setLoading(true)
     setError(null)
@@ -98,8 +102,10 @@ export function VorpBrowserPanel({ season }: Props) {
       })
     }
 
-    return () => { cancelled = true }
-  }, [season, selectedWeek, positionFilter, sort])
+    return () => {
+      cancelled = true
+    }
+  }, [season, selectedWeek, positionFilter, sort, allWeeks, selected])
 
   const weekEmpty = selectedWeek !== undefined && weekRows?.length === 0
   const seasonEmpty = selectedWeek === undefined && seasonRows?.length === 0
@@ -107,8 +113,23 @@ export function VorpBrowserPanel({ season }: Props) {
   return (
     <section className="vorp-browser-panel" aria-label="Season VORP browser">
       <Group gap="md" mb="md">
-        <Select label="Week" data={WEEK_OPTIONS} value={week} onChange={(value) => setWeek(value ?? 'All weeks')} w={140} />
-        <Select label="Position" data={POSITION_OPTIONS} value={position} onChange={(value) => setPosition(value ?? 'All')} w={140} />
+        <Select
+          label="Week"
+          data={WEEK_OPTIONS}
+          value={week}
+          onChange={(value) => {
+            setAllWeeks(value === 'All weeks')
+            if (value !== 'All weeks' && value) setSelected(Number(value))
+          }}
+          w={140}
+        />
+        <Select
+          label="Position"
+          data={POSITION_OPTIONS}
+          value={position}
+          onChange={(value) => setPosition(value ?? 'All')}
+          w={140}
+        />
         {selectedWeek !== undefined && (
           <Select
             label="Sort by"

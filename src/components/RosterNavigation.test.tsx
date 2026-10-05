@@ -5,7 +5,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { LineupPage } from './LineupPage'
 import { WaiverPage } from './WaiverPage'
 import { TradePage } from './TradePage'
-import { getLineupRoster, triggerLineupSwap } from '../api/client'
+import { getCurrentWeek, getLineupRoster, triggerLineupSwap } from '../api/client'
 import { CONFIG_STORAGE_KEY } from '../hooks/useDraftConfig'
 import type { LineupPlayerLine, LineupRosterResponse } from '../api/types'
 
@@ -32,11 +32,15 @@ const roster: LineupRosterResponse = {
   starters: [{ ...player('Starter', 'RB'), suggested_swap: { bench_for: 'Starter', add_player_id: 'Backup' } }],
   bench: [player('Backup', 'BE')],
 }
-const key = 'fantasy.lineup-draft:123:8:2026'
+const key = 'fantasy.lineup-draft:123:8:2026:5'
 beforeEach(() => {
-  localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({ league_id: '123', team_id: '8', season: 2026, mode: 'live' }))
+  localStorage.setItem(
+    CONFIG_STORAGE_KEY,
+    JSON.stringify({ league_id: '123', team_id: '8', season: 2026, mode: 'live' }),
+  )
+  vi.mocked(getCurrentWeek).mockResolvedValue({week: 5})
   vi.mocked(getLineupRoster).mockResolvedValue(roster)
-  vi.mocked(triggerLineupSwap).mockResolvedValue({} as never)
+  vi.mocked(triggerLineupSwap).mockResolvedValue({ tracking_id: 'lineup-123' })
 })
 afterEach(() => { cleanup(); vi.clearAllMocks(); localStorage.clear(); sessionStorage.clear() })
 function start(url = '/lineup?week=7') {
@@ -47,19 +51,20 @@ function start(url = '/lineup?week=7') {
   </Routes></MemoryRouter></MantineProvider>)
 }
 
-it('carries the selected week through waivers and trades and restores staged swaps', async () => {
-  start()
+it('keeps drafts week-scoped and prevents submitting a planning week', async () => {
+  start('/lineup?week=5')
   fireEvent.click(await screen.findByRole('button', { name: 'Apply hint' }))
   fireEvent.click(screen.getByRole('button', { name: 'Next week' }))
-  expect(screen.getByRole('link', { name: 'Find waiver upgrades' }).getAttribute('href')).toBe('/waivers?week=8')
+  await waitFor(() => expect(screen.queryByText('Starter → bench, Backup → RB')).toBeNull())
   fireEvent.click(screen.getByRole('link', { name: 'Find waiver upgrades' }))
-  fireEvent.click(await screen.findByRole('link', { name: 'Evaluate trade' }))
-  expect((screen.getByRole('textbox', { name: 'Week' }) as HTMLInputElement).value).toBe('8')
-  fireEvent.click(screen.getByRole('link', { name: 'Back to lineup · Week 8' }))
+  fireEvent.click(await screen.findByRole('link', { name: 'Back to lineup · Week 6' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Apply hint' }))
+  expect((screen.getByRole('button', {name: 'Submit lineup changes'}) as HTMLButtonElement).disabled).toBe(true)
+  fireEvent.click(screen.getByRole('button', {name: 'Previous week'}))
   expect(await screen.findByText('Starter → bench, Backup → RB')).toBeTruthy()
-  expect(triggerLineupSwap).not.toHaveBeenCalled()
-  fireEvent.click(screen.getByRole('button', { name: 'Submit lineup changes' }))
-  await waitFor(() => expect(triggerLineupSwap).toHaveBeenCalledWith('8', [{ drop_player_id: 'espn-Starter', add_player_id: 'espn-Backup', slot: 'RB' }]))
+  await waitFor(() => expect((screen.getByRole('button', {name: 'Submit lineup changes'}) as HTMLButtonElement).disabled).toBe(false))
+  fireEvent.click(screen.getByRole('button', {name: 'Submit lineup changes'}))
+  await waitFor(() => expect(triggerLineupSwap).toHaveBeenCalledWith('8', [{drop_player_id:'espn-Starter',add_player_id:'espn-Backup',slot:'RB'}], expect.any(String)))
   await waitFor(() => expect(sessionStorage.getItem(key)).toBe('[]'))
 })
 
@@ -93,17 +98,29 @@ it('removing a staged swap persists across navigation', async () => {
 it('omits invalid week context from trade links and follows edits', () => {
   start('/trades?week=invalid')
   expect(screen.getByRole('link', { name: 'Back to lineup' }).getAttribute('href')).toBe('/lineup')
-  fireEvent.change(screen.getByRole('textbox', { name: 'Week' }), { target: { value: '9' } })
-  expect(screen.getByRole('link', { name: 'Find waiver upgrades' }).getAttribute('href')).toBe('/waivers?week=9')
+  fireEvent.change(screen.getByRole('combobox', { name: 'Week' }), { target: { value: '9' } })
+  expect(screen.getByRole('link', { name: 'Find waiver upgrades' }).getAttribute('href')).toBe(
+    '/waivers?week=9',
+  )
 })
 
-it('keeps the staged draft after a failed submission', async () => {
+it('retains the idempotency key when retrying an uncertain submission', async () => {
   vi.mocked(triggerLineupSwap).mockRejectedValueOnce(new Error('Queue unavailable'))
-  start()
+  start('/lineup?week=5')
   fireEvent.click(await screen.findByRole('button', { name: 'Apply hint' }))
   fireEvent.click(screen.getByRole('button', { name: 'Submit lineup changes' }))
   await screen.findByText(/Failed to submit lineup swaps/)
-  fireEvent.click(screen.getByRole('link', { name: 'Find waiver upgrades' }))
-  fireEvent.click(await screen.findByRole('link', { name: 'Back to lineup · Week 7' }))
-  expect(await screen.findByText('Starter → bench, Backup → RB')).toBeTruthy()
+  expect(screen.getByText('Starter → bench, Backup → RB')).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: 'Submit lineup changes' }))
+  await waitFor(() => expect(triggerLineupSwap).toHaveBeenCalledTimes(2))
+  expect(vi.mocked(triggerLineupSwap).mock.calls[0][2]).toBe(vi.mocked(triggerLineupSwap).mock.calls[1][2])
+})
+
+it('rejects a submission if the live week rolled over after staging', async () => {
+  start('/lineup?week=5')
+  fireEvent.click(await screen.findByRole('button', {name: 'Apply hint'}))
+  vi.mocked(getCurrentWeek).mockResolvedValue({week: 6})
+  fireEvent.click(screen.getByRole('button', {name: 'Submit lineup changes'}))
+  await screen.findByText(/Lineup changes can only be submitted for the current week/)
+  expect(triggerLineupSwap).not.toHaveBeenCalled()
 })

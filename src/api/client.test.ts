@@ -27,7 +27,12 @@ describe('triggerWaiverClaim', () => {
     expect(path).toBe('/v1/trigger/waiver')
     expect(init.method).toBe('POST')
     expect(JSON.parse(init.body)).toEqual({
-      team_id: '7', player_id: '4046', name: 'Some Back', team: 'KC', drop_player_id: '9999',
+      idempotency_key: expect.any(String),
+      team_id: '7',
+      player_id: '4046',
+      name: 'Some Back',
+      team: 'KC',
+      drop_player_id: '9999',
     })
     expect(init.headers).toEqual({ 'Content-Type': 'application/json' })
   })
@@ -39,7 +44,11 @@ describe('triggerWaiverClaim', () => {
     await triggerWaiverClaim(config, add)
 
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
-      team_id: '7', player_id: '4046', name: 'Some Back', team: 'KC',
+      idempotency_key: expect.any(String),
+      team_id: '7',
+      player_id: '4046',
+      name: 'Some Back',
+      team: 'KC',
     })
   })
 

@@ -1,106 +1,85 @@
-import { useState } from 'react'
-import { Badge, Button, Modal, Stack, Text } from '@mantine/core'
-import { triggerWaiverClaim } from '../api/client'
+import { Badge, Button, Group, Stack, Text } from '@mantine/core'
+import { Link } from 'react-router-dom'
 import { InjuryBadge } from './InjuryBadge'
-import { RumorBadge } from './RumorBadge'
-import { useToast } from '../hooks/useToast'
-import type { DraftConfig, WaiverPlayerSummary, WaiverRecommendation } from '../api/types'
-
+import { useSelectedWeek } from '../hooks/useSelectedWeek'
+import type { DraftConfig, WaiverRecommendation } from '../api/types'
 interface Props {
   recommendations: WaiverRecommendation[]
   config: DraftConfig
 }
-
-interface PendingClaim {
-  key: string
-  position: string
-  addPlayer: WaiverPlayerSummary
-  dropPlayer: WaiverPlayerSummary
-}
-
-export function WaiverRecommendationPanel({ recommendations, config }: Props) {
-  const [pendingClaim, setPendingClaim] = useState<PendingClaim | null>(null)
-  const [submittingKey, setSubmittingKey] = useState<string | null>(null)
-  const { toast, showToast } = useToast()
-
-  async function handleConfirm() {
-    if (!pendingClaim) return
-    const claim = pendingClaim
-    setSubmittingKey(claim.key)
-    setPendingClaim(null)
-    try {
-      const result = await triggerWaiverClaim(config, claim.addPlayer, claim.dropPlayer)
-      showToast('success', `Claim queued for ${claim.addPlayer.name}. Tracking ID: ${result.tracking_id}.`)
-    } catch (err) {
-      showToast('error', `Claim failed: ${err instanceof Error ? err.message : String(err)}`)
-    } finally {
-      setSubmittingKey(null)
-    }
-  }
-
+export function WaiverRecommendationPanel({ recommendations }: Props) {
+  const [week] = useSelectedWeek()
   return (
     <section className="waiver-recommendation-panel">
-      <h3>Waiver pickups</h3>
-      {recommendations.length === 0 ? (
-        <Text c="dimmed" size="sm">No waiver upgrades this week.</Text>
+      <h3>Waiver upgrades</h3>
+      <Text size="sm" c="dimmed" mb="md">
+        Compare who joins your roster and who leaves before submitting a claim.
+      </Text>
+      {!recommendations.length ? (
+        <Text c="dimmed" size="sm">
+          No waiver upgrades this week.
+        </Text>
       ) : (
         <ul className="waiver-recommendation-list">
-          {recommendations.map(({ position, vorp_delta, free_agent, bench_player, rumor_sentiment, rumor_confidence, rumor_suggested_action }) => {
-            const key = `${position}-${free_agent.espn_id ?? free_agent.name}`
-            const canClaim = Boolean(free_agent.espn_id && free_agent.pro_team && bench_player.espn_id)
+          {recommendations.map((r) => {
+            const params = new URLSearchParams({
+              kind: 'waiver',
+              week: String(week),
+              add: r.free_agent.espn_id ?? '',
+              drop: r.bench_player.espn_id ?? '',
+            })
+            const canReview = Boolean(r.free_agent.espn_id && r.bench_player.espn_id)
             return (
-              <li key={key} className="waiver-recommendation-row">
-                <span className="waiver-recommendation-players">
-                  <span>
-                    {free_agent.name} ({position})
-                    <InjuryBadge status={free_agent.injury_status} />
-                    <RumorBadge
-                      sentiment={rumor_sentiment}
-                      confidence={rumor_confidence}
-                      suggestedAction={rumor_suggested_action}
-                    />
-                  </span>
-                  <span aria-hidden="true"> → </span>
-                  <span>
-                    {bench_player.name}
-                    <InjuryBadge status={bench_player.injury_status} />
-                  </span>
-                </span>
-                <Badge color={vorp_delta > 0 ? 'green' : 'gray'} size="sm">
-                  VORP {vorp_delta >= 0 ? '+' : ''}{vorp_delta.toFixed(1)}
-                </Badge>
-                <Button
-                  size="xs"
-                  disabled={!canClaim}
-                  loading={submittingKey === key}
-                  onClick={() =>
-                    setPendingClaim({
-                      key,
-                      position,
-                      addPlayer: free_agent,
-                      dropPlayer: bench_player,
-                    })
-                  }
-                >
-                  Submit ESPN claim
-                </Button>
+              <li
+                className="waiver-recommendation-row"
+                key={`${r.position}-${r.free_agent.espn_id ?? r.free_agent.name}`}
+              >
+                <div className="move-sides">
+                  <div className="move-side incoming">
+                    <h3>Add to your roster</h3>
+                    <Text fw={700}>{r.free_agent.name}</Text>
+                    <Text size="sm">
+                      {r.position} · {r.free_agent.pro_team}
+                    </Text>
+                    <InjuryBadge status={r.free_agent.injury_status} />
+                  </div>
+                  <div className="move-side outgoing">
+                    <h3>Drop from your roster</h3>
+                    <Text fw={700}>{r.bench_player.name}</Text>
+                    <Text size="sm">
+                      {r.position} · {r.bench_player.pro_team}
+                    </Text>
+                    <InjuryBadge status={r.bench_player.injury_status} />
+                  </div>
+                </div>
+                <Group justify="space-between" mt="md">
+                  <Stack gap={2}>
+                    <Badge color="teal">
+                      Value over replacement {r.vorp_delta >= 0 ? '+' : ''}
+                      {r.vorp_delta.toFixed(1)}
+                    </Badge>
+                    <Text size="xs" c="dimmed">
+                      VORP compares player value; it is not your projected lineup score gain.
+                    </Text>
+                  </Stack>
+                  <Button
+                    component={Link}
+                    to={canReview ? `/moves/review?${params}` : '#'}
+                    disabled={!canReview}
+                  >
+                    Review move
+                  </Button>
+                </Group>
+                {!canReview && (
+                  <Text size="xs" c="dimmed">
+                    An ESPN player identity is missing. Review this move in ESPN.
+                  </Text>
+                )}
               </li>
             )
           })}
         </ul>
       )}
-      <Modal opened={pendingClaim !== null} onClose={() => setPendingClaim(null)} title="Confirm waiver claim">
-        {pendingClaim && (
-          <Stack gap="md">
-            <Text size="sm">
-              Add <strong>{pendingClaim.addPlayer.name}</strong> ({pendingClaim.position}), drop{' '}
-              <strong>{pendingClaim.dropPlayer.name}</strong>. This submits a real ESPN waiver claim.
-            </Text>
-            <Button onClick={handleConfirm}>Confirm claim</Button>
-          </Stack>
-        )}
-      </Modal>
-      {toast && <p className={`status-message toast toast-${toast.tone}`}>{toast.message}</p>}
     </section>
   )
 }

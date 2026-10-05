@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Alert, Button, Group, Stack, Text } from '@mantine/core'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { getMatchup, getRosterDeficits } from '../api/client'
-import { useCurrentWeek } from '../hooks/useCurrentWeek'
+import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { LineupEditor } from './LineupEditor'
 import { RosterDeficitsGrid } from './RosterDeficitsGrid'
@@ -13,24 +13,14 @@ export function LineupPage() {
   const { config, loading: configLoading } = useDraftConfig()
   const isConfigured = Boolean(config.league_id && config.team_id)
 
-  const [searchParams] = useSearchParams()
-  const weekFromUrl = Number(searchParams.get('week'))
-  // number | string: '' is the "not yet resolved" state before either the URL param or
-  // useCurrentWeek() seeds a real value.
-  const [week, setWeek] = useState<number | string>(
-    Number.isFinite(weekFromUrl) && weekFromUrl > 0 ? weekFromUrl : '',
-  )
+  const [week, setWeek] = useSelectedWeek()
   const [deficits, setDeficits] = useState<RosterDeficitsResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [matchup, setMatchup] = useState<MatchupResponse | null>(null)
-  const currentWeek = useCurrentWeek()
 
   // Seed the field once the current week resolves, but only while it's still untouched -
   // never overwrite a week the user already typed or arrived with via URL.
-  useEffect(() => {
-    if (currentWeek !== null && week === '') setWeek(currentWeek)
-  }, [currentWeek])
 
   const weekValue = Number(week)
   const validWeek = Number.isFinite(weekValue) && weekValue > 0

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Alert, Button, Group, Stack, Text } from '@mantine/core'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { getScoreboard } from '../api/client'
-import { useCurrentWeek } from '../hooks/useCurrentWeek'
+import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { WeekSelector } from './WeekSelector'
 import type { ScoreboardMatchup, ScoreboardTeamInfo } from '../api/types'
@@ -40,19 +40,10 @@ export function ScoreboardPage() {
   const { config, loading: configLoading } = useDraftConfig()
   const isConfigured = Boolean(config.league_id && config.team_id)
 
-  const [searchParams] = useSearchParams()
-  const weekFromUrl = Number(searchParams.get('week'))
-  const [week, setWeek] = useState<number | string>(
-    Number.isFinite(weekFromUrl) && weekFromUrl > 0 ? weekFromUrl : '',
-  )
+  const [week, setWeek] = useSelectedWeek()
   const [matchups, setMatchups] = useState<ScoreboardMatchup[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const currentWeek = useCurrentWeek()
-
-  useEffect(() => {
-    if (currentWeek !== null && week === '') setWeek(currentWeek)
-  }, [currentWeek])
 
   const weekValue = Number(week)
   const validWeek = Number.isFinite(weekValue) && weekValue > 0

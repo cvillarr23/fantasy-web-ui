@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Alert, Button, Group, Skeleton, Stack, Text, Textarea } from '@mantine/core'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { ApiError, isNoProviderError, queryChat } from '../api/client'
-import { useCurrentWeek } from '../hooks/useCurrentWeek'
+import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { WeekSelector } from './WeekSelector'
 import type { ChatQueryResponse } from '../api/types'
@@ -11,13 +11,11 @@ export function ChatPage() {
   const { config, loading: configLoading } = useDraftConfig()
   const isConfigured = Boolean(config.league_id && config.team_id)
 
-  const [week, setWeek] = useState<number | string>('')
-  const currentWeek = useCurrentWeek()
+  const [params, setParams] = useSearchParams()
+  const sessionId = params.get('session') ?? undefined
+  const [week, setWeek] = useSelectedWeek()
   // Seed the field once the current week resolves, but only while it's still untouched -
   // never overwrite a week the user already picked.
-  useEffect(() => {
-    if (currentWeek !== null && week === '') setWeek(currentWeek)
-  }, [currentWeek])
   const weekValue = Number(week)
   const validWeek = Number.isFinite(weekValue) && weekValue > 0
 
@@ -52,8 +50,14 @@ export function ChatPage() {
     setNoProvider(false)
     setResponse(null)
     try {
-      const result = await queryChat(asked, config.season, weekValue, config.team_id)
+      const result = await queryChat(asked, config.season, weekValue, config.team_id, sessionId)
       setResponse(result)
+      if (result.session_id)
+        setParams((p) => {
+          const next = new URLSearchParams(p)
+          next.set('session', result.session_id!)
+          return next
+        })
       setAskedQuestion(asked)
       setQuestion('')
     } catch (err) {
@@ -71,9 +75,14 @@ export function ChatPage() {
           <WeekSelector week={week} onChange={setWeek} />
         </Group>
         <Text size="sm" c="dimmed">
-          Ask a question about your roster or matchup. Each question is answered independently
-          — there's no follow-up memory between questions yet.
+          Ask about your roster or matchup. Conversations are saved; follow-ups use refreshed league
+          context.
         </Text>
+        {sessionId && (
+          <Button component={Link} to={`/activity/sessions/${sessionId}`} variant="subtle">
+            View saved conversation
+          </Button>
+        )}
         <Textarea
           placeholder="e.g. Who are my weakest starters this week?"
           value={question}

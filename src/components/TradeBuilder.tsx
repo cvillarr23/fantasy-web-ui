@@ -1,6 +1,8 @@
+import { Link } from 'react-router-dom'
+import { WeekSelector } from './WeekSelector'
+import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useState } from 'react'
-import { Alert, Button, Group, NumberInput, Text } from '@mantine/core'
-import { useSearchParams } from 'react-router-dom'
+import { Alert, Button, Group, Text } from '@mantine/core'
 import { RosterQuickActions } from './RosterQuickActions'
 import { evaluateTrade } from '../api/client'
 import { PlayerCard } from './PlayerCard'
@@ -55,11 +57,7 @@ export function TradeBuilder({ config }: Props) {
   const [outgoing, setOutgoing] = useState<PlayerSearchResult[]>([])
   // number | string, same reasoning as LineupPage's week field - NumberInput passes
   // intermediate values that aren't a valid week yet.
-  const [searchParams] = useSearchParams()
-  const initialWeek = Number(searchParams.get('week'))
-  const [week, setWeek] = useState<number | string>(
-    Number.isInteger(initialWeek) && initialWeek > 0 ? initialWeek : '',
-  )
+  const [week, setWeek] = useSelectedWeek()
   const [result, setResult] = useState<TradeEvaluationResponse | null>(null)
   const [busy, setBusy] = useState(false)
   const { toast, showToast } = useToast()
@@ -99,22 +97,41 @@ export function TradeBuilder({ config }: Props) {
         <h2>Evaluate a trade</h2>
         <RosterQuickActions page="trades" week={week} />
       </Group>
-      <NumberInput
-        label="Week"
-        placeholder="e.g. 3"
-        value={week}
-        onChange={setWeek}
-        allowDecimal={false}
-        maw={160}
-        mb="md"
-      />
+      <WeekSelector week={week} onChange={setWeek} />
 
       <div className="trade-columns">
-        <TradeSideColumn side={{ label: 'Receiving', players: incoming, add: addTo(setIncoming), remove: removeFrom(setIncoming) }} />
-        <TradeSideColumn side={{ label: 'Sending', players: outgoing, add: addTo(setOutgoing), remove: removeFrom(setOutgoing) }} />
+        <TradeSideColumn
+          side={{
+            label: 'You receive',
+            players: incoming,
+            add: addTo(setIncoming),
+            remove: removeFrom(setIncoming),
+          }}
+        />
+        <TradeSideColumn
+          side={{
+            label: 'You send',
+            players: outgoing,
+            add: addTo(setOutgoing),
+            remove: removeFrom(setOutgoing),
+          }}
+        />
       </div>
 
-      <Button onClick={submit} loading={busy} disabled={!canEvaluate}>Evaluate trade</Button>
+      <Group mt="md">
+        <Button onClick={submit} loading={busy} disabled={!canEvaluate}>
+          Compare VORP
+        </Button>
+        <Button
+          component={Link}
+          disabled={
+            !validWeek || !incoming.length || [...incoming, ...outgoing].some((p) => !p.espn_id)
+          }
+          to={`/moves/review?${new URLSearchParams([['kind', 'trade'], ['week', String(week)], ...incoming.map((p) => ['add', p.espn_id ?? '']), ...outgoing.map((p) => ['drop', p.espn_id ?? ''])])}`}
+        >
+          Review roster impact
+        </Button>
+      </Group>
 
       {result && (
         <div className="trade-result">

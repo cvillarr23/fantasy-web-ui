@@ -100,7 +100,11 @@ function mergeSignals(a: AbortSignal, b: AbortSignal): AbortSignal {
   return merged.signal
 }
 
-async function request<T>(path: string, init?: RequestInit, timeoutMs: number = DEFAULT_TIMEOUT_MS): Promise<T> {
+async function networkRequest<T>(
+  path: string,
+  init?: RequestInit,
+  timeoutMs: number = DEFAULT_TIMEOUT_MS,
+): Promise<T> {
   const timeoutController = new AbortController()
   // An explicit flag rather than reading signal.aborted in the catch: the timer can fire in the
   // window between some other failure rejecting and the catch running, which would misreport a
@@ -153,8 +157,21 @@ async function request<T>(path: string, init?: RequestInit, timeoutMs: number = 
   }
 }
 
-export function getDraftStatus(leagueId: string, season: number, limit = 10): Promise<DraftStatusResponse> {
-  const params = new URLSearchParams({ league_id: leagueId, season: String(season), limit: String(limit) })
+// Query hooks own read caching. Polls and explicit refreshes must reach the network.
+export function request<T>(path: string, init?: RequestInit, timeoutMs?: number): Promise<T> {
+  return networkRequest<T>(path, init, timeoutMs)
+}
+
+export function getDraftStatus(
+  leagueId: string,
+  season: number,
+  limit = 10,
+): Promise<DraftStatusResponse> {
+  const params = new URLSearchParams({
+    league_id: leagueId,
+    season: String(season),
+    limit: String(limit),
+  })
   return request(`/v1/draft/status?${params}`)
 }
 
@@ -325,13 +342,20 @@ export function getTeamNames(): Promise<Record<string, string>> {
 
 // Sourced from Team.roster (not box_scores()), so it works on a bye week - see
 // get_current_team_roster in matchup_service.py.
-export function getLineupRoster(season: number): Promise<LineupRosterResponse> {
+export function getLineupRoster(season: number, week?: number): Promise<LineupRosterResponse> {
   const params = new URLSearchParams({ season: String(season) })
+  if (week) params.set('week', String(week))
   return request(`/v1/matchup/roster?${params}`)
 }
 
-export function getCurrentWeek(): Promise<{ week: number }> {
-  return request('/v1/league/current-week')
+export function getCurrentWeek(season?: number): Promise<{
+  week: number
+  season?: number
+  max_week?: number
+  source?: string
+  updated_at?: string
+}> {
+  return request(`/v1/league/current-week${season ? `?season=${season}` : ''}`)
 }
 
 // Publishes to the lineup_updates queue (see fantasy-core-pipeline's /v1/trigger/lineup).
@@ -342,16 +366,24 @@ export function getCurrentWeek(): Promise<{ week: number }> {
 // here only means the queue accepted the message, not that ESPN's roster actually changed.
 // lineup_bot.js verifies its own writes and dumps failure context to disk on error, but none
 // of that is visible from this UI.
-export function triggerLineupSwap(teamId: string, swaps: LineupSwapInstruction[]): Promise<unknown> {
+export function triggerLineupSwap(
+  teamId: string,
+  swaps: LineupSwapInstruction[],
+  idempotencyKey: string = crypto.randomUUID(),
+): Promise<{ tracking_id: string }> {
   return request('/v1/trigger/lineup', {
     method: 'POST',
-    body: JSON.stringify({ team_id: teamId, optimized_swaps: swaps }),
+    body: JSON.stringify({
+      team_id: teamId,
+      optimized_swaps: swaps,
+      idempotency_key: idempotencyKey,
+    }),
   })
 }
 
 // Acceptance means the queue received the claim; it does not confirm an ESPN transaction.
 export interface WaiverClaimResponse {
-  status: 'accepted'
+  status: 'accepted' | 'duplicate'
   queue: string
   team_id: string
   tracking_id: string
@@ -361,6 +393,7 @@ export function triggerWaiverClaim(
   config: DraftConfig,
   addPlayer: WaiverPlayerSummary,
   dropPlayer?: WaiverPlayerSummary,
+  idempotencyKey?: string,
 ): Promise<WaiverClaimResponse> {
   if (!addPlayer.espn_id) throw new Error('Claimed player has no ESPN ID.')
   if (!addPlayer.pro_team) throw new Error('Claimed player has no NFL team.')
@@ -372,6 +405,7 @@ export function triggerWaiverClaim(
       player_id: addPlayer.espn_id,
       name: addPlayer.name,
       team: addPlayer.pro_team,
+      idempotency_key: idempotencyKey ?? crypto.randomUUID(),
       ...(dropPlayer ? { drop_player_id: dropPlayer.espn_id } : {}),
     }),
   })
@@ -427,10 +461,11 @@ export function queryChat(
   season: number,
   week: number,
   teamId: string,
+  sessionId?: string,
 ): Promise<ChatQueryResponse> {
   return request('/v1/chat/query', {
     method: 'POST',
-    body: JSON.stringify({ question, season, week, team_id: teamId }),
+    body: JSON.stringify({ question, season, week, team_id: teamId, session_id: sessionId }),
   })
 }
 

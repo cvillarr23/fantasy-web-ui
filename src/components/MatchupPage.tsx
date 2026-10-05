@@ -1,8 +1,9 @@
+import { ScoreValue } from './ScoreValue'
 import { useEffect, useState } from 'react'
 import { Alert, Button, Group, Stack, Table, Text } from '@mantine/core'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { ApiError, getMatchup } from '../api/client'
-import { useCurrentWeek } from '../hooks/useCurrentWeek'
+import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { DeficitBadge, SwapBadge } from './DeficitBadge'
 import { PlayerCard } from './PlayerCard'
@@ -27,8 +28,31 @@ function PlayerRow({ line }: { line: PlayerLine }) {
           <SwapBadge benchFor={line.suggested_swap?.bench_for} />
         </>
       }
-      stats={`${line.points.toFixed(1)} / ${line.projected_points.toFixed(1)}`}
+      stats={
+        <span className="score-pair">
+          <ScoreValue value={line.points} />
+          <ScoreValue value={line.projected_points} projected />
+        </span>
+      }
     />
+  )
+}
+
+function MobilePlayer({ line }: { line: PlayerLine }) {
+  return (
+    <div className="matchup-mobile-player">
+      <div>
+        <Text size="xs" c="dimmed">
+          {line.slot} · {line.position}
+        </Text>
+        <Text fw={600}>{line.name}</Text>
+        <DeficitBadge isDeficit={line.deficit_flag} />
+      </div>
+      <span className="score-pair">
+        <ScoreValue value={line.points} />
+        <ScoreValue value={line.projected_points} projected />
+      </span>
+    </div>
   )
 }
 
@@ -48,7 +72,12 @@ function TeamCard({ side, label }: { side: MatchupTeamSide; label: string }) {
           <div className="matchup-score-projected">proj {side.team.projected.toFixed(1)}</div>
         </div>
       </header>
-      <Table>
+      <div className="matchup-player-cards">
+        {side.starters.map((line) => (
+          <MobilePlayer key={line.player_id} line={line} />
+        ))}
+      </div>
+      <Table className="desktop-matchup-table">
         <Table.Thead>
           <Table.Tr>
             <Table.Th>Slot</Table.Th>
@@ -56,7 +85,7 @@ function TeamCard({ side, label }: { side: MatchupTeamSide; label: string }) {
             <Table.Th>Player</Table.Th>
             <Table.Th>Pos</Table.Th>
             <Table.Th>#</Table.Th>
-            <Table.Th>Pts / Proj</Table.Th>
+            <Table.Th>Fantasy points</Table.Th>
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
@@ -67,11 +96,20 @@ function TeamCard({ side, label }: { side: MatchupTeamSide; label: string }) {
         {benchOpen ? 'Hide' : 'Show'} bench ({side.bench.length})
       </Button>
       {benchOpen && (
-        <Table mt="xs">
-          <Table.Tbody>
-            {side.bench.map((line) => <PlayerRow key={line.player_id} line={line} />)}
-          </Table.Tbody>
-        </Table>
+        <>
+          <div className="matchup-player-cards">
+            {side.bench.map((line) => (
+              <MobilePlayer key={line.player_id} line={line} />
+            ))}
+          </div>
+          <Table mt="xs" className="desktop-matchup-table">
+            <Table.Tbody>
+              {side.bench.map((line) => (
+                <PlayerRow key={line.player_id} line={line} />
+              ))}
+            </Table.Tbody>
+          </Table>
+        </>
       )}
     </section>
   )
@@ -81,20 +119,11 @@ export function MatchupPage() {
   const { config, loading: configLoading } = useDraftConfig()
   const isConfigured = Boolean(config.league_id && config.team_id)
 
-  const [searchParams] = useSearchParams()
-  const weekFromUrl = Number(searchParams.get('week'))
-  const [week, setWeek] = useState<number | string>(
-    Number.isFinite(weekFromUrl) && weekFromUrl > 0 ? weekFromUrl : '',
-  )
+  const [week, setWeek] = useSelectedWeek()
   const [matchup, setMatchup] = useState<MatchupResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notFound, setNotFound] = useState(false)
-  const currentWeek = useCurrentWeek()
-
-  useEffect(() => {
-    if (currentWeek !== null && week === '') setWeek(currentWeek)
-  }, [currentWeek])
 
   const weekValue = Number(week)
   const validWeek = Number.isFinite(weekValue) && weekValue > 0
