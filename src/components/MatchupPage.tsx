@@ -89,9 +89,7 @@ function TeamCard({ side, label }: { side: MatchupTeamSide; label: string }) {
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          {side.starters.map((line) => (
-            <PlayerRow key={line.player_id} line={line} />
-          ))}
+          {side.starters.map((line) => <PlayerRow key={line.player_id} line={line} />)}
         </Table.Tbody>
       </Table>
       <Button variant="subtle" size="xs" mt="xs" onClick={() => setBenchOpen((open) => !open)}>
@@ -140,9 +138,7 @@ export function MatchupPage() {
     // new request is in flight, or if it fails with a non-404 error.
     setMatchup(null)
     getMatchup(config.season, weekValue)
-      .then((response) => {
-        if (!cancelled) setMatchup(response)
-      })
+      .then((response) => { if (!cancelled) setMatchup(response) })
       .catch((err) => {
         if (cancelled) return
         if (err instanceof ApiError && err.status === 404) {
@@ -151,12 +147,8 @@ export function MatchupPage() {
           setError(String(err))
         }
       })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [isConfigured, config.season, weekValue, validWeek])
 
   if (!isConfigured) {
@@ -167,9 +159,7 @@ export function MatchupPage() {
           <Text ta="center" maw={480}>
             No league configured yet. Set your league and team in Settings first.
           </Text>
-          <Button component={Link} to="/settings" variant="default">
-            Go to Settings
-          </Button>
+          <Button component={Link} to="/settings" variant="default">Go to Settings</Button>
         </Stack>
       </div>
     )
@@ -183,15 +173,9 @@ export function MatchupPage() {
           Edit lineup for this week
         </Button>
       </Group>
-      {error && (
-        <Alert color="red" mb="md">
-          {error}
-        </Alert>
-      )}
+      {error && <Alert color="red" mb="md">{error}</Alert>}
       {notFound && (
-        <Alert color="gray" mb="md">
-          No matchup found for this week (bye week, or the season hasn't reached it yet).
-        </Alert>
+        <Alert color="gray" mb="md">No matchup found for this week (bye week, or the season hasn't reached it yet).</Alert>
       )}
       {loading && <Text c="dimmed">Loading matchup…</Text>}
       {matchup && (

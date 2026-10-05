@@ -32,18 +32,10 @@ export function LineupPage() {
     setError(null)
     setDeficits(null)
     getRosterDeficits(config.season, weekValue)
-      .then((response) => {
-        if (!cancelled) setDeficits(response)
-      })
-      .catch((err) => {
-        if (!cancelled) setError(String(err))
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
+      .then((response) => { if (!cancelled) setDeficits(response) })
+      .catch((err) => { if (!cancelled) setError(String(err)) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [isConfigured, config.season, weekValue, validWeek])
 
   // Best-effort matchup context banner - omitted entirely on a bye week (404) rather than
@@ -53,15 +45,9 @@ export function LineupPage() {
     let cancelled = false
     setMatchup(null)
     getMatchup(config.season, weekValue)
-      .then((response) => {
-        if (!cancelled) setMatchup(response)
-      })
-      .catch(() => {
-        /* no opponent this week (bye) or matchup unavailable - banner just stays hidden */
-      })
-    return () => {
-      cancelled = true
-    }
+      .then((response) => { if (!cancelled) setMatchup(response) })
+      .catch(() => { /* no opponent this week (bye) or matchup unavailable - banner just stays hidden */ })
+    return () => { cancelled = true }
   }, [isConfigured, config.season, weekValue, validWeek])
 
   if (!isConfigured) {
@@ -72,9 +58,7 @@ export function LineupPage() {
           <Text ta="center" maw={480}>
             No league configured yet. Set your league and team in Settings first.
           </Text>
-          <Button component={Link} to="/settings" variant="default">
-            Go to Settings
-          </Button>
+          <Button component={Link} to="/settings" variant="default">Go to Settings</Button>
         </Stack>
       </div>
     )
@@ -90,19 +74,11 @@ export function LineupPage() {
           </Button>
         )}
       </Group>
-      {error && (
-        <Alert color="red" mb="md">
-          {error}
-        </Alert>
-      )}
+      {error && <Alert color="red" mb="md">{error}</Alert>}
       {(loading || deficits) && (
         <RosterDeficitsGrid deficits={deficits} myTeamId={config.team_id} loading={loading} />
       )}
-      <LineupEditor
-        key={`${config.league_id}:${config.team_id}:${config.season}`}
-        config={config}
-        week={week}
-      />
+      <LineupEditor key={`${config.league_id}:${config.team_id}:${config.season}`} config={config} week={week} />
     </div>
   )
 }

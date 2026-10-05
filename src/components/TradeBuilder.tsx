@@ -23,8 +23,7 @@ interface Side {
 
 function TradeSideColumn({ side }: { side: Side }) {
   const [picking, setPicking] = useState<PlayerSearchResult | null>(null)
-  const alreadyAdded =
-    picking !== null && side.players.some((p) => p.player_id === picking.player_id)
+  const alreadyAdded = picking !== null && side.players.some((p) => p.player_id === picking.player_id)
 
   function addPicked() {
     if (!picking || alreadyAdded) return
@@ -34,26 +33,17 @@ function TradeSideColumn({ side }: { side: Side }) {
 
   return (
     <div className="trade-side-column">
-      <Text size="sm" fw={500}>
-        {side.label}
-      </Text>
+      <Text size="sm" fw={500}>{side.label}</Text>
       <div className="trade-side-add-row">
         <PlayerPicker selected={picking} onSelect={setPicking} onClear={() => setPicking(null)} />
-        <Button size="xs" onClick={addPicked} disabled={!picking || alreadyAdded}>
-          Add
-        </Button>
+        <Button size="xs" onClick={addPicked} disabled={!picking || alreadyAdded}>Add</Button>
       </div>
       {side.players.length > 0 && (
         <ul className="trade-side-list">
           {side.players.map((p) => (
             <li key={p.player_id}>
-              <PlayerCard
-                variant="row"
-                player={{ id: p.player_id, name: p.name, position: p.position, team: p.team }}
-              />
-              <Button variant="subtle" size="xs" onClick={() => side.remove(p.player_id)}>
-                ✕
-              </Button>
+              <PlayerCard variant="row" player={{ id: p.player_id, name: p.name, position: p.position, team: p.team }} />
+              <Button variant="subtle" size="xs" onClick={() => side.remove(p.player_id)}>✕</Button>
             </li>
           ))}
         </ul>
@@ -148,17 +138,13 @@ export function TradeBuilder({ config }: Props) {
           <div className="trade-result-totals">
             <span>Receiving VORP: {result.incoming_total.toFixed(1)}</span>
             <span>Sending VORP: {result.outgoing_total.toFixed(1)}</span>
-            <span
-              className={result.delta_vorp >= 0 ? 'trade-delta-positive' : 'trade-delta-negative'}
-            >
-              Net VORP: {result.delta_vorp >= 0 ? '+' : ''}
-              {result.delta_vorp.toFixed(1)}
+            <span className={result.delta_vorp >= 0 ? 'trade-delta-positive' : 'trade-delta-negative'}>
+              Net VORP: {result.delta_vorp >= 0 ? '+' : ''}{result.delta_vorp.toFixed(1)}
             </span>
           </div>
           {result.missing_player_ids.length > 0 && (
             <Alert color="yellow" mt="sm">
-              No VORP data for {result.missing_player_ids.length} player(s) - excluded from totals
-              above.
+              No VORP data for {result.missing_player_ids.length} player(s) - excluded from totals above.
             </Alert>
           )}
         </div>

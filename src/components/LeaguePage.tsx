@@ -44,7 +44,7 @@ export function LeaguePage() {
     queryFn: () =>
       getLeagueRows(view, config.season, Number(week), offset, q, position, owner, totals),
     enabled: Boolean(week && config.league_id),
-    refetchInterval: 60_000,
+    refetchInterval: view === 'standings' ? 60_000 : false,
   })
   return (
     <div className="dashboard">

@@ -35,22 +35,14 @@ export function DraftConfigProvider({ children }: { children: ReactNode }) {
       .finally(() => {
         if (!cancelled) setLoading(false)
       })
-    return () => {
-      cancelled = true
-    }
+    return () => { cancelled = true }
   }, [setConfig])
 
-  const saveConfig = useCallback(
-    async (next: DraftConfig) => {
-      await setDraftConfig(next)
-      setConfig(next)
-    },
-    [setConfig],
-  )
+  const saveConfig = useCallback(async (next: DraftConfig) => {
+    await setDraftConfig(next)
+    setConfig(next)
+  }, [setConfig])
 
-  const value = useMemo(
-    () => ({ config, loading, saveConfig, setConfig }),
-    [config, loading, saveConfig, setConfig],
-  )
+  const value = useMemo(() => ({ config, loading, saveConfig, setConfig }), [config, loading, saveConfig, setConfig])
   return <DraftConfigContext.Provider value={value}>{children}</DraftConfigContext.Provider>
 }

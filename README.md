@@ -8,7 +8,7 @@ follow the current league week unless a week is selected explicitly. Move review
 who joins/leaves the roster, projected lineup impact, and warnings before a waiver request.
 
 - [Palette and UI conventions](docs/ui-design-system.md)
-- [Implementation, caching, rollout, and validation](docs/ux-overhaul/implementation.md)
+- [Project architecture and rollout notes](https://github.com/cvillarr23/fantasy-project/blob/main/docs/season-management-ux.md)
 
 ## Running locally
 

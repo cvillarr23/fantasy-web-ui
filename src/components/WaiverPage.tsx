@@ -55,9 +55,7 @@ export function WaiverPage() {
           <Text ta="center" maw={480}>
             No league configured yet. Set your league and team in Settings first.
           </Text>
-          <Button component={Link} to="/settings" variant="default">
-            Go to Settings
-          </Button>
+          <Button component={Link} to="/settings" variant="default">Go to Settings</Button>
         </Stack>
       </div>
     )

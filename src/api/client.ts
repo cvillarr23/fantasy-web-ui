@@ -1,23 +1,4 @@
-import { queryClient, cacheKey, readFreshness } from './queryClient'
-import type {
-  BacktestResultDetail,
-  BacktestResultSummary,
-  ChatQueryResponse,
-  DraftConfig,
-  DraftStatusResponse,
-  LineupRosterResponse,
-  LineupSwapInstruction,
-  MatchupResponse,
-  PlayerSearchResult,
-  PlayerSummary,
-  PracticeSyncJobStatus,
-  RosterDeficitsResponse,
-  ScoreboardResponse,
-  TradeEvaluationResponse,
-  VorpStat,
-  WaiverPlayerSummary,
-  WaiverRecommendationsResponse,
-} from './types'
+import type { BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, ScoreboardResponse, TradeEvaluationResponse, VorpStat, WaiverPlayerSummary, WaiverRecommendationsResponse } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -38,9 +19,7 @@ function extractErrorMessage(body: string, fallback: string): string {
         if (!item || typeof item !== 'object') return []
         const { loc, msg } = item as { loc?: unknown; msg?: unknown }
         if (!Array.isArray(loc) || typeof msg !== 'string') return []
-        const field = loc
-          .filter((part): part is string => typeof part === 'string' && part !== 'body')
-          .join('.')
+        const field = loc.filter((part): part is string => typeof part === 'string' && part !== 'body').join('.')
         return [`${field || 'Request'}: ${msg}`]
       })
       if (issues.length) return issues.join('; ')
@@ -103,10 +82,7 @@ function showSessionExpiredBanner(): void {
  * answered" - they usually warrant different recovery. */
 export class ApiTimeoutError extends ApiError {
   constructor(path: string, timeoutMs: number) {
-    super(
-      0,
-      `Request to ${path} timed out after ${Math.round(timeoutMs / 1000)}s - the backend did not respond.`,
-    )
+    super(0, `Request to ${path} timed out after ${Math.round(timeoutMs / 1000)}s - the backend did not respond.`)
   }
 }
 
@@ -141,9 +117,7 @@ async function networkRequest<T>(
   // Merged rather than substituted: applying our signal after the init spread would defeat a
   // caller-supplied one, and applying theirs would defeat the timeout. Both have to survive.
   const callerSignal = init?.signal
-  const signal = callerSignal
-    ? mergeSignals(callerSignal, timeoutController.signal)
-    : timeoutController.signal
+  const signal = callerSignal ? mergeSignals(callerSignal, timeoutController.signal) : timeoutController.signal
   // The timer deliberately spans body consumption too, not just the fetch. fetch() resolves as
   // soon as headers arrive, so a backend that sends a 200 and then stalls the body would hang
   // .json() forever - reinstating the never-settles bug this whole change exists to remove.
@@ -183,13 +157,9 @@ async function networkRequest<T>(
   }
 }
 
+// Query hooks own read caching. Polls and explicit refreshes must reach the network.
 export function request<T>(path: string, init?: RequestInit, timeoutMs?: number): Promise<T> {
-  if (init?.method && init.method !== 'GET') return networkRequest<T>(path, init, timeoutMs)
-  return queryClient.fetchQuery({
-    queryKey: cacheKey(path),
-    staleTime: readFreshness(path),
-    queryFn: ({ signal }) => networkRequest<T>(path, { ...init, signal }, timeoutMs),
-  })
+  return networkRequest<T>(path, init, timeoutMs)
 }
 
 export function getDraftStatus(
@@ -326,19 +296,12 @@ export function searchPlayers(query: string): Promise<PlayerSearchResult[]> {
 // force tears down whatever run is already there instead of 409ing, which is the only way
 // out when a previous run is wedged (a Job stuck Terminating, or a control plane that stops
 // answering long enough to strand one).
-export function startPracticeSyncJob(
-  roomUrl: string,
-  force = false,
-): Promise<{ status: string; job_name: string }> {
+export function startPracticeSyncJob(roomUrl: string, force = false): Promise<{ status: string; job_name: string }> {
   const params = force ? '?force=true' : ''
-  return request(
-    `/v1/draft/practice/sync-job${params}`,
-    {
-      method: 'POST',
-      body: JSON.stringify({ room_url: roomUrl }),
-    },
-    force ? TEARDOWN_TIMEOUT_MS : undefined,
-  )
+  return request(`/v1/draft/practice/sync-job${params}`, {
+    method: 'POST',
+    body: JSON.stringify({ room_url: roomUrl }),
+  }, force ? TEARDOWN_TIMEOUT_MS : undefined)
 }
 
 export function getPracticeSyncJobStatus(): Promise<PracticeSyncJobStatus> {
@@ -354,10 +317,7 @@ export function getRosterDeficits(season: number, week: number): Promise<RosterD
   return request(`/v1/roster/deficits?${params}`)
 }
 
-export function getWaiverRecommendations(
-  season: number,
-  week: number,
-): Promise<WaiverRecommendationsResponse> {
+export function getWaiverRecommendations(season: number, week: number): Promise<WaiverRecommendationsResponse> {
   const params = new URLSearchParams({ season: String(season), week: String(week) })
   return request(`/v1/waiver/recommendations?${params}`)
 }
@@ -409,20 +369,21 @@ export function getCurrentWeek(season?: number): Promise<{
 export function triggerLineupSwap(
   teamId: string,
   swaps: LineupSwapInstruction[],
+  idempotencyKey: string = crypto.randomUUID(),
 ): Promise<{ tracking_id: string }> {
   return request('/v1/trigger/lineup', {
     method: 'POST',
     body: JSON.stringify({
       team_id: teamId,
       optimized_swaps: swaps,
-      idempotency_key: crypto.randomUUID(),
+      idempotency_key: idempotencyKey,
     }),
   })
 }
 
 // Acceptance means the queue received the claim; it does not confirm an ESPN transaction.
 export interface WaiverClaimResponse {
-  status: 'accepted'
+  status: 'accepted' | 'duplicate'
   queue: string
   team_id: string
   tracking_id: string

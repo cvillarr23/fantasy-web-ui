@@ -20,7 +20,7 @@ import {
   markActivityRead,
 } from '../api/dashboard'
 import { request } from '../api/client'
-import { invalidateRoster } from '../api/queryClient'
+import { queryClient, invalidateRoster } from '../api/queryClient'
 
 const label = (value: string) => value.replaceAll('_', ' ')
 const stamp = (value: string) => new Date(value).toLocaleString()
@@ -37,14 +37,16 @@ export function ActivityIndicator() {
     queryFn: () => getActions(),
     refetchInterval: 30_000,
   })
-  const seen = useRef(new Set<string>())
+  const seen = useRef<Set<string> | null>(null)
   useEffect(() => {
-    for (const item of query.data?.items ?? []) {
-      if (item.outcome === 'verified_complete' && !seen.current.has(item.id)) {
-        seen.current.add(item.id)
-        void invalidateRoster()
-      }
-    }
+    if (!query.data) return
+    const verified = new Set(
+      query.data.items
+        .filter((item) => item.outcome === 'verified_complete')
+        .map((item) => item.id),
+    )
+    if (seen.current && [...verified].some((id) => !seen.current!.has(id))) void invalidateRoster()
+    seen.current = verified
   }, [query.data])
   if (!query.data)
     return (
@@ -52,7 +54,9 @@ export function ActivityIndicator() {
         Activity
       </Button>
     )
-  const active = query.data.items.filter((a) => ['queued', 'running'].includes(a.execution)).length
+  const active = query.data.items.filter((a) =>
+    ['queued', 'delivered', 'running'].includes(a.execution),
+  ).length
   const unread = query.data.items.filter((a) => a.unread).length
   return (
     <Button component={Link} to="/activity" variant="light" size="xs">
@@ -86,7 +90,9 @@ export function ActivityPage() {
     queryFn: () => getActions(offset, tab === 'attention'),
     enabled: tab !== 'sessions',
     refetchInterval: (q) =>
-      q.state.data?.items.some((a) => ['queued', 'running'].includes(a.execution)) ? 5000 : 30_000,
+      q.state.data?.items.some((a) => ['queued', 'delivered', 'running'].includes(a.execution))
+        ? 5000
+        : 30_000,
   })
   const sessions = useQuery({
     queryKey: ['sessions', offset],
@@ -218,9 +224,25 @@ export function ActionDetailPage() {
   const query = useQuery({
     queryKey: ['action', id],
     queryFn: () => getAction(id),
-    refetchInterval: 5000,
+    refetchInterval: (q) =>
+      ['verified_complete', 'rejected', 'cancelled', 'expired'].includes(
+        q.state.data?.outcome ?? '',
+      ) || q.state.data?.execution === 'skipped'
+        ? false
+        : 5000,
   })
   const action = query.data
+  async function markRead() {
+    setCheckError(null)
+    try {
+      await markActivityRead(id)
+      await queryClient.invalidateQueries({
+        predicate: (q) => ['activity', 'activity-indicator'].includes(String(q.queryKey[0])),
+      })
+    } catch (e) {
+      setCheckError(`Could not mark read: ${String(e)}`)
+    }
+  }
   async function check() {
     setChecking(true)
     setCheckError(null)
@@ -258,7 +280,7 @@ export function ActionDetailPage() {
               <Button loading={checking} onClick={() => void check()}>
                 Check status
               </Button>
-              <Button variant="default" onClick={() => void markActivityRead(id)}>
+              <Button variant="default" onClick={() => void markRead()}>
                 Mark read
               </Button>
               <Button

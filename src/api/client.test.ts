@@ -4,35 +4,19 @@ import type { DraftConfig, WaiverPlayerSummary } from './types'
 
 const config = { team_id: '7', league_id: '123' } as DraftConfig
 const add: WaiverPlayerSummary = {
-  espn_id: '4046',
-  name: 'Some Back',
-  pro_team: 'KC',
-  injury_status: null,
-  net_vorp: 9,
+  espn_id: '4046', name: 'Some Back', pro_team: 'KC', injury_status: null, net_vorp: 9,
 }
 const drop: WaiverPlayerSummary = {
-  espn_id: '9999',
-  name: 'Bench Back',
-  pro_team: 'NO',
-  injury_status: null,
-  net_vorp: 1,
+  espn_id: '9999', name: 'Bench Back', pro_team: 'NO', injury_status: null, net_vorp: 1,
 }
 
 afterEach(() => vi.unstubAllGlobals())
 
 describe('triggerWaiverClaim', () => {
   it('sends ESPN identities and returns the publisher tracking ID', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(
-        JSON.stringify({
-          status: 'accepted',
-          team_id: '7',
-          queue: 'waiver_actions',
-          tracking_id: 'track-123',
-        }),
-        { status: 202 },
-      ),
-    )
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      status: 'accepted', team_id: '7', queue: 'waiver_actions', tracking_id: 'track-123',
+    }), { status: 202 }))
     vi.stubGlobal('fetch', fetchMock)
 
     const result = await triggerWaiverClaim(config, add, drop)
@@ -54,11 +38,7 @@ describe('triggerWaiverClaim', () => {
   })
 
   it('omits drop_player_id for an add-only request', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue(
-        new Response(JSON.stringify({ tracking_id: 'track-456' }), { status: 202 }),
-      )
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ tracking_id: 'track-456' }), { status: 202 }))
     vi.stubGlobal('fetch', fetchMock)
 
     await triggerWaiverClaim(config, add)
@@ -73,17 +53,9 @@ describe('triggerWaiverClaim', () => {
   })
 
   it('turns backend validation details into an actionable error', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue(
-        new Response(
-          JSON.stringify({
-            detail: [{ loc: ['body', 'team'], msg: 'Field required', type: 'missing' }],
-          }),
-          { status: 422 },
-        ),
-      ),
-    )
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      detail: [{ loc: ['body', 'team'], msg: 'Field required', type: 'missing' }],
+    }), { status: 422 })))
 
     await expect(triggerWaiverClaim(config, add)).rejects.toThrow('team: Field required')
   })

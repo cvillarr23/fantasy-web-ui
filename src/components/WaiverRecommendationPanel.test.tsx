@@ -10,36 +10,17 @@ vi.mock('../api/client', () => ({ getCurrentWeek: vi.fn().mockResolvedValue({ we
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation(() => ({
-    matches: false,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
+    matches: false, addListener: vi.fn(), removeListener: vi.fn(),
+    addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
   })),
 })
 
 const config: DraftConfig = { league_id: '123', team_id: '7', season: 2026, mode: 'live' }
 const recommendation: WaiverRecommendation = {
-  position: 'RB',
-  vorp_delta: 8,
-  free_agent: {
-    espn_id: '4046',
-    name: 'Some Back',
-    pro_team: 'KC',
-    injury_status: null,
-    net_vorp: 9,
-  },
-  bench_player: {
-    espn_id: '9999',
-    name: 'Bench Back',
-    pro_team: 'NO',
-    injury_status: null,
-    net_vorp: 1,
-  },
-  rumor_sentiment: null,
-  rumor_confidence: null,
-  rumor_suggested_action: null,
+  position: 'RB', vorp_delta: 8,
+  free_agent: { espn_id: '4046', name: 'Some Back', pro_team: 'KC', injury_status: null, net_vorp: 9 },
+  bench_player: { espn_id: '9999', name: 'Bench Back', pro_team: 'NO', injury_status: null, net_vorp: 1 },
+  rumor_sentiment: null, rumor_confidence: null, rumor_suggested_action: null,
 }
 
 afterEach(() => {

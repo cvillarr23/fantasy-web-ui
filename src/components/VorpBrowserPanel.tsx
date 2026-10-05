@@ -78,33 +78,21 @@ export function VorpBrowserPanel({ season }: Props) {
 
     if (selectedWeek !== undefined) {
       getVorpStats({ season, week: selectedWeek, position: positionFilter, sort, limit: 1000 })
-        .then((rows) => {
-          if (!cancelled) setWeekRows(rows)
-        })
-        .catch((err) => {
-          if (!cancelled) setError(String(err))
-        })
-        .finally(() => {
-          if (!cancelled) setLoading(false)
-        })
+        .then((rows) => { if (!cancelled) setWeekRows(rows) })
+        .catch((err) => { if (!cancelled) setError(String(err)) })
+        .finally(() => { if (!cancelled) setLoading(false) })
     } else {
       // The API caps at 1000 rows/call, which a full season's player pool can exceed - fetch
       // per-week and sum client-side instead. allSettled (not all/catch-per-request) so one
       // bad week doesn't erase the rest, but a total outage still surfaces as an error.
       const weekNumbers = Array.from({ length: MAX_WEEK }, (_, i) => i + 1)
       Promise.allSettled(
-        weekNumbers.map((w) =>
-          getVorpStats({ season, week: w, position: positionFilter, limit: 1000 }),
-        ),
+        weekNumbers.map((w) => getVorpStats({ season, week: w, position: positionFilter, limit: 1000 })),
       ).then((results) => {
         if (cancelled) return
-        const fulfilled = results.filter(
-          (r): r is PromiseFulfilledResult<VorpStat[]> => r.status === 'fulfilled',
-        )
+        const fulfilled = results.filter((r): r is PromiseFulfilledResult<VorpStat[]> => r.status === 'fulfilled')
         if (fulfilled.length === 0 && results.length > 0) {
-          const firstFailure = results.find(
-            (r): r is PromiseRejectedResult => r.status === 'rejected',
-          )
+          const firstFailure = results.find((r): r is PromiseRejectedResult => r.status === 'rejected')
           setError(String(firstFailure?.reason))
           setLoading(false)
           return
@@ -152,20 +140,12 @@ export function VorpBrowserPanel({ season }: Props) {
           />
         )}
       </Group>
-      {error && (
-        <Alert color="red" mb="md">
-          {error}
-        </Alert>
-      )}
+      {error && <Alert color="red" mb="md">{error}</Alert>}
       {loading && (
         <Table>
           <Table.Tbody>
             {Array.from({ length: 6 }).map((_, i) => (
-              <Table.Tr key={i}>
-                <Table.Td>
-                  <Skeleton height={12} />
-                </Table.Td>
-              </Table.Tr>
+              <Table.Tr key={i}><Table.Td><Skeleton height={12} /></Table.Td></Table.Tr>
             ))}
           </Table.Tbody>
         </Table>
@@ -223,9 +203,7 @@ export function VorpBrowserPanel({ season }: Props) {
         </Table>
       )}
       {!loading && !error && (weekEmpty || seasonEmpty) && (
-        <Text c="dimmed" size="sm">
-          No VORP data for this selection.
-        </Text>
+        <Text c="dimmed" size="sm">No VORP data for this selection.</Text>
       )}
     </section>
   )

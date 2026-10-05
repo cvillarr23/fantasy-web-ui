@@ -7,13 +7,7 @@ import { useDraftConfig } from '../hooks/useDraftConfig'
 import { WeekSelector } from './WeekSelector'
 import type { ScoreboardMatchup, ScoreboardTeamInfo } from '../api/types'
 
-function ScoreboardSide({
-  side,
-  isMyTeam,
-}: {
-  side: ScoreboardTeamInfo | null
-  isMyTeam: boolean
-}) {
+function ScoreboardSide({ side, isMyTeam }: { side: ScoreboardTeamInfo | null; isMyTeam: boolean }) {
   if (!side) {
     return (
       <div className="scoreboard-side scoreboard-side-bye">
@@ -61,18 +55,10 @@ export function ScoreboardPage() {
     setError(null)
     setMatchups(null)
     getScoreboard(config.season, weekValue)
-      .then((response) => {
-        if (!cancelled) setMatchups(response.matchups)
-      })
-      .catch((err) => {
-        if (!cancelled) setError(String(err))
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false)
-      })
-    return () => {
-      cancelled = true
-    }
+      .then((response) => { if (!cancelled) setMatchups(response.matchups) })
+      .catch((err) => { if (!cancelled) setError(String(err)) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [isConfigured, config.season, weekValue, validWeek])
 
   if (!isConfigured) {
@@ -83,9 +69,7 @@ export function ScoreboardPage() {
           <Text ta="center" maw={480}>
             No league configured yet. Set your league and team in Settings first.
           </Text>
-          <Button component={Link} to="/settings" variant="default">
-            Go to Settings
-          </Button>
+          <Button component={Link} to="/settings" variant="default">Go to Settings</Button>
         </Stack>
       </div>
     )
@@ -96,13 +80,11 @@ export function ScoreboardPage() {
       <Group justify="space-between" align="center" mb="md">
         <WeekSelector week={week} onChange={setWeek} />
       </Group>
-      {error && (
-        <Alert color="red" mb="md">
-          {error}
-        </Alert>
-      )}
+      {error && <Alert color="red" mb="md">{error}</Alert>}
       {loading && <Text c="dimmed">Loading scoreboard…</Text>}
-      {matchups && matchups.length === 0 && <Alert color="gray">No matchups this week.</Alert>}
+      {matchups && matchups.length === 0 && (
+        <Alert color="gray">No matchups this week.</Alert>
+      )}
       {matchups && matchups.length > 0 && (
         <div className="scoreboard-grid">
           {matchups.map((matchup, index) => (

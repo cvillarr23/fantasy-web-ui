@@ -97,6 +97,8 @@ export const getLeagueRows = (
 ) =>
   request<LeagueResponse>(
     `/v1/league/${view}?${new URLSearchParams({ season: String(season), week: String(week), offset: String(offset), q, position, owner, totals: String(totals) })}`,
+    undefined,
+    45_000,
   )
 export const previewMove = (payload: {
   kind: string

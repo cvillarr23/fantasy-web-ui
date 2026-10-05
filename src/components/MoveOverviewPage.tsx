@@ -14,7 +14,7 @@ import {
 } from '@mantine/core'
 import { LineChart } from '@mantine/charts'
 import { Link, useSearchParams } from 'react-router-dom'
-import { previewMove } from '../api/dashboard'
+import { type MovePreview, previewMove } from '../api/dashboard'
 import { triggerWaiverClaim } from '../api/client'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
@@ -28,7 +28,8 @@ export function MoveOverviewPage() {
   const incoming = params.getAll('add')
   const outgoing = params.getAll('drop')
   const [rest, setRest] = useState(false)
-  const [confirm, setConfirm] = useState(false)
+  const [confirmed, setConfirmed] = useState<MovePreview | null>(null)
+  const invalidWaiver = kind === 'waiver' && (incoming.length !== 1 || outgoing.length > 1)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [tracking, setTracking] = useState<string | null>(null)
@@ -51,24 +52,40 @@ export function MoveOverviewPage() {
     [config.league_id, config.team_id, params.toString()],
   )
   const data = query.data
-  async function submit() {
-    if (!data) return
+  async function review() {
     setBusy(true)
     setError(null)
     try {
-      // Refresh the proposal immediately before the final action; the worker independently validates current eligibility.
+      if (invalidWaiver)
+        throw new Error('A waiver claim must add one player and drop at most one player.')
       const fresh = await previewMove(payload)
-      const add = fresh.incoming[0]
-      const drop = fresh.outgoing[0]
-      if (!add || !drop) throw new Error('Select both a player to add and a player to drop.')
+      if (
+        fresh.incoming.map((p) => p.espn_id).join() !== incoming.join() ||
+        fresh.outgoing.map((p) => p.espn_id).join() !== outgoing.join()
+      )
+        throw new Error('The proposal changed. Review your selections again.')
+      setConfirmed(fresh)
+    } catch (e) {
+      setError(String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+  async function submit() {
+    if (!confirmed || invalidWaiver) return
+    setBusy(true)
+    setError(null)
+    try {
+      const add = confirmed.incoming[0]
+      const drop = confirmed.outgoing[0]
       const result = await triggerWaiverClaim(
         config,
         { ...add, net_vorp: add.net_vorp ?? 0 },
-        { ...drop, net_vorp: drop.net_vorp ?? 0 },
+        drop ? { ...drop, net_vorp: drop.net_vorp ?? 0 } : undefined,
         submissionKey,
       )
       setTracking(result.tracking_id)
-      setConfirm(false)
+      setConfirmed(null)
     } catch (e) {
       setError(String(e))
     } finally {
@@ -99,6 +116,9 @@ export function MoveOverviewPage() {
           checked={rest}
           onChange={(e) => setRest(e.currentTarget.checked)}
         />
+        {invalidWaiver && (
+          <Alert color="red">Waivers support one addition and at most one drop per claim.</Alert>
+        )}
         {!incoming.length && (
           <Alert color="yellow">Choose a move from Waivers or the trade builder first.</Alert>
         )}
@@ -144,7 +164,8 @@ export function MoveOverviewPage() {
             </div>
             {kind === 'waiver' && (
               <Select
-                label="Player to drop"
+                label="Player to drop (optional if you have an open roster spot)"
+                clearable
                 value={outgoing[0] ?? null}
                 data={data.before.map((p) => ({
                   value: p.espn_id,
@@ -251,7 +272,7 @@ export function MoveOverviewPage() {
               </details>
             ))}
             {kind === 'waiver' && !tracking && (
-              <Button onClick={() => setConfirm(true)} disabled={!data.outgoing.length}>
+              <Button onClick={() => void review()} loading={busy} disabled={invalidWaiver}>
                 Review and submit ESPN claim
               </Button>
             )}
@@ -273,16 +294,29 @@ export function MoveOverviewPage() {
         )}
         {error && <Alert color="red">{error}</Alert>}
         <Modal
-          opened={confirm}
-          onClose={() => !busy && setConfirm(false)}
+          opened={Boolean(confirmed)}
+          onClose={() => !busy && setConfirmed(null)}
           title="Confirm live waiver claim"
         >
           <Stack>
             <Text>
-              Add <strong>{data?.incoming[0]?.name}</strong> and drop{' '}
-              <strong>{data?.outgoing[0]?.name}</strong>. This submits a real ESPN claim against
-              your current roster.
+              Add <strong>{confirmed?.incoming[0]?.name}</strong>
+              {confirmed?.outgoing[0] ? (
+                <>
+                  {' '}
+                  and drop <strong>{confirmed.outgoing[0].name}</strong>
+                </>
+              ) : (
+                ' without dropping a player'
+              )}
+              . This submits a real ESPN claim against your current roster.
             </Text>
+            {confirmed?.warnings.map((warning, i) => (
+              <Alert color="yellow" key={i}>
+                {warning}
+              </Alert>
+            ))}
+            {error && <Alert color="red">{error}</Alert>}
             <Button loading={busy} onClick={() => void submit()}>
               Confirm claim
             </Button>
