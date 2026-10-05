@@ -1,4 +1,4 @@
-import { Skeleton } from '@mantine/core'
+import { ListRowsSkeleton } from './skeletons'
 import type { DraftStatusResponse } from '../api/types'
 import { buildPositionComparisonRows } from './positionComparison'
 
@@ -19,13 +19,12 @@ export function RosterVsLeaguePanel({ status, myTeamId, loading = false }: Props
     <section className="roster-comparison-panel">
       <h2>Your roster vs. league average</h2>
       {loading ? (
-        <ul className="roster-comparison-list">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <li key={i} className="roster-comparison-row">
-              <Skeleton height={14} width="100%" />
-            </li>
-          ))}
-        </ul>
+        <ListRowsSkeleton
+          rows={6}
+          listClassName="roster-comparison-list"
+          itemClassName="roster-comparison-row"
+          label="Loading roster comparison"
+        />
       ) : rows.length === 0 ? (
         <p className="muted">Position-count aggregates are not available yet.</p>
       ) : (

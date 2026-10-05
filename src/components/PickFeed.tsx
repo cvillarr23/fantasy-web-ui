@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Skeleton } from '@mantine/core'
+import { ListRowsSkeleton } from './skeletons'
 import type { DraftPickSummary, DraftStatusResponse } from '../api/types'
 import { usePlayerDetailsCache } from '../hooks/usePlayerDetailsCache'
 import { useTeamNames } from '../hooks/useTeamNames'
@@ -21,17 +21,6 @@ function formatDisplayTime(value: string | null | undefined): string {
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
 
-function SkeletonPickList() {
-  return (
-    <ol>
-      {Array.from({ length: 4 }).map((_, i) => (
-        <li key={i} className="pick-row">
-          <Skeleton height={14} width="100%" />
-        </li>
-      ))}
-    </ol>
-  )
-}
 
 export function PickFeed({ picks, myTeamId, status, loading = false }: Props) {
   const [expandedPlayerId, setExpandedPlayerId] = useState<string | null>(null)
@@ -99,11 +88,11 @@ export function PickFeed({ picks, myTeamId, status, loading = false }: Props) {
       <div className="pick-feed-sections">
         <article className="pick-section">
           <h3>League picks</h3>
-          {loading ? <SkeletonPickList /> : renderPickList(picks, 'No picks yet.')}
+          {loading ? <ListRowsSkeleton ordered rows={4} itemClassName="pick-row" label="Loading picks" /> : renderPickList(picks, 'No picks yet.')}
         </article>
         <article className="pick-section">
           <h3>Your team picks</h3>
-          {loading ? <SkeletonPickList /> : renderPickList(myTeamPicks, 'Your team has not picked yet.')}
+          {loading ? <ListRowsSkeleton ordered rows={4} itemClassName="pick-row" label="Loading picks" /> : renderPickList(myTeamPicks, 'Your team has not picked yet.')}
         </article>
       </div>
       {expandedPlayerId && (

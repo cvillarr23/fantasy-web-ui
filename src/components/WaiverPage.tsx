@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { queryClient } from '../api/queryClient'
 import { Alert, Button, Group, Stack, Text } from '@mantine/core'
 import { Link } from 'react-router-dom'
@@ -9,6 +9,7 @@ import { RosterDeficitsGrid } from './RosterDeficitsGrid'
 import { WaiverRecommendationPanel } from './WaiverRecommendationPanel'
 import { RosterQuickActions } from './RosterQuickActions'
 import { WeekSelector } from './WeekSelector'
+import { PageSkeleton } from './skeletons'
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
@@ -27,6 +28,7 @@ export function WaiverPage() {
       queryFn: () => getRosterDeficits(config.season, weekValue),
       enabled,
       refetchInterval: 60_000,
+      placeholderData: keepPreviousData,
     },
     queryClient,
   )
@@ -36,6 +38,7 @@ export function WaiverPage() {
       queryFn: () => getWaiverRecommendations(config.season, weekValue),
       enabled,
       refetchInterval: 60_000,
+      placeholderData: keepPreviousData,
     },
     queryClient,
   )
@@ -48,7 +51,7 @@ export function WaiverPage() {
     : null
 
   if (!isConfigured) {
-    if (configLoading) return null
+    if (configLoading) return <PageSkeleton />
     return (
       <div className="dashboard">
         <Stack gap="md" mt="xl" align="center">
@@ -78,15 +81,23 @@ export function WaiverPage() {
         <Alert color="red" mb="md">
           {recommendationsError}
         </Alert>
-      ) : recommendationsQuery.isLoading ? (
-        <Text role="status">Finding waiver upgrades…</Text>
       ) : (
-        <WaiverRecommendationPanel recommendations={recommendations} config={config} />
+        <WaiverRecommendationPanel
+          recommendations={recommendations}
+          config={config}
+          loading={recommendationsQuery.isLoading}
+          updating={recommendationsQuery.isPlaceholderData}
+        />
       )}
       <details className="secondary-panel">
         <summary>League position depth</summary>
         {(loading || deficits) && (
-          <RosterDeficitsGrid deficits={deficits} myTeamId={config.team_id} loading={loading} />
+          <RosterDeficitsGrid
+            deficits={deficits}
+            myTeamId={config.team_id}
+            loading={loading}
+            updating={deficitsQuery.isPlaceholderData}
+          />
         )}
       </details>
     </div>

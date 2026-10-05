@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Alert, Button, Group, Skeleton, Stack, Text, Textarea } from '@mantine/core'
+import { Alert, Button, Group, Stack, Text, Textarea } from '@mantine/core'
+import { PageSkeleton, SkeletonRegion, TextSkeleton } from './skeletons'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ApiError, isNoProviderError, queryChat } from '../api/client'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
@@ -27,7 +28,7 @@ export function ChatPage() {
   const [noProvider, setNoProvider] = useState(false)
 
   if (!isConfigured) {
-    if (configLoading) return null
+    if (configLoading) return <PageSkeleton />
     return (
       <div className="dashboard">
         <Stack gap="md" mt="xl" align="center">
@@ -109,11 +110,9 @@ export function ChatPage() {
         {error && <Alert color="red">{error}</Alert>}
 
         {loading && (
-          <Stack gap="xs">
-            <Skeleton height={14} width="90%" />
-            <Skeleton height={14} width="75%" />
-            <Skeleton height={14} width="60%" />
-          </Stack>
+          <SkeletonRegion label="Waiting for an answer">
+            <TextSkeleton lines={3} />
+          </SkeletonRegion>
         )}
 
         {!loading && response && (

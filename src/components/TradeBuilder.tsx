@@ -2,12 +2,15 @@ import { Link } from 'react-router-dom'
 import { WeekSelector } from './WeekSelector'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
+import { queryClient } from '../api/queryClient'
 import { Alert, Button, Group, Text } from '@mantine/core'
 import { RosterQuickActions } from './RosterQuickActions'
 import { evaluateTrade } from '../api/client'
 import { PlayerCard } from './PlayerCard'
 import { PlayerPicker } from './PlayerPicker'
 import { useToast } from '../hooks/useToast'
+import { OperationProgress } from './skeletons'
 import type { DraftConfig, PlayerSearchResult, TradeEvaluationResponse } from '../api/types'
 
 interface Props {
@@ -58,13 +61,23 @@ export function TradeBuilder({ config }: Props) {
   // number | string, same reasoning as LineupPage's week field - NumberInput passes
   // intermediate values that aren't a valid week yet.
   const [week, setWeek] = useSelectedWeek()
-  const [result, setResult] = useState<TradeEvaluationResponse | null>(null)
-  const [busy, setBusy] = useState(false)
   const { toast, showToast } = useToast()
-
   const weekValue = Number(week)
   const validWeek = Number.isFinite(weekValue) && weekValue > 0
   const canEvaluate = validWeek && (incoming.length > 0 || outgoing.length > 0)
+
+  const evaluation = useMutation({
+    mutationFn: () =>
+      evaluateTrade(
+        incoming.map((p) => p.player_id),
+        outgoing.map((p) => p.player_id),
+        config.season,
+        weekValue,
+      ),
+    onError: (err) => showToast('error', `Failed to evaluate trade: ${String(err)}`),
+  }, queryClient)
+  // Cleared while a new evaluation runs so an old verdict never reads as the new one.
+  const result: TradeEvaluationResponse | undefined = evaluation.isPending ? undefined : evaluation.data
 
   function addTo(setter: typeof setIncoming) {
     return (p: PlayerSearchResult) => setter((prev) => [...prev, p])
@@ -73,22 +86,8 @@ export function TradeBuilder({ config }: Props) {
     return (playerId: string) => setter((prev) => prev.filter((p) => p.player_id !== playerId))
   }
 
-  async function submit() {
-    setBusy(true)
-    setResult(null)
-    try {
-      const response = await evaluateTrade(
-        incoming.map((p) => p.player_id),
-        outgoing.map((p) => p.player_id),
-        config.season,
-        weekValue,
-      )
-      setResult(response)
-    } catch (err) {
-      showToast('error', `Failed to evaluate trade: ${String(err)}`)
-    } finally {
-      setBusy(false)
-    }
+  function submit() {
+    evaluation.mutate()
   }
 
   return (
@@ -119,7 +118,7 @@ export function TradeBuilder({ config }: Props) {
       </div>
 
       <Group mt="md">
-        <Button onClick={submit} loading={busy} disabled={!canEvaluate}>
+        <Button onClick={submit} loading={evaluation.isPending} disabled={!canEvaluate}>
           Compare VORP
         </Button>
         <Button
@@ -133,6 +132,7 @@ export function TradeBuilder({ config }: Props) {
         </Button>
       </Group>
 
+      {evaluation.isPending && <OperationProgress label="Comparing trade value" />}
       {result && (
         <div className="trade-result">
           <div className="trade-result-totals">

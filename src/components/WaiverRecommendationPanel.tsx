@@ -1,4 +1,5 @@
-import { Badge, Button, Group, Stack, Text } from '@mantine/core'
+import { Badge, Button, Group, Skeleton, Stack, Text } from '@mantine/core'
+import { MoveSidesSkeleton, SkeletonRegion } from './skeletons'
 import { Link } from 'react-router-dom'
 import { InjuryBadge } from './InjuryBadge'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
@@ -6,8 +7,34 @@ import type { DraftConfig, WaiverRecommendation } from '../api/types'
 interface Props {
   recommendations: WaiverRecommendation[]
   config: DraftConfig
+  /** First load: render placeholder rows inside the real panel chrome. */
+  loading?: boolean
+  /** Showing the previous week's recommendations while the next week loads. */
+  updating?: boolean
 }
-export function WaiverRecommendationPanel({ recommendations }: Props) {
+
+function RecommendationRowsSkeleton() {
+  return (
+    <SkeletonRegion label="Finding waiver upgrades">
+      <ul className="waiver-recommendation-list">
+        {Array.from({ length: 3 }, (_, i) => (
+          <li key={i} className="waiver-recommendation-row">
+            <MoveSidesSkeleton />
+            <Group justify="space-between" mt="md">
+              <Stack gap={4}>
+                <Skeleton height={20} width={190} radius="xl" />
+                <Skeleton height={10} width={260} />
+              </Stack>
+              <Skeleton height={36} width={120} radius="sm" />
+            </Group>
+          </li>
+        ))}
+      </ul>
+    </SkeletonRegion>
+  )
+}
+
+export function WaiverRecommendationPanel({ recommendations, loading = false, updating = false }: Props) {
   const [week] = useSelectedWeek()
   return (
     <section className="waiver-recommendation-panel">
@@ -15,12 +42,14 @@ export function WaiverRecommendationPanel({ recommendations }: Props) {
       <Text size="sm" c="dimmed" mb="md">
         Compare who joins your roster and who leaves before submitting a claim.
       </Text>
-      {!recommendations.length ? (
+      {loading ? (
+        <RecommendationRowsSkeleton />
+      ) : !recommendations.length ? (
         <Text c="dimmed" size="sm">
           No waiver upgrades this week.
         </Text>
       ) : (
-        <ul className="waiver-recommendation-list">
+        <ul className="waiver-recommendation-list" aria-busy={updating || undefined}>
           {recommendations.map((r) => {
             const params = new URLSearchParams({
               kind: 'waiver',

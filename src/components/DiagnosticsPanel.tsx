@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Button, Skeleton } from '@mantine/core'
+import { Button } from '@mantine/core'
+import { TextSkeleton } from './skeletons'
 import type { DraftStatusResponse } from '../api/types'
 import type { DiagnosticsLogEntry } from '../hooks/useDiagnosticsLog'
 import { formatDiagnosticsDetail, formatDiagnosticsEntry } from '../hooks/useDiagnosticsLog'
@@ -81,7 +82,7 @@ export function DiagnosticsPanel({ status, connectionState, reconnectCount, stal
         <div>
           <h2>Diagnostics</h2>
           {loading ? (
-            <Skeleton height={12} width="80%" />
+            <TextSkeleton lines={1} height={12} />
           ) : (
             <p className="diagnostics-summary">
               Listener {status?.listener_state ?? '—'} · Job {status?.job_state ?? '—'} · Health {status?.pipeline_health ?? '—'} ·{' '}

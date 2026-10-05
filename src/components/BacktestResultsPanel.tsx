@@ -1,45 +1,54 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { queryClient } from '../api/queryClient'
 import { BarChart, LineChart } from '@mantine/charts'
 import { Alert, Select, Skeleton, Stack, Text, Title } from '@mantine/core'
 import { getBacktestResultDetail, getBacktestResults } from '../api/client'
-import type { BacktestResultDetail, BacktestResultSummary } from '../api/types'
+import { ChartSkeleton, SkeletonRegion } from './skeletons'
+
+const CHART_HEIGHT = 280
+
+// Three titled charts, matching the loaded layout below.
+function BacktestChartsSkeleton() {
+  return (
+    <SkeletonRegion label="Loading backtest results">
+      <Stack gap="xl">
+        {Array.from({ length: 3 }, (_, i) => (
+          <div key={i}>
+            <Skeleton height={20} width="55%" mb="xs" />
+            <ChartSkeleton height={CHART_HEIGHT} />
+          </div>
+        ))}
+      </Stack>
+    </SkeletonRegion>
+  )
+}
 
 export function BacktestResultsPanel() {
-  const [runs, setRuns] = useState<BacktestResultSummary[] | null>(null)
-  const [season, setSeason] = useState<string | null>(null)
-  const [detail, setDetail] = useState<BacktestResultDetail | null>(null)
-  const [loadingRuns, setLoadingRuns] = useState(true)
-  const [loadingDetail, setLoadingDetail] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const runsQuery = useQuery({ queryKey: ['backtest-runs'], queryFn: getBacktestResults }, queryClient)
+  const runs = runsQuery.data ?? null
+  const [selectedSeason, setSeason] = useState<string | null>(null)
+  // Default to the newest run until the user picks one.
+  const season = selectedSeason ?? (runs?.[0] ? String(runs[0].season) : null)
+  const detailQuery = useQuery({
+    queryKey: ['backtest-detail', season],
+    queryFn: () => getBacktestResultDetail(Number(season)),
+    enabled: Boolean(season),
+    placeholderData: keepPreviousData,
+  }, queryClient)
+  const detail = detailQuery.data ?? null
+  const error = detailQuery.error ? String(detailQuery.error) : null
 
-  useEffect(() => {
-    let cancelled = false
-    getBacktestResults()
-      .then((rows) => {
-        if (cancelled) return
-        setRuns(rows)
-        if (rows.length > 0) setSeason(String(rows[0].season))
-      })
-      .catch((err) => { if (!cancelled) setError(String(err)) })
-      .finally(() => { if (!cancelled) setLoadingRuns(false) })
-    return () => { cancelled = true }
-  }, [])
-
-  useEffect(() => {
-    if (!season) return
-    let cancelled = false
-    setLoadingDetail(true)
-    setError(null)
-    setDetail(null)
-    getBacktestResultDetail(Number(season))
-      .then((response) => { if (!cancelled) setDetail(response) })
-      .catch((err) => { if (!cancelled) setError(String(err)) })
-      .finally(() => { if (!cancelled) setLoadingDetail(false) })
-    return () => { cancelled = true }
-  }, [season])
-
-  if (loadingRuns) return <Skeleton height={300} />
-  if (error && !runs) return <Alert color="red">{error}</Alert>
+  if (runsQuery.isPending) {
+    return (
+      <section className="backtest-results-panel" aria-label="Backtest results">
+        <Skeleton height={14} width={50} mb={6} />
+        <Skeleton height={36} width={140} radius="sm" mb="md" />
+        <BacktestChartsSkeleton />
+      </section>
+    )
+  }
+  if (runsQuery.error) return <Alert color="red">{String(runsQuery.error)}</Alert>
   if (!runs || runs.length === 0) {
     return <Text c="dimmed" size="sm">No backtest runs available yet.</Text>
   }
@@ -72,13 +81,13 @@ export function BacktestResultsPanel() {
         mb="md"
       />
       {error && <Alert color="red" mb="md">{error}</Alert>}
-      {loadingDetail && <Skeleton height={300} />}
-      {!loadingDetail && detail && (
-        <Stack gap="xl">
+      {detailQuery.isLoading && <BacktestChartsSkeleton />}
+      {detail && (
+        <Stack gap="xl" aria-busy={detailQuery.isPlaceholderData || undefined}>
           <div>
             <Title order={4} mb="xs">Weekly lineup: ours vs. hindsight-optimal vs. naive baseline</Title>
             <LineChart
-              h={280}
+              h={CHART_HEIGHT}
               data={weeklyData}
               dataKey="week"
               series={[
@@ -93,7 +102,7 @@ export function BacktestResultsPanel() {
           <div>
             <Title order={4} mb="xs">Waiver: ours vs. static no-moves roster</Title>
             <LineChart
-              h={280}
+              h={CHART_HEIGHT}
               data={waiverData}
               dataKey="week"
               series={[
@@ -107,7 +116,7 @@ export function BacktestResultsPanel() {
           <div>
             <Title order={4} mb="xs">Draft: our roster's season points vs. pure-ADP-drafted roster</Title>
             <BarChart
-              h={280}
+              h={CHART_HEIGHT}
               data={draftData}
               dataKey="category"
               series={[

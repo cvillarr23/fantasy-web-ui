@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
   Alert,
   Button,
@@ -7,6 +7,7 @@ import {
   Group,
   SegmentedControl,
   Select,
+  Skeleton,
   Stack,
   Table,
   Text,
@@ -18,6 +19,7 @@ import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { getLeagueRows } from '../api/dashboard'
 import { WeekSelector } from './WeekSelector'
 import { ScoreValue } from './ScoreValue'
+import { SkeletonRegion, TableSkeleton } from './skeletons'
 export function LeaguePage() {
   const { config } = useDraftConfig()
   const [week, setWeek] = useSelectedWeek()
@@ -45,7 +47,15 @@ export function LeaguePage() {
       getLeagueRows(view, config.season, Number(week), offset, q, position, owner, totals),
     enabled: Boolean(week && config.league_id),
     refetchInterval: view === 'standings' ? 60_000 : false,
+    // Paging, filtering and searching keep the current rows up (dimmed) instead of blanking.
+    // Switching view starts clean: standings rows don't fit the player-leader columns.
+    placeholderData: (previous, previousQuery) =>
+      previousQuery?.queryKey[3] === view ? keepPreviousData(previous) : undefined,
   })
+  const headers =
+    view === 'standings'
+      ? ['Rank', 'Team', 'Record', 'Fantasy points', 'Points against']
+      : ['Rank', 'Player', 'Position / Owner', 'Fantasy points', 'Projected points']
   return (
     <div className="dashboard">
       <Stack>
@@ -117,25 +127,27 @@ export function LeaguePage() {
           </Text>
         )}
         {query.error && <Alert color="red">{query.error.message}</Alert>}
-        {query.isPending && <Text>Loading league data…</Text>}
+        {query.isPending && Boolean(week && config.league_id) && (
+          <SkeletonRegion label="Loading league data">
+            <Stack>
+              {/* Scoring and last-updated line */}
+              <Skeleton height={18} width={240} />
+              {/* Point cells stack a label over the value, so rows are taller than one line. */}
+              <TableSkeleton columns={5} rows={12} headers={headers} rowMinHeight={74} />
+            </Stack>
+          </SkeletonRegion>
+        )}
         {query.data && (
           <>
             <Text size="xs" c="dimmed">
               {query.data.scoring} · Updated {new Date(query.data.updated_at).toLocaleString()}
-              {query.isFetching ? ' · Updating…' : ''}
             </Text>
             {query.data.coverage && <Alert color="blue">{query.data.coverage}</Alert>}
             <Table.ScrollContainer minWidth={600}>
-              <Table>
+              <Table aria-busy={query.isPlaceholderData || undefined}>
                 <Table.Thead>
                   <Table.Tr>
-                    <Table.Th>Rank</Table.Th>
-                    <Table.Th>{view === 'standings' ? 'Team' : 'Player'}</Table.Th>
-                    <Table.Th>{view === 'standings' ? 'Record' : 'Position / Owner'}</Table.Th>
-                    <Table.Th>Fantasy points</Table.Th>
-                    <Table.Th>
-                      {view === 'standings' ? 'Points against' : 'Projected points'}
-                    </Table.Th>
+                    {headers.map((heading) => <Table.Th key={heading}>{heading}</Table.Th>)}
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>

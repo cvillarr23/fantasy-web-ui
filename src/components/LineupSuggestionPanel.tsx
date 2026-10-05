@@ -2,6 +2,7 @@ import { Badge, Button, Text } from '@mantine/core'
 import { HEALTHY_STATUSES, InjuryBadge } from './InjuryBadge'
 import { PlayerCard } from './PlayerCard'
 import { RumorBadge } from './RumorBadge'
+import { PlayerListSkeleton } from './skeletons'
 import type { LineupPlayerLine, LineupRosterResponse } from '../api/types'
 
 interface Suggestion {
@@ -103,6 +104,16 @@ export function LineupSuggestionPanel({ roster, onApply }: Props) {
           ))}
         </ul>
       )}
+    </section>
+  )
+}
+
+// Shown while the roster (which carries the optimizer's suggestions) is still loading.
+export function LineupSuggestionPanelSkeleton() {
+  return (
+    <section className="lineup-suggestion-panel">
+      <h3>Suggested start/sit changes</h3>
+      <PlayerListSkeleton rows={2} variant="row" label="Loading suggestions" />
     </section>
   )
 }

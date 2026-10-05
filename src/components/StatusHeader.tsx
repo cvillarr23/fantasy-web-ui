@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button, Skeleton } from '@mantine/core'
+import { StatTileSkeleton } from './skeletons'
 import { pauseDraft } from '../api/client'
 import { useTeamNames } from '../hooks/useTeamNames'
 import type { DraftStatusResponse } from '../api/types'
@@ -107,12 +108,11 @@ export function StatusHeader({
 
   if (loading) {
     return (
-      <header className="status-header">
+      <header className="status-header" aria-busy="true" aria-label="Loading draft status">
         <Skeleton height={22} width={70} radius="xl" />
         {Array.from({ length: 6 }).map((_, i) => (
           <div className="status-field" key={i}>
-            <Skeleton height={10} width={60} mb={6} />
-            <Skeleton height={14} width={80} />
+            <StatTileSkeleton />
           </div>
         ))}
       </header>

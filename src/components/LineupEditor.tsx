@@ -1,16 +1,18 @@
 import { useCurrentWeek } from '../hooks/useCurrentWeek'
-import { getCurrentWeek } from '../api/client'
 import { Link } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { DndContext, useDraggable, useDroppable, type DragEndEvent } from '@dnd-kit/core'
-import { Alert, Badge, Button, Group, Text, Tooltip } from '@mantine/core'
-import { getLineupRoster, triggerLineupSwap } from '../api/client'
+import { useMutation } from '@tanstack/react-query'
+import { Alert, Badge, Button, Group, Tooltip } from '@mantine/core'
+import { getCurrentWeek, getLineupRoster, triggerLineupSwap } from '../api/client'
+import { queryClient } from '../api/queryClient'
 import { useToast } from '../hooks/useToast'
 import { RosterQuickActions } from './RosterQuickActions'
 import { InjuryBadge } from './InjuryBadge'
-import { LineupSuggestionPanel } from './LineupSuggestionPanel'
+import { LineupSuggestionPanel, LineupSuggestionPanelSkeleton } from './LineupSuggestionPanel'
 import { PlayerCard } from './PlayerCard'
 import { RumorBadge } from './RumorBadge'
+import { PlayerRowSkeleton, SkeletonRegion } from './skeletons'
 import type { DraftConfig, LineupPlayerLine, LineupRosterResponse } from '../api/types'
 
 interface Props {
@@ -100,6 +102,47 @@ function StarterSlot({
   )
 }
 
+function LineupIntro() {
+  return (
+    <p className="muted">
+      This submits a real lineup change to ESPN via the browser worker — it isn't a dry
+      run. Drag a bench player onto a starting slot to stage a swap, review the list, then
+      submit them together.
+    </p>
+  )
+}
+
+// Mirrors the editor's columns: a standard ESPN lineup has 9 starting slots and 6-7 bench spots.
+function LineupEditorSkeleton({ week }: { week: number | string }) {
+  return (
+    <section className="lineup-editor">
+      <Group justify="space-between" mb="md">
+        <h2>Set your lineup</h2>
+        <RosterQuickActions page="lineup" week={week} />
+      </Group>
+      <LineupIntro />
+      <SkeletonRegion label="Loading your roster">
+        <LineupSuggestionPanelSkeleton />
+        <div className="lineup-editor-columns">
+          <div className="lineup-editor-starters">
+            <h3>Starters</h3>
+            {Array.from({ length: 9 }, (_, i) => (
+              <div key={i} className="lineup-slot">
+                <span className="lineup-slot-label" />
+                <PlayerRowSkeleton />
+              </div>
+            ))}
+          </div>
+          <div className="lineup-editor-bench">
+            <h3>Bench</h3>
+            {Array.from({ length: 6 }, (_, i) => <PlayerRowSkeleton key={i} />)}
+          </div>
+        </div>
+      </SkeletonRegion>
+    </section>
+  )
+}
+
 export function LineupEditor({ config, week = '' }: Props) {
   const currentWeek = useCurrentWeek()
   const canSubmit = Number(week) === currentWeek
@@ -122,15 +165,40 @@ export function LineupEditor({ config, week = '' }: Props) {
     } catch { /* The editor still works when session storage is unavailable. */ }
   }
   const [trackingId, setTrackingId] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
   const { toast, showToast } = useToast()
+  const submitMutation = useMutation({
+    mutationFn: async () => {
+      const live = await getCurrentWeek(config.season)
+      if (!canSubmit || live.week !== Number(week)) {
+        throw new Error('Lineup changes can only be submitted for the current week. Return to the current week and review your swaps.')
+      }
+      const signature = JSON.stringify([draftKey, pendingSwaps.map(s => [s.dropPlayer.espn_id, s.addPlayer.espn_id, s.slot])])
+      if (submissionAttempt.current?.signature !== signature) submissionAttempt.current = {signature, key: crypto.randomUUID()}
+      return triggerLineupSwap(
+        config.team_id,
+        pendingSwaps.map((swap) => ({
+          drop_player_id: swap.dropPlayer.espn_id,
+          add_player_id: swap.addPlayer.espn_id,
+          slot: swap.slot,
+        })),
+        submissionAttempt.current.key,
+      )
+    },
+  }, queryClient)
 
   function loadRoster() {
     setPendingSwaps([])
     const version = ++loadVersion.current
     setLoading(true)
     setError(null)
-    getLineupRoster(config.season, Number(week) || undefined)
+    // Through the query client (always fresh, never served from cache) so the read registers
+    // with the global progress bar; staged-swap restoration below needs the imperative result.
+    queryClient
+      .fetchQuery({
+        queryKey: ['lineup-roster', config.league_id, config.team_id, config.season, week],
+        queryFn: () => getLineupRoster(config.season, Number(week) || undefined),
+        staleTime: 0,
+      })
       .then((fresh) => {
         if (version !== loadVersion.current) return
         setRoster(fresh)
@@ -190,23 +258,8 @@ export function LineupEditor({ config, week = '' }: Props) {
   }
 
   async function submitSwaps() {
-    setBusy(true)
     try {
-      const live = await getCurrentWeek(config.season)
-      if (!canSubmit || live.week !== Number(week)) {
-        throw new Error('Lineup changes can only be submitted for the current week. Return to the current week and review your swaps.')
-      }
-      const signature = JSON.stringify([draftKey, pendingSwaps.map(s => [s.dropPlayer.espn_id, s.addPlayer.espn_id, s.slot])])
-      if (submissionAttempt.current?.signature !== signature) submissionAttempt.current = {signature, key: crypto.randomUUID()}
-      const accepted = await triggerLineupSwap(
-        config.team_id,
-        pendingSwaps.map((swap) => ({
-          drop_player_id: swap.dropPlayer.espn_id,
-          add_player_id: swap.addPlayer.espn_id,
-          slot: swap.slot,
-        })),
-        submissionAttempt.current.key,
-      )
+      const accepted = await submitMutation.mutateAsync()
       submissionAttempt.current = null
       setTrackingId(accepted.tracking_id)
       showToast(
@@ -217,24 +270,17 @@ export function LineupEditor({ config, week = '' }: Props) {
       loadRoster()
     } catch (err) {
       showToast('error', `Failed to submit lineup swaps: ${String(err)}`)
-    } finally {
-      setBusy(false)
     }
   }
 
-  if (loading && !roster) return <Text c="dimmed">Loading your roster…</Text>
+  if (loading && !roster) return <LineupEditorSkeleton week={week} />
   if (error) return <Alert color="red">{error}</Alert>
   if (!roster) return null
 
   return (
-    <section className="lineup-editor">
+    <section className="lineup-editor" aria-busy={loading || undefined}>
       <Group justify="space-between" mb="md">
         <h2>Set your lineup</h2>
-        {loading && (
-          <Text size="xs" c="dimmed">
-            Updating recommendations…
-          </Text>
-        )}
         <RosterQuickActions page="lineup" week={week} />
       </Group>
       {!canSubmit && <Alert color="yellow" mb="md">This week is for planning only. Return to the current week to submit lineup changes.</Alert>}
@@ -244,11 +290,7 @@ export function LineupEditor({ config, week = '' }: Props) {
           submitting.
         </Alert>
       )}
-      <p className="muted">
-        This submits a real lineup change to ESPN via the browser worker — it isn't a dry
-        run. Drag a bench player onto a starting slot to stage a swap, review the list, then
-        submit them together.
-      </p>
+      <LineupIntro />
       <LineupSuggestionPanel
         roster={roster}
         onApply={(starter, benchPlayer) => stageSwap(starter, benchPlayer, starter.slot)}
@@ -284,7 +326,7 @@ export function LineupEditor({ config, week = '' }: Props) {
         </ul>
       )}
 
-      <Button onClick={submitSwaps} loading={busy} disabled={pendingSwaps.length === 0 || !canSubmit || loading}>
+      <Button onClick={submitSwaps} loading={submitMutation.isPending} disabled={pendingSwaps.length === 0 || !canSubmit || loading}>
         Submit lineup changes
       </Button>
 

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import {
   Alert,
   Badge,
@@ -20,6 +20,7 @@ import { useDraftConfig } from '../hooks/useDraftConfig'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { WeekSelector } from './WeekSelector'
 import { palette } from '../theme'
+import { ChartSkeleton, MoveSidesSkeleton, OperationProgress, SkeletonRegion } from './skeletons'
 export function MoveOverviewPage() {
   const { config } = useDraftConfig()
   const [params, setParams] = useSearchParams()
@@ -30,7 +31,6 @@ export function MoveOverviewPage() {
   const [rest, setRest] = useState(false)
   const [confirmed, setConfirmed] = useState<MovePreview | null>(null)
   const invalidWaiver = kind === 'waiver' && (incoming.length !== 1 || outgoing.length > 1)
-  const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [tracking, setTracking] = useState<string | null>(null)
   const payload = {
@@ -46,16 +46,24 @@ export function MoveOverviewPage() {
     queryFn: () => previewMove(payload),
     enabled: Boolean(week && incoming.length),
     staleTime: 30_000,
+    // Toggling the week or rest-of-season keeps the current comparison up (dimmed) while the
+    // solver reruns; a different set of players starts clean so stale sides never show.
+    placeholderData: (previous, previousQuery) => {
+      const prev = previousQuery?.queryKey[3] as typeof payload | undefined
+      return prev &&
+        prev.incoming_espn_ids.join() === incoming.join() &&
+        prev.outgoing_espn_ids.join() === outgoing.join()
+        ? previous
+        : undefined
+    },
   })
   const submissionKey = useMemo(
     () => crypto.randomUUID(),
     [config.league_id, config.team_id, params.toString()],
   )
   const data = query.data
-  async function review() {
-    setBusy(true)
-    setError(null)
-    try {
+  const reviewMutation = useMutation({
+    mutationFn: async () => {
       if (invalidWaiver)
         throw new Error('A waiver claim must add one player and drop at most one player.')
       const fresh = await previewMove(payload)
@@ -64,33 +72,37 @@ export function MoveOverviewPage() {
         fresh.outgoing.map((p) => p.espn_id).join() !== outgoing.join()
       )
         throw new Error('The proposal changed. Review your selections again.')
-      setConfirmed(fresh)
-    } catch (e) {
-      setError(String(e))
-    } finally {
-      setBusy(false)
-    }
-  }
-  async function submit() {
-    if (!confirmed || invalidWaiver) return
-    setBusy(true)
-    setError(null)
-    try {
-      const add = confirmed.incoming[0]
-      const drop = confirmed.outgoing[0]
-      const result = await triggerWaiverClaim(
+      return fresh
+    },
+    onMutate: () => setError(null),
+    onSuccess: (fresh) => setConfirmed(fresh),
+    onError: (e) => setError(String(e)),
+  })
+  const submitMutation = useMutation({
+    mutationFn: (move: MovePreview) => {
+      const add = move.incoming[0]
+      const drop = move.outgoing[0]
+      return triggerWaiverClaim(
         config,
         { ...add, net_vorp: add.net_vorp ?? 0 },
         drop ? { ...drop, net_vorp: drop.net_vorp ?? 0 } : undefined,
         submissionKey,
       )
+    },
+    onMutate: () => setError(null),
+    onSuccess: (result) => {
       setTracking(result.tracking_id)
       setConfirmed(null)
-    } catch (e) {
-      setError(String(e))
-    } finally {
-      setBusy(false)
-    }
+    },
+    onError: (e) => setError(String(e)),
+  })
+  const busy = reviewMutation.isPending || submitMutation.isPending
+  function review() {
+    reviewMutation.mutate()
+  }
+  function submit() {
+    if (!confirmed || invalidWaiver) return
+    submitMutation.mutate(confirmed)
   }
   return (
     <div className="dashboard">
@@ -122,9 +134,16 @@ export function MoveOverviewPage() {
         {!incoming.length && (
           <Alert color="yellow">Choose a move from Waivers or the trade builder first.</Alert>
         )}
-        {query.isPending && incoming.length > 0 && (
-          <Text role="status">Comparing eligible lineups…</Text>
+        {query.isPending && incoming.length > 0 && Boolean(week) && (
+          <SkeletonRegion label="Comparing eligible lineups">
+            <Stack>
+              <MoveSidesSkeleton />
+              <h3>Projected lineup impact</h3>
+              <ChartSkeleton height={240} />
+            </Stack>
+          </SkeletonRegion>
         )}
+        {query.isPlaceholderData && <OperationProgress label="Comparing eligible lineups" />}
         {query.error && (
           <Alert color="red">
             {query.error.message}
@@ -134,7 +153,7 @@ export function MoveOverviewPage() {
           </Alert>
         )}
         {data && (
-          <>
+          <Stack aria-busy={query.isPlaceholderData || undefined}>
             <div className="move-sides">
               {[
                 {
@@ -276,6 +295,9 @@ export function MoveOverviewPage() {
                 Review and submit ESPN claim
               </Button>
             )}
+            {reviewMutation.isPending && (
+              <OperationProgress label="Checking the latest roster before you confirm" />
+            )}
             {kind === 'trade' && (
               <Alert color="blue">This is an evaluation. No trade has been submitted.</Alert>
             )}
@@ -290,7 +312,7 @@ export function MoveOverviewPage() {
             <Text size="xs" c="dimmed">
               Evaluated {new Date(data.updated_at).toLocaleString()}
             </Text>
-          </>
+          </Stack>
         )}
         {error && <Alert color="red">{error}</Alert>}
         <Modal
@@ -320,6 +342,7 @@ export function MoveOverviewPage() {
             <Button loading={busy} onClick={() => void submit()}>
               Confirm claim
             </Button>
+            {submitMutation.isPending && <OperationProgress label="Submitting claim to ESPN" />}
           </Stack>
         </Modal>
       </Stack>

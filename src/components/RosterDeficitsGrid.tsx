@@ -1,4 +1,5 @@
-import { Alert, Skeleton, Table, Tooltip } from '@mantine/core'
+import { Alert, Table, Tooltip } from '@mantine/core'
+import { SkeletonRegion, TableRowsSkeleton } from './skeletons'
 import { useTeamNames } from '../hooks/useTeamNames'
 import type { RosterDeficitsResponse, RosterPositionDeficit } from '../api/types'
 
@@ -9,7 +10,10 @@ const POSITION_COLUMNS = ['QB', 'RB', 'WR', 'TE'] as const
 interface Props {
   deficits: RosterDeficitsResponse | null
   myTeamId: string
+  /** First load: no data yet, render the placeholder grid. */
   loading?: boolean
+  /** Showing the previous week's data while the next one loads. */
+  updating?: boolean
 }
 
 function HelpIcon({ label }: { label: string }) {
@@ -20,13 +24,14 @@ function HelpIcon({ label }: { label: string }) {
   )
 }
 
-export function RosterDeficitsGrid({ deficits, myTeamId, loading = false }: Props) {
+export function RosterDeficitsGrid({ deficits, myTeamId, loading = false, updating = false }: Props) {
   const teamNames = useTeamNames()
 
   if (loading) {
     return (
       <section className="roster-deficits-grid" aria-label="Roster deficits by team and position">
         <h2>Roster deficits</h2>
+        <SkeletonRegion label="Loading roster deficits">
         <Table>
           <Table.Thead>
             <Table.Tr>
@@ -37,16 +42,11 @@ export function RosterDeficitsGrid({ deficits, myTeamId, loading = false }: Prop
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {Array.from({ length: 4 }).map((_, row) => (
-              <Table.Tr key={row}>
-                <Table.Th><Skeleton height={12} width={70} /></Table.Th>
-                {POSITION_COLUMNS.map((position) => (
-                  <Table.Td key={position}><Skeleton height={12} width={30} mx="auto" /></Table.Td>
-                ))}
-              </Table.Tr>
-            ))}
+            {/* A typical league has 10-12 teams; matching that keeps the editor below from jumping. */}
+            <TableRowsSkeleton columns={POSITION_COLUMNS.length + 1} rows={10} rowHeight={12} rowMinHeight={39} rowHeader />
           </Table.Tbody>
         </Table>
+        </SkeletonRegion>
       </section>
     )
   }
@@ -70,7 +70,11 @@ export function RosterDeficitsGrid({ deficits, myTeamId, loading = false }: Prop
   ]
 
   return (
-    <section className="roster-deficits-grid" aria-label="Roster deficits by team and position">
+    <section
+      className="roster-deficits-grid"
+      aria-label="Roster deficits by team and position"
+      aria-busy={updating || undefined}
+    >
       <h2>
         Roster deficits{deficits ? ` — season ${deficits.season}, week ${deficits.week}` : ''}{' '}
         <HelpIcon label="Each cell shows players rostered / starters required at that position. A highlighted cell means you don't have enough players rostered to fill your required starting slots — a real deficit, not just thin bench depth." />

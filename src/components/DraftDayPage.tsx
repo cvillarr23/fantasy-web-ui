@@ -9,6 +9,7 @@ import { RosterVsLeaguePanel } from './RosterVsLeaguePanel'
 import { StatusHeader } from './StatusHeader'
 import { TeamComparisonPanel } from './TeamComparisonPanel'
 import { TeamPositionGrid } from './TeamPositionGrid'
+import { PageSkeleton } from './skeletons'
 import { useDraftStream } from '../hooks/useDraftStream'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { triggerDraftPick } from '../api/client'
@@ -146,7 +147,7 @@ export function DraftDayPage() {
     setReconfiguring(false)
   }
 
-  if (!isConfigured && loading) return null
+  if (!isConfigured && loading) return <PageSkeleton />
 
   if (reconfiguring || !isConfigured) {
     return <ConfigScreen initial={config} onConfigured={handleConfigured} />

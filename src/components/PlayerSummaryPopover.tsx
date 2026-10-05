@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
-import { Modal } from '@mantine/core'
+import { useQuery } from '@tanstack/react-query'
+import { queryClient } from '../api/queryClient'
+import { Modal, Skeleton } from '@mantine/core'
 import { getPlayerSummary } from '../api/client'
-import type { PlayerSummary } from '../api/types'
+import { SkeletonRegion, TextSkeleton } from './skeletons'
 
 interface Props {
   playerId: string
@@ -12,28 +13,28 @@ interface Props {
 // injury_status + recent CORE-13 news) on demand, rather than bundling it into every
 // pick-feed row up front.
 export function PlayerSummaryPopover({ playerId, onClose }: Props) {
-  const [summary, setSummary] = useState<PlayerSummary | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    setSummary(null)
-    setError(null)
-    getPlayerSummary(playerId)
-      .then((result) => { if (!cancelled) setSummary(result) })
-      .catch((err) => { if (!cancelled) setError(String(err)) })
-    return () => { cancelled = true }
-  }, [playerId])
+  const query = useQuery({
+    queryKey: ['player-summary', playerId],
+    queryFn: () => getPlayerSummary(playerId),
+  }, queryClient)
+  const summary = query.data
+  const error = query.error ? String(query.error) : null
 
   return (
     <Modal
       opened
       onClose={onClose}
-      title={summary?.name ?? (error ? 'Unable to load player' : 'Loading player…')}
+      title={summary?.name ?? (error ? 'Unable to load player' : 'Player')}
       size="md"
     >
       {error && <p className="error">Failed to load player summary: {error}</p>}
-      {!summary && !error && <p>Loading…</p>}
+      {!summary && !error && (
+        <SkeletonRegion label="Loading player">
+          <Skeleton height={14} width="60%" my="md" />
+          <h4>Recent news</h4>
+          <TextSkeleton lines={4} />
+        </SkeletonRegion>
+      )}
       {summary && (
         <>
           <p className="subtitle">{summary.position} · {summary.team} · {summary.status}
