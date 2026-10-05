@@ -2,7 +2,8 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { queryClient } from '../api/queryClient'
 import { Alert, Button, Group, Stack, Text } from '@mantine/core'
 import { Link } from 'react-router-dom'
-import { getRosterDeficits, getWaiverRecommendations } from '../api/client'
+import { getWaiverRecommendations } from '../api/client'
+import { rosterDeficitsQuery } from '../api/weekReads'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { RosterDeficitsGrid } from './RosterDeficitsGrid'
@@ -23,13 +24,7 @@ export function WaiverPage() {
   const weekValue = Number(week)
   const enabled = isConfigured && Number.isInteger(weekValue) && weekValue > 0
   const deficitsQuery = useQuery(
-    {
-      queryKey: ['roster-deficits', config.league_id, config.season, weekValue],
-      queryFn: () => getRosterDeficits(config.season, weekValue),
-      enabled,
-      refetchInterval: 60_000,
-      placeholderData: keepPreviousData,
-    },
+    { ...rosterDeficitsQuery(config, weekValue), refetchInterval: 60_000, placeholderData: keepPreviousData },
     queryClient,
   )
   const recommendationsQuery = useQuery(

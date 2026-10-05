@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { queryClient } from '../api/queryClient'
 import { Alert, Button, Group, Stack, Text } from '@mantine/core'
 import { Link } from 'react-router-dom'
-import { getMatchup, getRosterDeficits } from '../api/client'
+import { matchupQuery as matchupOptions, rosterDeficitsQuery } from '../api/weekReads'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { LineupEditor } from './LineupEditor'
@@ -20,19 +20,13 @@ export function LineupPage() {
   const enabled = isConfigured && validWeek
 
   // Same keys as the waiver and matchup pages, so moving between them reuses the cache.
-  const deficitsQuery = useQuery({
-    queryKey: ['roster-deficits', config.league_id, config.season, weekValue],
-    queryFn: () => getRosterDeficits(config.season, weekValue),
-    enabled,
-    placeholderData: keepPreviousData,
-  }, queryClient)
-  // Best-effort matchup context banner - omitted entirely on a bye week (404) or any other
-  // failure rather than shown as an error, since lineup editing must keep working without it.
-  const matchupQuery = useQuery({
-    queryKey: ['matchup', config.league_id, config.season, weekValue],
-    queryFn: () => getMatchup(config.season, weekValue),
-    enabled,
-  }, queryClient)
+  const deficitsQuery = useQuery(
+    { ...rosterDeficitsQuery(config, weekValue), placeholderData: keepPreviousData },
+    queryClient,
+  )
+  // Best-effort matchup context banner - omitted entirely on a bye week (cached as null) or
+  // any failure rather than shown as an error, since lineup editing must keep working without it.
+  const matchupQuery = useQuery(matchupOptions(config, weekValue), queryClient)
   const deficits = deficitsQuery.data ?? null
   const loading = enabled && deficitsQuery.isPending
   const error = deficitsQuery.error ? String(deficitsQuery.error) : null

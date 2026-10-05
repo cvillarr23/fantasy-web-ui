@@ -20,4 +20,12 @@ Element.prototype.scrollIntoView = vi.fn()
 
 afterEach(() => queryClient.clear())
 
-beforeEach(() => queryClient.setDefaultOptions({ queries: { retry: false } }))
+// setDefaultOptions replaces the whole object, so keep the app's cache settings (staleTime,
+// gcTime) and only turn retries off; tests then exercise the real caching behaviour.
+const appDefaults = queryClient.getDefaultOptions()
+beforeEach(() =>
+  queryClient.setDefaultOptions({
+    ...appDefaults,
+    queries: { ...appDefaults.queries, retry: false },
+  }),
+)
