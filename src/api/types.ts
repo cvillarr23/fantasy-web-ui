@@ -348,6 +348,7 @@ export interface ChatGrounding {
 }
 
 export interface ChatQueryResponse {
+  session_id?: string
   answer: string
   provider: string
   model: string

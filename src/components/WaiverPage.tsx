@@ -1,15 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { queryClient } from '../api/queryClient'
 import { Alert, Button, Group, Stack, Text } from '@mantine/core'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { getRosterDeficits, getWaiverRecommendations } from '../api/client'
-import { useCurrentWeek } from '../hooks/useCurrentWeek'
+import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useDraftConfig } from '../hooks/useDraftConfig'
-import { RoadmapBanner } from './RoadmapBanner'
 import { RosterDeficitsGrid } from './RosterDeficitsGrid'
 import { WaiverRecommendationPanel } from './WaiverRecommendationPanel'
 import { RosterQuickActions } from './RosterQuickActions'
 import { WeekSelector } from './WeekSelector'
-import type { RosterDeficitsResponse, WaiverRecommendation } from '../api/types'
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
@@ -19,49 +18,34 @@ export function WaiverPage() {
   const { config, loading: configLoading } = useDraftConfig()
   const isConfigured = Boolean(config.league_id && config.team_id)
 
-  const [searchParams] = useSearchParams()
-  const weekFromUrl = Number(searchParams.get('week'))
-  const [week, setWeek] = useState<number | string>(
-    Number.isFinite(weekFromUrl) && weekFromUrl > 0 ? weekFromUrl : '',
-  )
-  const [deficits, setDeficits] = useState<RosterDeficitsResponse | null>(null)
-  const [recommendations, setRecommendations] = useState<WaiverRecommendation[]>([])
-  const [loading, setLoading] = useState(false)
-  // Tracked per call: one endpoint failing (e.g. recommendations' 503 when no pregame data
-  // is usable) must not hide what the other one returned.
-  const [deficitsError, setDeficitsError] = useState<string | null>(null)
-  const [recommendationsError, setRecommendationsError] = useState<string | null>(null)
-  const currentWeek = useCurrentWeek()
-
-  useEffect(() => {
-    if (currentWeek !== null && week === '') setWeek(currentWeek)
-  }, [currentWeek])
-
+  const [week, setWeek] = useSelectedWeek()
   const weekValue = Number(week)
-  const validWeek = Number.isFinite(weekValue) && weekValue > 0
-
-  useEffect(() => {
-    if (!isConfigured || !validWeek) return
-    let cancelled = false
-    setLoading(true)
-    setDeficitsError(null)
-    setRecommendationsError(null)
-    setDeficits(null)
-    setRecommendations([])
-    Promise.allSettled([
-      getRosterDeficits(config.season, weekValue),
-      getWaiverRecommendations(config.season, weekValue),
-    ])
-      .then(([deficitsResult, waiverResult]) => {
-        if (cancelled) return
-        if (deficitsResult.status === 'fulfilled') setDeficits(deficitsResult.value)
-        else setDeficitsError(errorMessage(deficitsResult.reason))
-        if (waiverResult.status === 'fulfilled') setRecommendations(waiverResult.value.recommendations)
-        else setRecommendationsError(errorMessage(waiverResult.reason))
-      })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [isConfigured, config.season, weekValue, validWeek])
+  const enabled = isConfigured && Number.isInteger(weekValue) && weekValue > 0
+  const deficitsQuery = useQuery(
+    {
+      queryKey: ['roster-deficits', config.league_id, config.season, weekValue],
+      queryFn: () => getRosterDeficits(config.season, weekValue),
+      enabled,
+      refetchInterval: 60_000,
+    },
+    queryClient,
+  )
+  const recommendationsQuery = useQuery(
+    {
+      queryKey: ['waiver-recommendations', config.league_id, config.season, weekValue],
+      queryFn: () => getWaiverRecommendations(config.season, weekValue),
+      enabled,
+      refetchInterval: 60_000,
+    },
+    queryClient,
+  )
+  const deficits = deficitsQuery.data ?? null
+  const recommendations = recommendationsQuery.data?.recommendations ?? []
+  const loading = deficitsQuery.isLoading
+  const deficitsError = deficitsQuery.error ? errorMessage(deficitsQuery.error) : null
+  const recommendationsError = recommendationsQuery.error
+    ? errorMessage(recommendationsQuery.error)
+    : null
 
   if (!isConfigured) {
     if (configLoading) return null
@@ -71,7 +55,9 @@ export function WaiverPage() {
           <Text ta="center" maw={480}>
             No league configured yet. Set your league and team in Settings first.
           </Text>
-          <Button component={Link} to="/settings" variant="default">Go to Settings</Button>
+          <Button component={Link} to="/settings" variant="default">
+            Go to Settings
+          </Button>
         </Stack>
       </div>
     )
@@ -79,25 +65,32 @@ export function WaiverPage() {
 
   return (
     <div className="dashboard">
-      <RoadmapBanner
-        title="Waiver Manager improvements are planned"
-        issueUrl="https://github.com/cvillarr23/fantasy-web-ui/issues/77"
-      />
       <Group justify="space-between" mb="md">
         <WeekSelector week={week} onChange={setWeek} />
         <RosterQuickActions page="waivers" week={week} />
       </Group>
-      {deficitsError && <Alert color="red" mb="md">{deficitsError}</Alert>}
-      {(loading || deficits) && (
-        <RosterDeficitsGrid deficits={deficits} myTeamId={config.team_id} loading={loading} />
+      {deficitsError && (
+        <Alert color="red" mb="md">
+          {deficitsError}
+        </Alert>
       )}
       {recommendationsError ? (
         // Not the panel: its empty state ("No waiver upgrades this week.") would misread a
         // failed load as "nothing worth claiming".
-        <Alert color="red" mb="md">{recommendationsError}</Alert>
+        <Alert color="red" mb="md">
+          {recommendationsError}
+        </Alert>
+      ) : recommendationsQuery.isLoading ? (
+        <Text role="status">Finding waiver upgrades…</Text>
       ) : (
         <WaiverRecommendationPanel recommendations={recommendations} config={config} />
       )}
+      <details className="secondary-panel">
+        <summary>League position depth</summary>
+        {(loading || deficits) && (
+          <RosterDeficitsGrid deficits={deficits} myTeamId={config.team_id} loading={loading} />
+        )}
+      </details>
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { DndContext, useDraggable, useDroppable, type DragEndEvent } from '@dnd-kit/core'
 import { Alert, Badge, Button, Group, Text, Tooltip } from '@mantine/core'
@@ -83,7 +84,9 @@ function StarterSlot({
       <DraggablePlayerCard line={line} />
       {line.deficit_flag && (
         <Tooltip label="This position is a structural deficit on your roster">
-          <Badge color="yellow" size="xs">thin</Badge>
+          <Badge color="yellow" size="xs">
+            thin
+          </Badge>
         </Tooltip>
       )}
       {hintedBenchPlayer && (
@@ -110,11 +113,22 @@ export function LineupEditor({ config, week = '' }: Props) {
   function saveSwaps(swaps: PendingSwap[]) {
     setPendingSwaps(swaps)
     try {
-      window.sessionStorage.setItem(draftKey, JSON.stringify(swaps.map((swap) => ({
-        id: swap.id, dropId: swap.dropPlayer.player_id, addId: swap.addPlayer.player_id, slot: swap.slot,
-      }))))
-    } catch { /* The editor still works when session storage is unavailable. */ }
+      window.sessionStorage.setItem(
+        draftKey,
+        JSON.stringify(
+          swaps.map((swap) => ({
+            id: swap.id,
+            dropId: swap.dropPlayer.player_id,
+            addId: swap.addPlayer.player_id,
+            slot: swap.slot,
+          })),
+        ),
+      )
+    } catch {
+      /* The editor still works when session storage is unavailable. */
+    }
   }
+  const [trackingId, setTrackingId] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const { toast, showToast } = useToast()
 
@@ -122,7 +136,7 @@ export function LineupEditor({ config, week = '' }: Props) {
     const version = ++loadVersion.current
     setLoading(true)
     setError(null)
-    getLineupRoster(config.season)
+    getLineupRoster(config.season, Number(week) || undefined)
       .then((fresh) => {
         if (version !== loadVersion.current) return
         setRoster(fresh)
@@ -132,7 +146,9 @@ export function LineupEditor({ config, week = '' }: Props) {
           const restored: PendingSwap[] = []
           for (const item of saved) {
             if (!item || typeof item.id !== 'string') continue
-            const dropPlayer = fresh.starters.find((p) => p.player_id === item.dropId && p.slot === item.slot)
+            const dropPlayer = fresh.starters.find(
+              (p) => p.player_id === item.dropId && p.slot === item.slot,
+            )
             const addPlayer = fresh.bench.find((p) => p.player_id === item.addId)
             if (dropPlayer?.espn_id && addPlayer?.espn_id) {
               restored.push({ id: item.id, slot: item.slot, dropPlayer, addPlayer })
@@ -140,26 +156,40 @@ export function LineupEditor({ config, week = '' }: Props) {
           }
           setDraftNotice(restored.length !== saved.length)
           saveSwaps(restored)
-        } catch { /* Ignore unavailable or corrupt draft storage. */ }
+        } catch {
+          /* Ignore unavailable or corrupt draft storage. */
+        }
       })
-      .catch((err) => { if (version === loadVersion.current) setError(String(err)) })
-      .finally(() => { if (version === loadVersion.current) setLoading(false) })
+      .catch((err) => {
+        if (version === loadVersion.current) setError(String(err))
+      })
+      .finally(() => {
+        if (version === loadVersion.current) setLoading(false)
+      })
   }
 
   useEffect(() => {
     loadRoster()
-    return () => { loadVersion.current += 1 }
+    return () => {
+      loadVersion.current += 1
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config.season])
+  }, [config.season, week])
 
   function stageSwap(dropPlayer: LineupPlayerLine, addPlayer: LineupPlayerLine, slot: string) {
     if (!dropPlayer.espn_id || !addPlayer.espn_id) {
-      showToast('error', 'One of these players has no ESPN id in our crosswalk — make this change in ESPN directly.')
+      showToast(
+        'error',
+        'One of these players has no ESPN id in our crosswalk — make this change in ESPN directly.',
+      )
       return
     }
     saveSwaps([
-      ...pendingSwaps.filter((swap) =>
-        swap.dropPlayer.player_id !== dropPlayer.player_id && swap.addPlayer.player_id !== addPlayer.player_id),
+      ...pendingSwaps.filter(
+        (swap) =>
+          swap.dropPlayer.player_id !== dropPlayer.player_id &&
+          swap.addPlayer.player_id !== addPlayer.player_id,
+      ),
       { id: crypto.randomUUID(), dropPlayer, addPlayer, slot },
     ])
   }
@@ -184,7 +214,7 @@ export function LineupEditor({ config, week = '' }: Props) {
   async function submitSwaps() {
     setBusy(true)
     try {
-      await triggerLineupSwap(
+      const accepted = await triggerLineupSwap(
         config.team_id,
         pendingSwaps.map((swap) => ({
           drop_player_id: swap.dropPlayer.espn_id,
@@ -192,7 +222,11 @@ export function LineupEditor({ config, week = '' }: Props) {
           slot: swap.slot,
         })),
       )
-      showToast('success', `Submitted ${pendingSwaps.length} lineup swap(s).`)
+      setTrackingId(accepted.tracking_id)
+      showToast(
+        'success',
+        `Queued ${pendingSwaps.length} lineup swap(s). Waiting for verification.`,
+      )
       saveSwaps([])
       loadRoster()
     } catch (err) {
@@ -202,7 +236,7 @@ export function LineupEditor({ config, week = '' }: Props) {
     }
   }
 
-  if (loading) return <Text c="dimmed">Loading your roster…</Text>
+  if (loading && !roster) return <Text c="dimmed">Loading your roster…</Text>
   if (error) return <Alert color="red">{error}</Alert>
   if (!roster) return null
 
@@ -210,13 +244,23 @@ export function LineupEditor({ config, week = '' }: Props) {
     <section className="lineup-editor">
       <Group justify="space-between" mb="md">
         <h2>Set your lineup</h2>
+        {loading && (
+          <Text size="xs" c="dimmed">
+            Updating recommendations…
+          </Text>
+        )}
         <RosterQuickActions page="lineup" week={week} />
       </Group>
-      {draftNotice && <Alert color="yellow" mb="md">Some staged swaps were removed because your roster changed. Review your lineup before submitting.</Alert>}
+      {draftNotice && (
+        <Alert color="yellow" mb="md">
+          Some staged swaps were removed because your roster changed. Review your lineup before
+          submitting.
+        </Alert>
+      )}
       <p className="muted">
-        This submits a real lineup change to ESPN via the browser worker — it isn't a dry
-        run. Drag a bench player onto a starting slot to stage a swap, review the list, then
-        submit them together.
+        This submits a real lineup change to ESPN via the browser worker — it isn't a dry run. Drag
+        a bench player onto a starting slot to stage a swap, review the list, then submit them
+        together.
       </p>
       <LineupSuggestionPanel
         roster={roster}
@@ -231,13 +275,17 @@ export function LineupEditor({ config, week = '' }: Props) {
                 key={line.player_id}
                 line={line}
                 bench={roster.bench}
-                onApplyHint={(starter, benchPlayer) => stageSwap(starter, benchPlayer, starter.slot)}
+                onApplyHint={(starter, benchPlayer) =>
+                  stageSwap(starter, benchPlayer, starter.slot)
+                }
               />
             ))}
           </div>
           <div className="lineup-editor-bench">
             <h3>Bench</h3>
-            {roster.bench.map((line) => <DraggablePlayerCard key={line.player_id} line={line} />)}
+            {roster.bench.map((line) => (
+              <DraggablePlayerCard key={line.player_id} line={line} />
+            ))}
           </div>
         </div>
       </DndContext>
@@ -246,8 +294,12 @@ export function LineupEditor({ config, week = '' }: Props) {
         <ul className="lineup-swap-pending-list">
           {pendingSwaps.map((swap) => (
             <li key={swap.id}>
-              <span>{swap.dropPlayer.name} → bench, {swap.addPlayer.name} → {swap.slot}</span>
-              <Button variant="subtle" size="xs" onClick={() => removeSwap(swap.id)}>✕</Button>
+              <span>
+                {swap.dropPlayer.name} → bench, {swap.addPlayer.name} → {swap.slot}
+              </span>
+              <Button variant="subtle" size="xs" onClick={() => removeSwap(swap.id)}>
+                ✕
+              </Button>
             </li>
           ))}
         </ul>
@@ -257,6 +309,11 @@ export function LineupEditor({ config, week = '' }: Props) {
         Submit lineup changes
       </Button>
 
+      {trackingId && (
+        <Button component={Link} to={`/activity/actions/${trackingId}`} variant="subtle">
+          Track lineup changes
+        </Button>
+      )}
       {toast && <p className={`status-message toast toast-${toast.tone}`}>{toast.message}</p>}
     </section>
   )

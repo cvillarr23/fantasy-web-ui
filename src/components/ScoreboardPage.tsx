@@ -1,13 +1,19 @@
 import { useEffect, useState } from 'react'
 import { Alert, Button, Group, Stack, Text } from '@mantine/core'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { getScoreboard } from '../api/client'
-import { useCurrentWeek } from '../hooks/useCurrentWeek'
+import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { WeekSelector } from './WeekSelector'
 import type { ScoreboardMatchup, ScoreboardTeamInfo } from '../api/types'
 
-function ScoreboardSide({ side, isMyTeam }: { side: ScoreboardTeamInfo | null; isMyTeam: boolean }) {
+function ScoreboardSide({
+  side,
+  isMyTeam,
+}: {
+  side: ScoreboardTeamInfo | null
+  isMyTeam: boolean
+}) {
   if (!side) {
     return (
       <div className="scoreboard-side scoreboard-side-bye">
@@ -40,19 +46,10 @@ export function ScoreboardPage() {
   const { config, loading: configLoading } = useDraftConfig()
   const isConfigured = Boolean(config.league_id && config.team_id)
 
-  const [searchParams] = useSearchParams()
-  const weekFromUrl = Number(searchParams.get('week'))
-  const [week, setWeek] = useState<number | string>(
-    Number.isFinite(weekFromUrl) && weekFromUrl > 0 ? weekFromUrl : '',
-  )
+  const [week, setWeek] = useSelectedWeek()
   const [matchups, setMatchups] = useState<ScoreboardMatchup[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const currentWeek = useCurrentWeek()
-
-  useEffect(() => {
-    if (currentWeek !== null && week === '') setWeek(currentWeek)
-  }, [currentWeek])
 
   const weekValue = Number(week)
   const validWeek = Number.isFinite(weekValue) && weekValue > 0
@@ -64,10 +61,18 @@ export function ScoreboardPage() {
     setError(null)
     setMatchups(null)
     getScoreboard(config.season, weekValue)
-      .then((response) => { if (!cancelled) setMatchups(response.matchups) })
-      .catch((err) => { if (!cancelled) setError(String(err)) })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
+      .then((response) => {
+        if (!cancelled) setMatchups(response.matchups)
+      })
+      .catch((err) => {
+        if (!cancelled) setError(String(err))
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [isConfigured, config.season, weekValue, validWeek])
 
   if (!isConfigured) {
@@ -78,7 +83,9 @@ export function ScoreboardPage() {
           <Text ta="center" maw={480}>
             No league configured yet. Set your league and team in Settings first.
           </Text>
-          <Button component={Link} to="/settings" variant="default">Go to Settings</Button>
+          <Button component={Link} to="/settings" variant="default">
+            Go to Settings
+          </Button>
         </Stack>
       </div>
     )
@@ -89,11 +96,13 @@ export function ScoreboardPage() {
       <Group justify="space-between" align="center" mb="md">
         <WeekSelector week={week} onChange={setWeek} />
       </Group>
-      {error && <Alert color="red" mb="md">{error}</Alert>}
-      {loading && <Text c="dimmed">Loading scoreboard…</Text>}
-      {matchups && matchups.length === 0 && (
-        <Alert color="gray">No matchups this week.</Alert>
+      {error && (
+        <Alert color="red" mb="md">
+          {error}
+        </Alert>
       )}
+      {loading && <Text c="dimmed">Loading scoreboard…</Text>}
+      {matchups && matchups.length === 0 && <Alert color="gray">No matchups this week.</Alert>}
       {matchups && matchups.length > 0 && (
         <div className="scoreboard-grid">
           {matchups.map((matchup, index) => (

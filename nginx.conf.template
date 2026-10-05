@@ -17,7 +17,7 @@ server {
     resolver 10.152.183.152 valid=10s;
     set $backend "${CORE_API_UPSTREAM}";
 
-    location = /v1/trigger/waiver {
+    location ~ ^/v1/trigger/(waiver|lineup|draft-pick)$ {
         limit_except POST { deny all; }
         proxy_set_header X-API-Key "${TRIGGER_API_KEY}";
         proxy_pass http://$backend$request_uri;

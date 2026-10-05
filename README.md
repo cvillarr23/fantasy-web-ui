@@ -1,20 +1,14 @@
 # fantasy-web-ui
 
-Draft-day monitoring dashboard for the fantasy manager pipeline. Part 1 of a planned
-web UI (see `fantasy-core-pipeline`'s planning notes) that will eventually grow into a
-full overview/management console in front of ESPN's fantasy app.
+Fantasy team management console for lineup, matchup, waivers, trades, league standings,
+player rankings, draft monitoring, and persistent bot/LLM activity.
 
-## What it does
+The mobile navigation drawer and desktop sidebar share the same pages. Weekly views
+follow the current league week unless a week is selected explicitly. Move reviews show
+who joins/leaves the roster, projected lineup impact, and warnings before a waiver request.
 
-- Follows a live draft in real time via `fantasy-core-pipeline`'s `GET /v1/draft/stream`
-  SSE endpoint: pipeline health, job state, on-the-clock team, current pick.
-- Shows every pick (yours and opponents') with player name/position, click-to-expand
-  for a fuller summary (team, injury status, recent news).
-- Shows the system's top-5 ranked draft candidates, with a placeholder slot for ESPN's
-  own suggested pick (not yet available - pending a `fantasy-browser-worker` follow-up).
-- Lets you pause/resume the pipeline's auto-draft, and publish a manual pick to the
-  `draft_targets` queue (does not yet click ESPN's UI for you - that automation is a
-  separate follow-up, WORKER-06).
+- [Palette and UI conventions](docs/ui-design-system.md)
+- [Implementation, caching, rollout, and validation](docs/ux-overhaul/implementation.md)
 
 ## Running locally
 

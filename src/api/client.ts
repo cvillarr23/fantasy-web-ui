@@ -1,4 +1,23 @@
-import type { BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, ScoreboardResponse, TradeEvaluationResponse, VorpStat, WaiverPlayerSummary, WaiverRecommendationsResponse } from './types'
+import { queryClient, cacheKey, readFreshness } from './queryClient'
+import type {
+  BacktestResultDetail,
+  BacktestResultSummary,
+  ChatQueryResponse,
+  DraftConfig,
+  DraftStatusResponse,
+  LineupRosterResponse,
+  LineupSwapInstruction,
+  MatchupResponse,
+  PlayerSearchResult,
+  PlayerSummary,
+  PracticeSyncJobStatus,
+  RosterDeficitsResponse,
+  ScoreboardResponse,
+  TradeEvaluationResponse,
+  VorpStat,
+  WaiverPlayerSummary,
+  WaiverRecommendationsResponse,
+} from './types'
 
 export class ApiError extends Error {
   status: number
@@ -19,7 +38,9 @@ function extractErrorMessage(body: string, fallback: string): string {
         if (!item || typeof item !== 'object') return []
         const { loc, msg } = item as { loc?: unknown; msg?: unknown }
         if (!Array.isArray(loc) || typeof msg !== 'string') return []
-        const field = loc.filter((part): part is string => typeof part === 'string' && part !== 'body').join('.')
+        const field = loc
+          .filter((part): part is string => typeof part === 'string' && part !== 'body')
+          .join('.')
         return [`${field || 'Request'}: ${msg}`]
       })
       if (issues.length) return issues.join('; ')
@@ -82,7 +103,10 @@ function showSessionExpiredBanner(): void {
  * answered" - they usually warrant different recovery. */
 export class ApiTimeoutError extends ApiError {
   constructor(path: string, timeoutMs: number) {
-    super(0, `Request to ${path} timed out after ${Math.round(timeoutMs / 1000)}s - the backend did not respond.`)
+    super(
+      0,
+      `Request to ${path} timed out after ${Math.round(timeoutMs / 1000)}s - the backend did not respond.`,
+    )
   }
 }
 
@@ -100,7 +124,11 @@ function mergeSignals(a: AbortSignal, b: AbortSignal): AbortSignal {
   return merged.signal
 }
 
-async function request<T>(path: string, init?: RequestInit, timeoutMs: number = DEFAULT_TIMEOUT_MS): Promise<T> {
+async function networkRequest<T>(
+  path: string,
+  init?: RequestInit,
+  timeoutMs: number = DEFAULT_TIMEOUT_MS,
+): Promise<T> {
   const timeoutController = new AbortController()
   // An explicit flag rather than reading signal.aborted in the catch: the timer can fire in the
   // window between some other failure rejecting and the catch running, which would misreport a
@@ -113,7 +141,9 @@ async function request<T>(path: string, init?: RequestInit, timeoutMs: number = 
   // Merged rather than substituted: applying our signal after the init spread would defeat a
   // caller-supplied one, and applying theirs would defeat the timeout. Both have to survive.
   const callerSignal = init?.signal
-  const signal = callerSignal ? mergeSignals(callerSignal, timeoutController.signal) : timeoutController.signal
+  const signal = callerSignal
+    ? mergeSignals(callerSignal, timeoutController.signal)
+    : timeoutController.signal
   // The timer deliberately spans body consumption too, not just the fetch. fetch() resolves as
   // soon as headers arrive, so a backend that sends a 200 and then stalls the body would hang
   // .json() forever - reinstating the never-settles bug this whole change exists to remove.
@@ -153,8 +183,25 @@ async function request<T>(path: string, init?: RequestInit, timeoutMs: number = 
   }
 }
 
-export function getDraftStatus(leagueId: string, season: number, limit = 10): Promise<DraftStatusResponse> {
-  const params = new URLSearchParams({ league_id: leagueId, season: String(season), limit: String(limit) })
+export function request<T>(path: string, init?: RequestInit, timeoutMs?: number): Promise<T> {
+  if (init?.method && init.method !== 'GET') return networkRequest<T>(path, init, timeoutMs)
+  return queryClient.fetchQuery({
+    queryKey: cacheKey(path),
+    staleTime: readFreshness(path),
+    queryFn: ({ signal }) => networkRequest<T>(path, { ...init, signal }, timeoutMs),
+  })
+}
+
+export function getDraftStatus(
+  leagueId: string,
+  season: number,
+  limit = 10,
+): Promise<DraftStatusResponse> {
+  const params = new URLSearchParams({
+    league_id: leagueId,
+    season: String(season),
+    limit: String(limit),
+  })
   return request(`/v1/draft/status?${params}`)
 }
 
@@ -279,12 +326,19 @@ export function searchPlayers(query: string): Promise<PlayerSearchResult[]> {
 // force tears down whatever run is already there instead of 409ing, which is the only way
 // out when a previous run is wedged (a Job stuck Terminating, or a control plane that stops
 // answering long enough to strand one).
-export function startPracticeSyncJob(roomUrl: string, force = false): Promise<{ status: string; job_name: string }> {
+export function startPracticeSyncJob(
+  roomUrl: string,
+  force = false,
+): Promise<{ status: string; job_name: string }> {
   const params = force ? '?force=true' : ''
-  return request(`/v1/draft/practice/sync-job${params}`, {
-    method: 'POST',
-    body: JSON.stringify({ room_url: roomUrl }),
-  }, force ? TEARDOWN_TIMEOUT_MS : undefined)
+  return request(
+    `/v1/draft/practice/sync-job${params}`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ room_url: roomUrl }),
+    },
+    force ? TEARDOWN_TIMEOUT_MS : undefined,
+  )
 }
 
 export function getPracticeSyncJobStatus(): Promise<PracticeSyncJobStatus> {
@@ -300,7 +354,10 @@ export function getRosterDeficits(season: number, week: number): Promise<RosterD
   return request(`/v1/roster/deficits?${params}`)
 }
 
-export function getWaiverRecommendations(season: number, week: number): Promise<WaiverRecommendationsResponse> {
+export function getWaiverRecommendations(
+  season: number,
+  week: number,
+): Promise<WaiverRecommendationsResponse> {
   const params = new URLSearchParams({ season: String(season), week: String(week) })
   return request(`/v1/waiver/recommendations?${params}`)
 }
@@ -325,13 +382,20 @@ export function getTeamNames(): Promise<Record<string, string>> {
 
 // Sourced from Team.roster (not box_scores()), so it works on a bye week - see
 // get_current_team_roster in matchup_service.py.
-export function getLineupRoster(season: number): Promise<LineupRosterResponse> {
+export function getLineupRoster(season: number, week?: number): Promise<LineupRosterResponse> {
   const params = new URLSearchParams({ season: String(season) })
+  if (week) params.set('week', String(week))
   return request(`/v1/matchup/roster?${params}`)
 }
 
-export function getCurrentWeek(): Promise<{ week: number }> {
-  return request('/v1/league/current-week')
+export function getCurrentWeek(season?: number): Promise<{
+  week: number
+  season?: number
+  max_week?: number
+  source?: string
+  updated_at?: string
+}> {
+  return request(`/v1/league/current-week${season ? `?season=${season}` : ''}`)
 }
 
 // Publishes to the lineup_updates queue (see fantasy-core-pipeline's /v1/trigger/lineup).
@@ -342,10 +406,17 @@ export function getCurrentWeek(): Promise<{ week: number }> {
 // here only means the queue accepted the message, not that ESPN's roster actually changed.
 // lineup_bot.js verifies its own writes and dumps failure context to disk on error, but none
 // of that is visible from this UI.
-export function triggerLineupSwap(teamId: string, swaps: LineupSwapInstruction[]): Promise<unknown> {
+export function triggerLineupSwap(
+  teamId: string,
+  swaps: LineupSwapInstruction[],
+): Promise<{ tracking_id: string }> {
   return request('/v1/trigger/lineup', {
     method: 'POST',
-    body: JSON.stringify({ team_id: teamId, optimized_swaps: swaps }),
+    body: JSON.stringify({
+      team_id: teamId,
+      optimized_swaps: swaps,
+      idempotency_key: crypto.randomUUID(),
+    }),
   })
 }
 
@@ -361,6 +432,7 @@ export function triggerWaiverClaim(
   config: DraftConfig,
   addPlayer: WaiverPlayerSummary,
   dropPlayer?: WaiverPlayerSummary,
+  idempotencyKey?: string,
 ): Promise<WaiverClaimResponse> {
   if (!addPlayer.espn_id) throw new Error('Claimed player has no ESPN ID.')
   if (!addPlayer.pro_team) throw new Error('Claimed player has no NFL team.')
@@ -372,6 +444,7 @@ export function triggerWaiverClaim(
       player_id: addPlayer.espn_id,
       name: addPlayer.name,
       team: addPlayer.pro_team,
+      idempotency_key: idempotencyKey ?? crypto.randomUUID(),
       ...(dropPlayer ? { drop_player_id: dropPlayer.espn_id } : {}),
     }),
   })
@@ -427,10 +500,11 @@ export function queryChat(
   season: number,
   week: number,
   teamId: string,
+  sessionId?: string,
 ): Promise<ChatQueryResponse> {
   return request('/v1/chat/query', {
     method: 'POST',
-    body: JSON.stringify({ question, season, week, team_id: teamId }),
+    body: JSON.stringify({ question, season, week, team_id: teamId, session_id: sessionId }),
   })
 }
 

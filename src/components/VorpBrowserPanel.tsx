@@ -1,3 +1,4 @@
+import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useEffect, useState } from 'react'
 import { Alert, Group, Select, Skeleton, Table, Text } from '@mantine/core'
 import { getVorpStats } from '../api/client'
@@ -54,7 +55,9 @@ interface Props {
 }
 
 export function VorpBrowserPanel({ season }: Props) {
-  const [week, setWeek] = useState('All weeks')
+  const [selected, setSelected] = useSelectedWeek()
+  const [allWeeks, setAllWeeks] = useState(false)
+  const week = allWeeks ? 'All weeks' : String(selected)
   const [position, setPosition] = useState('All')
   const [sort, setSort] = useState<SortValue>('vorp')
   const [weekRows, setWeekRows] = useState<VorpStat[] | null>(null)
@@ -66,6 +69,7 @@ export function VorpBrowserPanel({ season }: Props) {
   const selectedWeek = week === 'All weeks' ? undefined : Number(week)
 
   useEffect(() => {
+    if (!allWeeks && !selected) return
     let cancelled = false
     setLoading(true)
     setError(null)
@@ -74,21 +78,33 @@ export function VorpBrowserPanel({ season }: Props) {
 
     if (selectedWeek !== undefined) {
       getVorpStats({ season, week: selectedWeek, position: positionFilter, sort, limit: 1000 })
-        .then((rows) => { if (!cancelled) setWeekRows(rows) })
-        .catch((err) => { if (!cancelled) setError(String(err)) })
-        .finally(() => { if (!cancelled) setLoading(false) })
+        .then((rows) => {
+          if (!cancelled) setWeekRows(rows)
+        })
+        .catch((err) => {
+          if (!cancelled) setError(String(err))
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false)
+        })
     } else {
       // The API caps at 1000 rows/call, which a full season's player pool can exceed - fetch
       // per-week and sum client-side instead. allSettled (not all/catch-per-request) so one
       // bad week doesn't erase the rest, but a total outage still surfaces as an error.
       const weekNumbers = Array.from({ length: MAX_WEEK }, (_, i) => i + 1)
       Promise.allSettled(
-        weekNumbers.map((w) => getVorpStats({ season, week: w, position: positionFilter, limit: 1000 })),
+        weekNumbers.map((w) =>
+          getVorpStats({ season, week: w, position: positionFilter, limit: 1000 }),
+        ),
       ).then((results) => {
         if (cancelled) return
-        const fulfilled = results.filter((r): r is PromiseFulfilledResult<VorpStat[]> => r.status === 'fulfilled')
+        const fulfilled = results.filter(
+          (r): r is PromiseFulfilledResult<VorpStat[]> => r.status === 'fulfilled',
+        )
         if (fulfilled.length === 0 && results.length > 0) {
-          const firstFailure = results.find((r): r is PromiseRejectedResult => r.status === 'rejected')
+          const firstFailure = results.find(
+            (r): r is PromiseRejectedResult => r.status === 'rejected',
+          )
           setError(String(firstFailure?.reason))
           setLoading(false)
           return
@@ -98,8 +114,10 @@ export function VorpBrowserPanel({ season }: Props) {
       })
     }
 
-    return () => { cancelled = true }
-  }, [season, selectedWeek, positionFilter, sort])
+    return () => {
+      cancelled = true
+    }
+  }, [season, selectedWeek, positionFilter, sort, allWeeks, selected])
 
   const weekEmpty = selectedWeek !== undefined && weekRows?.length === 0
   const seasonEmpty = selectedWeek === undefined && seasonRows?.length === 0
@@ -107,8 +125,23 @@ export function VorpBrowserPanel({ season }: Props) {
   return (
     <section className="vorp-browser-panel" aria-label="Season VORP browser">
       <Group gap="md" mb="md">
-        <Select label="Week" data={WEEK_OPTIONS} value={week} onChange={(value) => setWeek(value ?? 'All weeks')} w={140} />
-        <Select label="Position" data={POSITION_OPTIONS} value={position} onChange={(value) => setPosition(value ?? 'All')} w={140} />
+        <Select
+          label="Week"
+          data={WEEK_OPTIONS}
+          value={week}
+          onChange={(value) => {
+            setAllWeeks(value === 'All weeks')
+            if (value !== 'All weeks' && value) setSelected(Number(value))
+          }}
+          w={140}
+        />
+        <Select
+          label="Position"
+          data={POSITION_OPTIONS}
+          value={position}
+          onChange={(value) => setPosition(value ?? 'All')}
+          w={140}
+        />
         {selectedWeek !== undefined && (
           <Select
             label="Sort by"
@@ -119,12 +152,20 @@ export function VorpBrowserPanel({ season }: Props) {
           />
         )}
       </Group>
-      {error && <Alert color="red" mb="md">{error}</Alert>}
+      {error && (
+        <Alert color="red" mb="md">
+          {error}
+        </Alert>
+      )}
       {loading && (
         <Table>
           <Table.Tbody>
             {Array.from({ length: 6 }).map((_, i) => (
-              <Table.Tr key={i}><Table.Td><Skeleton height={12} /></Table.Td></Table.Tr>
+              <Table.Tr key={i}>
+                <Table.Td>
+                  <Skeleton height={12} />
+                </Table.Td>
+              </Table.Tr>
             ))}
           </Table.Tbody>
         </Table>
@@ -182,7 +223,9 @@ export function VorpBrowserPanel({ season }: Props) {
         </Table>
       )}
       {!loading && !error && (weekEmpty || seasonEmpty) && (
-        <Text c="dimmed" size="sm">No VORP data for this selection.</Text>
+        <Text c="dimmed" size="sm">
+          No VORP data for this selection.
+        </Text>
       )}
     </section>
   )

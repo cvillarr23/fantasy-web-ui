@@ -1,44 +1,63 @@
-import { ActionIcon, Group, Text } from '@mantine/core'
-
+import { ActionIcon, Button, Group, NativeSelect } from '@mantine/core'
+import { useSearchParams } from 'react-router-dom'
 interface Props {
   week: number | string
   onChange: (week: number) => void
   min?: number
   max?: number
 }
-
-const DEFAULT_MIN = 1
-const DEFAULT_MAX = 18
-
-/** Prev/next week bar, sitting atop a weekly view (Matchup, Lineup). Replaces a plain
- * number box so the reader always sees "Week N" rather than an empty/editable field. */
-export function WeekSelector({ week, onChange, min = DEFAULT_MIN, max = DEFAULT_MAX }: Props) {
+export function WeekSelector({ week, onChange, min = 1, max = 18 }: Props) {
+  const [params, setParams] = useSearchParams()
   const current = Number(week)
-  const hasValidWeek = Number.isFinite(current) && current > 0
-
+  const valid = Number.isInteger(current) && current >= min && current <= max
   return (
     <Group gap="xs" className="week-selector">
       <ActionIcon
         variant="default"
         size="lg"
         aria-label="Previous week"
-        disabled={!hasValidWeek || current <= min}
+        disabled={!valid || current <= min}
         onClick={() => onChange(current - 1)}
       >
         ‹
       </ActionIcon>
-      <Text fw={600} miw={80} ta="center">
-        {hasValidWeek ? `Week ${current}` : 'Week —'}
-      </Text>
+      <NativeSelect
+        aria-label="Week"
+        w={125}
+        value={valid ? String(current) : ''}
+        data={[
+          { value: '', label: 'Select week' },
+          ...Array.from({ length: max - min + 1 }, (_, i) => ({
+            value: String(min + i),
+            label: `Week ${min + i}`,
+          })),
+        ]}
+        onChange={(e) => e.currentTarget.value && onChange(Number(e.currentTarget.value))}
+      />
       <ActionIcon
         variant="default"
         size="lg"
         aria-label="Next week"
-        disabled={!hasValidWeek || current >= max}
+        disabled={!valid || current >= max}
         onClick={() => onChange(current + 1)}
       >
         ›
       </ActionIcon>
+      {params.has('week') && (
+        <Button
+          variant="subtle"
+          size="xs"
+          onClick={() =>
+            setParams((p) => {
+              const next = new URLSearchParams(p)
+              next.delete('week')
+              return next
+            })
+          }
+        >
+          Current week
+        </Button>
+      )}
     </Group>
   )
 }
