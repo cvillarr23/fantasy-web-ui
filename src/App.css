@@ -1165,3 +1165,13 @@
     display: block;
   }
 }
+
+.skeleton-player-card {
+  cursor: default;
+}
+
+/* Stale content kept on screen during a refetch: visibly "updating" without blanking. */
+[aria-busy='true']:not([role='status']):not(:has(.mantine-Skeleton-root)) {
+  opacity: 0.6;
+  transition: opacity 150ms ease;
+}

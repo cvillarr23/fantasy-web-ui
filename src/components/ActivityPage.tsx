@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import {
   Alert,
   Badge,
   Button,
   Group,
   SegmentedControl,
+  Skeleton,
   Stack,
   Text,
   TextInput,
 } from '@mantine/core'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { CardListSkeleton, SkeletonRegion, TextSkeleton } from './skeletons'
 import {
   checkAction,
   getAction,
@@ -31,6 +33,27 @@ function Payload({ value }: { value: unknown }) {
     </pre>
   )
 }
+// Title, status badges and a few timeline events: the shape shared by both detail pages.
+function ActivityDetailSkeleton({ label }: { label: string }) {
+  return (
+    <SkeletonRegion label={label}>
+      <Stack>
+        <Skeleton height={30} width="50%" />
+        <Group>
+          <Skeleton height={20} width={90} radius="xl" />
+          <Skeleton height={20} width={90} radius="xl" />
+        </Group>
+        <TextSkeleton lines={2} />
+        {Array.from({ length: 3 }, (_, i) => (
+          <div className="timeline-event" key={i}>
+            <TextSkeleton lines={2} />
+          </div>
+        ))}
+      </Stack>
+    </SkeletonRegion>
+  )
+}
+
 export function ActivityIndicator() {
   const query = useQuery({
     queryKey: ['activity-indicator'],
@@ -89,6 +112,9 @@ export function ActivityPage() {
     queryKey: ['activity', tab, offset],
     queryFn: () => getActions(offset, tab === 'attention'),
     enabled: tab !== 'sessions',
+    // Paging keeps the current page up while the next loads; switching tab starts clean.
+    placeholderData: (previous, previousQuery) =>
+      previousQuery?.queryKey[1] === tab ? previous : undefined,
     refetchInterval: (q) =>
       q.state.data?.items.some((a) => ['queued', 'delivered', 'running'].includes(a.execution))
         ? 5000
@@ -98,6 +124,7 @@ export function ActivityPage() {
     queryKey: ['sessions', offset],
     queryFn: () => getSessions(offset),
     enabled: tab === 'sessions',
+    placeholderData: keepPreviousData,
     refetchInterval: 5000,
   })
   const query = tab === 'sessions' ? sessions : actions
@@ -153,7 +180,14 @@ export function ActivityPage() {
           value={search}
           onChange={(e) => setSearch(e.currentTarget.value)}
         />
-        {query.isPending && <Text role="status">Loading activity…</Text>}
+        {query.isPending && (
+          <CardListSkeleton
+            label="Loading activity"
+            cardClassName="activity-item"
+            count={6}
+            lineHeight={18}
+          />
+        )}
         {query.error && <Alert color="red">Could not load activity: {query.error.message}</Alert>}
         {query.data?.items.length === 0 && (
           <Text c="dimmed">
@@ -263,7 +297,7 @@ export function ActionDetailPage() {
           ← All activity
         </Button>
         {query.error && <Alert color="red">{query.error.message}</Alert>}
-        {!action && !query.error && <Text>Loading submission…</Text>}
+        {!action && !query.error && <ActivityDetailSkeleton label="Loading submission" />}
         {action && (
           <>
             <h2>{action.title}</h2>
@@ -338,6 +372,7 @@ export function SessionDetailPage() {
           ← LLM sessions
         </Button>
         {query.error && <Alert color="red">{query.error.message}</Alert>}
+        {!session && !query.error && <ActivityDetailSkeleton label="Loading session" />}
         {session && (
           <>
             <h2>{session.title}</h2>

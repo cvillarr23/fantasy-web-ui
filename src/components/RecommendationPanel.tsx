@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Button, Skeleton } from '@mantine/core'
+import { Button } from '@mantine/core'
+import { ListRowsSkeleton } from './skeletons'
 import { isPickTooLateError } from '../api/client'
 import { PlayerCard } from './PlayerCard'
 import { useToast } from '../hooks/useToast'
@@ -13,18 +14,6 @@ interface Props {
   isMyTurn: boolean
   onDraftPlayer: (espnPlayerId: string, name: string, position: string, proTeam: string) => Promise<unknown>
   loading?: boolean
-}
-
-function SkeletonCandidateRows() {
-  return (
-    <ol>
-      {Array.from({ length: 3 }).map((_, i) => (
-        <li key={i} className="candidate-row">
-          <Skeleton height={14} width="100%" />
-        </li>
-      ))}
-    </ol>
-  )
 }
 
 export function RecommendationPanel({ recommendation, pickNumber, isMyTurn, onDraftPlayer, loading = false }: Props) {
@@ -50,7 +39,7 @@ export function RecommendationPanel({ recommendation, pickNumber, isMyTurn, onDr
       <div className="recommendation-column">
         <h2>System's top picks</h2>
         {loading ? (
-          <SkeletonCandidateRows />
+          <ListRowsSkeleton ordered rows={3} itemClassName="candidate-row" label="Loading recommendations" />
         ) : (
           <>
             {candidates.length === 0 && <p className="muted">No recommendation yet.</p>}
@@ -100,7 +89,7 @@ export function RecommendationPanel({ recommendation, pickNumber, isMyTurn, onDr
       <div className="recommendation-column">
         <h2>ESPN's suggested pick</h2>
         {loading ? (
-          <SkeletonCandidateRows />
+          <ListRowsSkeleton ordered rows={3} itemClassName="candidate-row" label="Loading recommendations" />
         ) : pickNumber === undefined ? (
           <p className="muted">No active pick — nothing to compare yet.</p>
         ) : !suggestion ? (

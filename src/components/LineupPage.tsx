@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { queryClient } from '../api/queryClient'
 import { Alert, Button, Group, Stack, Text } from '@mantine/core'
 import { Link } from 'react-router-dom'
 import { getMatchup, getRosterDeficits } from '../api/client'
@@ -7,51 +8,38 @@ import { useDraftConfig } from '../hooks/useDraftConfig'
 import { LineupEditor } from './LineupEditor'
 import { RosterDeficitsGrid } from './RosterDeficitsGrid'
 import { WeekSelector } from './WeekSelector'
-import type { MatchupResponse, RosterDeficitsResponse } from '../api/types'
+import { PageSkeleton } from './skeletons'
 
 export function LineupPage() {
   const { config, loading: configLoading } = useDraftConfig()
   const isConfigured = Boolean(config.league_id && config.team_id)
 
   const [week, setWeek] = useSelectedWeek()
-  const [deficits, setDeficits] = useState<RosterDeficitsResponse | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [matchup, setMatchup] = useState<MatchupResponse | null>(null)
-
-  // Seed the field once the current week resolves, but only while it's still untouched -
-  // never overwrite a week the user already typed or arrived with via URL.
-
   const weekValue = Number(week)
   const validWeek = Number.isFinite(weekValue) && weekValue > 0
+  const enabled = isConfigured && validWeek
 
-  useEffect(() => {
-    if (!isConfigured || !validWeek) return
-    let cancelled = false
-    setLoading(true)
-    setError(null)
-    setDeficits(null)
-    getRosterDeficits(config.season, weekValue)
-      .then((response) => { if (!cancelled) setDeficits(response) })
-      .catch((err) => { if (!cancelled) setError(String(err)) })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [isConfigured, config.season, weekValue, validWeek])
-
-  // Best-effort matchup context banner - omitted entirely on a bye week (404) rather than
-  // shown as an error, since lineup editing must keep working when there's no opponent.
-  useEffect(() => {
-    if (!isConfigured || !validWeek) return
-    let cancelled = false
-    setMatchup(null)
-    getMatchup(config.season, weekValue)
-      .then((response) => { if (!cancelled) setMatchup(response) })
-      .catch(() => { /* no opponent this week (bye) or matchup unavailable - banner just stays hidden */ })
-    return () => { cancelled = true }
-  }, [isConfigured, config.season, weekValue, validWeek])
+  // Same keys as the waiver and matchup pages, so moving between them reuses the cache.
+  const deficitsQuery = useQuery({
+    queryKey: ['roster-deficits', config.league_id, config.season, weekValue],
+    queryFn: () => getRosterDeficits(config.season, weekValue),
+    enabled,
+    placeholderData: keepPreviousData,
+  }, queryClient)
+  // Best-effort matchup context banner - omitted entirely on a bye week (404) or any other
+  // failure rather than shown as an error, since lineup editing must keep working without it.
+  const matchupQuery = useQuery({
+    queryKey: ['matchup', config.league_id, config.season, weekValue],
+    queryFn: () => getMatchup(config.season, weekValue),
+    enabled,
+  }, queryClient)
+  const deficits = deficitsQuery.data ?? null
+  const loading = enabled && deficitsQuery.isPending
+  const error = deficitsQuery.error ? String(deficitsQuery.error) : null
+  const matchup = matchupQuery.data ?? null
 
   if (!isConfigured) {
-    if (configLoading) return null
+    if (configLoading) return <PageSkeleton />
     return (
       <div className="dashboard">
         <Stack gap="md" mt="xl" align="center">
@@ -76,7 +64,12 @@ export function LineupPage() {
       </Group>
       {error && <Alert color="red" mb="md">{error}</Alert>}
       {(loading || deficits) && (
-        <RosterDeficitsGrid deficits={deficits} myTeamId={config.team_id} loading={loading} />
+        <RosterDeficitsGrid
+          deficits={deficits}
+          myTeamId={config.team_id}
+          loading={loading}
+          updating={deficitsQuery.isPlaceholderData}
+        />
       )}
       <LineupEditor key={`${config.league_id}:${config.team_id}:${config.season}`} config={config} week={week} />
     </div>

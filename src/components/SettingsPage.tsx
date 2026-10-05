@@ -1,19 +1,40 @@
 import { useState } from 'react'
-import { Alert, Button, NumberInput, Stack, TextInput, Title } from '@mantine/core'
+import { Alert, Button, NumberInput, Skeleton, Stack, TextInput, Title } from '@mantine/core'
+import { SkeletonRegion } from './skeletons'
 import type { DraftConfig } from '../api/types'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 
 // League/team settings, saved server-side so they follow the operator across browsers/devices.
 export function SettingsPage() {
   const { config, loading, saveConfig } = useDraftConfig()
+  if (loading) return <SettingsFormSkeleton />
   // Keyed on the config so the form re-seeds once the server copy arrives (it may differ from
   // this browser's cache) without a setState-in-effect.
-  return <SettingsForm key={JSON.stringify(config)} config={config} loading={loading} saveConfig={saveConfig} />
+  return <SettingsForm key={JSON.stringify(config)} config={config} saveConfig={saveConfig} />
 }
 
-function SettingsForm({ config, loading, saveConfig }: {
+// Same stack as the form: three labelled inputs and the save button.
+function SettingsFormSkeleton() {
+  return (
+    <div className="config-screen">
+      <Title order={1}>Settings</Title>
+      <SkeletonRegion label="Loading settings">
+        <Stack gap="sm" mt="md">
+          {Array.from({ length: 3 }, (_, i) => (
+            <div key={i}>
+              <Skeleton height={14} width={110} mb={6} />
+              <Skeleton height={36} radius="sm" />
+            </div>
+          ))}
+          <Skeleton height={36} width={80} radius="sm" />
+        </Stack>
+      </SkeletonRegion>
+    </div>
+  )
+}
+
+function SettingsForm({ config, saveConfig }: {
   config: DraftConfig
-  loading: boolean
   saveConfig: (config: DraftConfig) => Promise<void>
 }) {
   const [leagueId, setLeagueId] = useState(config.league_id)
@@ -49,10 +70,10 @@ function SettingsForm({ config, loading, saveConfig }: {
       <Title order={1}>Settings</Title>
       <form onSubmit={handleSubmit}>
         <Stack gap="sm" mt="md">
-          <TextInput label="League ID" value={leagueId} onChange={(e) => { setLeagueId(e.currentTarget.value); setSaved(false) }} disabled={loading} required />
-          <TextInput label="Your team ID" value={teamId} onChange={(e) => { setTeamId(e.currentTarget.value); setSaved(false) }} disabled={loading} required />
-          <NumberInput label="Season" value={season} onChange={(v) => { setSeason(v); setSaved(false) }} allowDecimal={false} disabled={loading} required />
-          <Button type="submit" loading={busy || loading}>Save</Button>
+          <TextInput label="League ID" value={leagueId} onChange={(e) => { setLeagueId(e.currentTarget.value); setSaved(false) }} required />
+          <TextInput label="Your team ID" value={teamId} onChange={(e) => { setTeamId(e.currentTarget.value); setSaved(false) }} required />
+          <NumberInput label="Season" value={season} onChange={(v) => { setSeason(v); setSaved(false) }} allowDecimal={false} required />
+          <Button type="submit" loading={busy}>Save</Button>
         </Stack>
       </form>
       {saved && <Alert color="green" mt="md">Saved. This league/team now applies on every device.</Alert>}

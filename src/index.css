@@ -82,3 +82,12 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* Skeletons and operation bars keep their shape but drop the pulse/stripes for users who ask
+   for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  .mantine-Skeleton-root::after,
+  .mantine-Progress-section {
+    animation: none;
+  }
+}

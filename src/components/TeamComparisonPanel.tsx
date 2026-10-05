@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Button, Skeleton } from '@mantine/core'
+import { SkeletonRegion, TextSkeleton } from './skeletons'
 import type { DraftPickSummary, TeamAggregate } from '../api/types'
 import { usePlayerDetailsCache } from '../hooks/usePlayerDetailsCache'
 import { useTeamNames } from '../hooks/useTeamNames'
@@ -22,17 +23,14 @@ const MATCHUP_BADGE_DELTA = 0.1
 
 function SkeletonTeamColumns() {
   return (
-    <div className="team-comparison-columns">
+    <SkeletonRegion label="Loading team comparison" className="team-comparison-columns">
       {Array.from({ length: 3 }).map((_, i) => (
         <article className="team-column" key={i}>
           <Skeleton height={16} width="60%" mb={10} />
-          <Skeleton height={12} width="90%" mb={12} />
-          <Skeleton height={12} width="100%" mb={6} />
-          <Skeleton height={12} width="100%" mb={6} />
-          <Skeleton height={12} width="100%" />
+          <TextSkeleton lines={4} height={12} />
         </article>
       ))}
-    </div>
+    </SkeletonRegion>
   )
 }
 

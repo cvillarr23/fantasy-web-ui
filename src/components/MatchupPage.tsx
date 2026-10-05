@@ -1,6 +1,8 @@
 import { ScoreValue } from './ScoreValue'
-import { useEffect, useState } from 'react'
-import { Alert, Button, Group, Stack, Table, Text } from '@mantine/core'
+import { useState } from 'react'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { queryClient } from '../api/queryClient'
+import { Alert, Button, Group, Skeleton, Stack, Table, Text } from '@mantine/core'
 import { Link } from 'react-router-dom'
 import { ApiError, getMatchup } from '../api/client'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
@@ -8,7 +10,8 @@ import { useDraftConfig } from '../hooks/useDraftConfig'
 import { DeficitBadge, SwapBadge } from './DeficitBadge'
 import { PlayerCard } from './PlayerCard'
 import { WeekSelector } from './WeekSelector'
-import type { MatchupResponse, MatchupTeamSide, PlayerLine } from '../api/types'
+import { PageSkeleton, SkeletonRegion, TableRowsSkeleton } from './skeletons'
+import type { MatchupTeamSide, PlayerLine } from '../api/types'
 
 function PlayerRow({ line }: { line: PlayerLine }) {
   return (
@@ -56,6 +59,40 @@ function MobilePlayer({ line }: { line: PlayerLine }) {
   )
 }
 
+const MATCHUP_COLUMNS = ['Slot', '', 'Player', 'Pos', '#', 'Fantasy points']
+
+function MatchupColumnsSkeleton() {
+  return (
+    <SkeletonRegion label="Loading matchup" className="matchup-columns">
+      {['Your team', 'Opponent'].map((label) => (
+        <section key={label} className="matchup-team-card">
+          <header className="matchup-team-header">
+            <Skeleton height={40} width={40} radius={6} />
+            <div>
+              <div className="matchup-team-label">{label}</div>
+              <Skeleton height={20} width={140} mt={4} />
+            </div>
+            <div className="matchup-team-score">
+              <Skeleton height={24} width={56} mb={4} />
+              <Skeleton height={12} width={56} />
+            </div>
+          </header>
+          <Table className="desktop-matchup-table">
+            <Table.Thead>
+              <Table.Tr>
+                {MATCHUP_COLUMNS.map((heading, i) => <Table.Th key={i}>{heading}</Table.Th>)}
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              <TableRowsSkeleton columns={MATCHUP_COLUMNS.length} rows={9} />
+            </Table.Tbody>
+          </Table>
+        </section>
+      ))}
+    </SkeletonRegion>
+  )
+}
+
 function TeamCard({ side, label }: { side: MatchupTeamSide; label: string }) {
   const [benchOpen, setBenchOpen] = useState(false)
 
@@ -80,12 +117,7 @@ function TeamCard({ side, label }: { side: MatchupTeamSide; label: string }) {
       <Table className="desktop-matchup-table">
         <Table.Thead>
           <Table.Tr>
-            <Table.Th>Slot</Table.Th>
-            <Table.Th></Table.Th>
-            <Table.Th>Player</Table.Th>
-            <Table.Th>Pos</Table.Th>
-            <Table.Th>#</Table.Th>
-            <Table.Th>Fantasy points</Table.Th>
+            {MATCHUP_COLUMNS.map((heading, i) => <Table.Th key={i}>{heading}</Table.Th>)}
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
@@ -120,39 +152,24 @@ export function MatchupPage() {
   const isConfigured = Boolean(config.league_id && config.team_id)
 
   const [week, setWeek] = useSelectedWeek()
-  const [matchup, setMatchup] = useState<MatchupResponse | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [notFound, setNotFound] = useState(false)
-
   const weekValue = Number(week)
   const validWeek = Number.isFinite(weekValue) && weekValue > 0
 
-  useEffect(() => {
-    if (!isConfigured || !validWeek) return
-    let cancelled = false
-    setLoading(true)
-    setError(null)
-    setNotFound(false)
-    // Clear stale content immediately so a week change never looks like a no-op while the
-    // new request is in flight, or if it fails with a non-404 error.
-    setMatchup(null)
-    getMatchup(config.season, weekValue)
-      .then((response) => { if (!cancelled) setMatchup(response) })
-      .catch((err) => {
-        if (cancelled) return
-        if (err instanceof ApiError && err.status === 404) {
-          setNotFound(true)
-        } else {
-          setError(String(err))
-        }
-      })
-      .finally(() => { if (!cancelled) setLoading(false) })
-    return () => { cancelled = true }
-  }, [isConfigured, config.season, weekValue, validWeek])
+  // The previous week stays visible (dimmed) while the next one loads, so a week change reads
+  // as "updating" rather than a no-op or a blank page.
+  const query = useQuery({
+    queryKey: ['matchup', config.league_id, config.season, weekValue],
+    queryFn: () => getMatchup(config.season, weekValue),
+    enabled: isConfigured && validWeek,
+    placeholderData: keepPreviousData,
+  }, queryClient)
+  const matchup = query.data ?? null
+  // A 404 is a bye week (or a week the season hasn't reached), not a failure.
+  const notFound = query.error instanceof ApiError && query.error.status === 404
+  const error = query.error && !notFound ? String(query.error) : null
 
   if (!isConfigured) {
-    if (configLoading) return null
+    if (configLoading) return <PageSkeleton />
     return (
       <div className="dashboard">
         <Stack gap="md" mt="xl" align="center">
@@ -177,9 +194,9 @@ export function MatchupPage() {
       {notFound && (
         <Alert color="gray" mb="md">No matchup found for this week (bye week, or the season hasn't reached it yet).</Alert>
       )}
-      {loading && <Text c="dimmed">Loading matchup…</Text>}
+      {query.isPending && validWeek && <MatchupColumnsSkeleton />}
       {matchup && (
-        <div className="matchup-columns">
+        <div className="matchup-columns" aria-busy={query.isPlaceholderData || undefined}>
           <TeamCard side={matchup.our_team} label="Your team" />
           <TeamCard side={matchup.opponent} label="Opponent" />
         </div>

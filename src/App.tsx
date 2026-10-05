@@ -16,6 +16,7 @@ const DraftDayPage = lazy(() =>
   import('./components/DraftDayPage').then((m) => ({ default: m.DraftDayPage })),
 )
 import { Layout } from './components/Layout'
+import { PageSkeleton } from './components/skeletons'
 import { LineupPage } from './components/LineupPage'
 import { MatchupPage } from './components/MatchupPage'
 const PracticeDraftScreen = lazy(() =>
@@ -33,13 +34,7 @@ function App() {
   return (
     <DraftConfigProvider>
       <BrowserRouter>
-        <Suspense
-          fallback={
-            <p role="status" className="dashboard">
-              Loading view…
-            </p>
-          }
-        >
+        <Suspense fallback={<PageSkeleton label="Loading view" />}>
           <Routes>
             <Route element={<Layout />}>
               <Route index element={<Navigate to="/lineup" replace />} />

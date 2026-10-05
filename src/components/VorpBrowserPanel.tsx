@@ -1,8 +1,11 @@
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
-import { useEffect, useState } from 'react'
-import { Alert, Group, Select, Skeleton, Table, Text } from '@mantine/core'
+import { useState } from 'react'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { queryClient } from '../api/queryClient'
+import { Alert, Group, Select, Table, Text } from '@mantine/core'
 import { getVorpStats } from '../api/client'
 import { PlayerCard } from './PlayerCard'
+import { SkeletonRegion, TableRowsSkeleton } from './skeletons'
 import type { VorpStat } from '../api/types'
 
 const POSITION_OPTIONS = ['All', 'QB', 'RB', 'WR', 'TE', 'K', 'D/ST']
@@ -14,6 +17,9 @@ const SORT_OPTIONS = [
 ] as const
 type SortValue = (typeof SORT_OPTIONS)[number]['value']
 
+const WEEK_COLUMNS = ['Player', 'Pos', 'Team', 'Projected', 'Actual', 'VORP']
+const SEASON_COLUMNS = ['Player', 'Pos', 'Team', 'Weeks', 'Season VORP']
+
 const MAX_WEEK = 18
 const WEEK_OPTIONS = ['All weeks', ...Array.from({ length: MAX_WEEK }, (_, i) => String(i + 1))]
 
@@ -24,6 +30,22 @@ interface SeasonTotalRow {
   team: string | null
   totalVorp: number
   weeksPlayed: number
+}
+
+// The API caps at 1000 rows/call, which a full season's player pool can exceed - fetch per-week
+// and sum client-side instead. allSettled (not all/catch-per-request) so one bad week doesn't
+// erase the rest, but a total outage still surfaces as an error.
+async function fetchSeasonTotals(season: number, position: string | undefined): Promise<SeasonTotalRow[]> {
+  const weekNumbers = Array.from({ length: MAX_WEEK }, (_, i) => i + 1)
+  const results = await Promise.allSettled(
+    weekNumbers.map((w) => getVorpStats({ season, week: w, position, limit: 1000 })),
+  )
+  const fulfilled = results.filter((r): r is PromiseFulfilledResult<VorpStat[]> => r.status === 'fulfilled')
+  if (fulfilled.length === 0 && results.length > 0) {
+    const firstFailure = results.find((r): r is PromiseRejectedResult => r.status === 'rejected')
+    throw firstFailure?.reason
+  }
+  return aggregateSeasonTotals(fulfilled.map((r) => r.value))
 }
 
 function aggregateSeasonTotals(weeks: VorpStat[][]): SeasonTotalRow[] {
@@ -60,52 +82,30 @@ export function VorpBrowserPanel({ season }: Props) {
   const week = allWeeks ? 'All weeks' : String(selected)
   const [position, setPosition] = useState('All')
   const [sort, setSort] = useState<SortValue>('vorp')
-  const [weekRows, setWeekRows] = useState<VorpStat[] | null>(null)
-  const [seasonRows, setSeasonRows] = useState<SeasonTotalRow[] | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   const positionFilter = position === 'All' ? undefined : position
   const selectedWeek = week === 'All weeks' ? undefined : Number(week)
 
-  useEffect(() => {
-    if (!allWeeks && !selected) return
-    let cancelled = false
-    setLoading(true)
-    setError(null)
-    setWeekRows(null)
-    setSeasonRows(null)
-
-    if (selectedWeek !== undefined) {
-      getVorpStats({ season, week: selectedWeek, position: positionFilter, sort, limit: 1000 })
-        .then((rows) => { if (!cancelled) setWeekRows(rows) })
-        .catch((err) => { if (!cancelled) setError(String(err)) })
-        .finally(() => { if (!cancelled) setLoading(false) })
-    } else {
-      // The API caps at 1000 rows/call, which a full season's player pool can exceed - fetch
-      // per-week and sum client-side instead. allSettled (not all/catch-per-request) so one
-      // bad week doesn't erase the rest, but a total outage still surfaces as an error.
-      const weekNumbers = Array.from({ length: MAX_WEEK }, (_, i) => i + 1)
-      Promise.allSettled(
-        weekNumbers.map((w) => getVorpStats({ season, week: w, position: positionFilter, limit: 1000 })),
-      ).then((results) => {
-        if (cancelled) return
-        const fulfilled = results.filter((r): r is PromiseFulfilledResult<VorpStat[]> => r.status === 'fulfilled')
-        if (fulfilled.length === 0 && results.length > 0) {
-          const firstFailure = results.find((r): r is PromiseRejectedResult => r.status === 'rejected')
-          setError(String(firstFailure?.reason))
-          setLoading(false)
-          return
-        }
-        setSeasonRows(aggregateSeasonTotals(fulfilled.map((r) => r.value)))
-        setLoading(false)
-      })
-    }
-
-    return () => {
-      cancelled = true
-    }
-  }, [season, selectedWeek, positionFilter, sort, allWeeks, selected])
+  // Filters keep the current table up (dimmed) while the next selection loads.
+  const weekQuery = useQuery({
+    queryKey: ['vorp-week', season, selectedWeek, positionFilter, sort],
+    queryFn: () => getVorpStats({ season, week: selectedWeek, position: positionFilter, sort, limit: 1000 }),
+    enabled: selectedWeek !== undefined && Boolean(selected),
+    placeholderData: keepPreviousData,
+  }, queryClient)
+  const seasonQuery = useQuery({
+    queryKey: ['vorp-season', season, positionFilter],
+    queryFn: () => fetchSeasonTotals(season, positionFilter),
+    enabled: selectedWeek === undefined,
+    placeholderData: keepPreviousData,
+  }, queryClient)
+  const activeQuery = selectedWeek === undefined ? seasonQuery : weekQuery
+  const weekRows = weekQuery.data ?? null
+  const seasonRows = seasonQuery.data ?? null
+  const loading = activeQuery.isLoading
+  const error = activeQuery.error ? String(activeQuery.error) : null
+  const updating = activeQuery.isPlaceholderData
+  const columns = selectedWeek === undefined ? SEASON_COLUMNS : WEEK_COLUMNS
 
   const weekEmpty = selectedWeek !== undefined && weekRows?.length === 0
   const seasonEmpty = selectedWeek === undefined && seasonRows?.length === 0
@@ -142,24 +142,24 @@ export function VorpBrowserPanel({ season }: Props) {
       </Group>
       {error && <Alert color="red" mb="md">{error}</Alert>}
       {loading && (
-        <Table>
-          <Table.Tbody>
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Table.Tr key={i}><Table.Td><Skeleton height={12} /></Table.Td></Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
+        <SkeletonRegion label="Loading VORP data">
+          <Table striped>
+            <Table.Thead>
+              <Table.Tr>
+                {columns.map((heading) => <Table.Th key={heading}>{heading}</Table.Th>)}
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              <TableRowsSkeleton columns={columns.length} rows={12} />
+            </Table.Tbody>
+          </Table>
+        </SkeletonRegion>
       )}
       {!loading && selectedWeek !== undefined && weekRows && weekRows.length > 0 && (
-        <Table striped highlightOnHover>
+        <Table striped highlightOnHover aria-busy={updating || undefined}>
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Player</Table.Th>
-              <Table.Th>Pos</Table.Th>
-              <Table.Th>Team</Table.Th>
-              <Table.Th>Projected</Table.Th>
-              <Table.Th>Actual</Table.Th>
-              <Table.Th>VORP</Table.Th>
+              {WEEK_COLUMNS.map((heading) => <Table.Th key={heading}>{heading}</Table.Th>)}
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -180,14 +180,10 @@ export function VorpBrowserPanel({ season }: Props) {
         </Table>
       )}
       {!loading && selectedWeek === undefined && seasonRows && seasonRows.length > 0 && (
-        <Table striped highlightOnHover>
+        <Table striped highlightOnHover aria-busy={updating || undefined}>
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>Player</Table.Th>
-              <Table.Th>Pos</Table.Th>
-              <Table.Th>Team</Table.Th>
-              <Table.Th>Weeks</Table.Th>
-              <Table.Th>Season VORP</Table.Th>
+              {SEASON_COLUMNS.map((heading) => <Table.Th key={heading}>{heading}</Table.Th>)}
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>

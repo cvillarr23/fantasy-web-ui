@@ -2,13 +2,14 @@ import { Button, Stack, Text } from '@mantine/core'
 import { Link } from 'react-router-dom'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { TradeBuilder } from './TradeBuilder'
+import { PageSkeleton } from './skeletons'
 
 export function TradePage() {
   const { config, loading: configLoading } = useDraftConfig()
   const isConfigured = Boolean(config.league_id && config.team_id)
 
   if (!isConfigured) {
-    if (configLoading) return null
+    if (configLoading) return <PageSkeleton />
     return (
       <div className="dashboard">
         <Stack gap="md" mt="xl" align="center">

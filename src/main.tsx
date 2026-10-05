@@ -5,9 +5,11 @@ import { createRoot } from 'react-dom/client'
 import { MantineProvider } from '@mantine/core'
 import '@mantine/core/styles.css'
 import '@mantine/charts/styles.css'
+import '@mantine/nprogress/styles.css'
 import './index.css'
 import App from './App.tsx'
 import { theme, cssVariablesResolver } from './theme'
+import { GlobalProgress } from './components/GlobalProgress'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -17,6 +19,7 @@ createRoot(document.getElementById('root')!).render(
       cssVariablesResolver={cssVariablesResolver}
     >
       <QueryClientProvider client={queryClient}>
+        <GlobalProgress />
         <App />
       </QueryClientProvider>
     </MantineProvider>

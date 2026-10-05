@@ -1,4 +1,5 @@
-import { Skeleton, Table } from '@mantine/core'
+import { Table } from '@mantine/core'
+import { TableRowsSkeleton } from './skeletons'
 import { useTeamNames } from '../hooks/useTeamNames'
 import type { DraftStatusResponse } from '../api/types'
 
@@ -62,7 +63,7 @@ export function TeamPositionGrid({ teamIds, teamAggregates, myTeamId, loading = 
 
   if (loading) {
     return (
-      <section className="team-position-grid" aria-label="Team comparison by position counts">
+      <section className="team-position-grid" aria-label="Team comparison by position counts" aria-busy="true">
         <h2>Team comparison</h2>
         <Table>
           <Table.Thead>
@@ -74,14 +75,7 @@ export function TeamPositionGrid({ teamIds, teamAggregates, myTeamId, loading = 
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
-            {Array.from({ length: 4 }).map((_, row) => (
-              <Table.Tr key={row}>
-                <Table.Th><Skeleton height={12} width={70} /></Table.Th>
-                {POSITION_COLUMNS.map((position) => (
-                  <Table.Td key={position.label}><Skeleton height={12} width={20} mx="auto" /></Table.Td>
-                ))}
-              </Table.Tr>
-            ))}
+            <TableRowsSkeleton columns={POSITION_COLUMNS.length + 1} rows={4} rowHeight={12} rowMinHeight={39} rowHeader />
           </Table.Tbody>
         </Table>
       </section>
