@@ -42,8 +42,8 @@ Validation used mocked ESPN/broker/database boundaries and mocked browser API re
 ## Verification
 
 - UI: 16 tests, production TypeScript/Vite build, oxlint (existing React warnings remain).
-- Core: 894 tests, including durable acceptance, broker failure, deadline checks, waiver reconciliation, projection constraints, and credential redaction.
-- Worker: 501 tests, including duplicate ownership and best-effort outcome recording after external writes.
+- Core: 990 tests, including durable acceptance, broker failure, deadline checks, waiver reconciliation, projection constraints, and credential redaction.
+- Worker: 556 tests, including duplicate ownership and best-effort outcome recording after external writes.
 - Browser: 14 routes at 320, 375, 768, 1024, and 1440px; no page-wide overflow or runtime errors. Mobile drawer navigation also checked.
 
 Screenshots are in `../screenshots/ux-overhaul/` and use synthetic fixture data.
