@@ -394,6 +394,9 @@ export function triggerWaiverClaim(
   addPlayer: WaiverPlayerSummary,
   dropPlayer?: WaiverPlayerSummary,
   idempotencyKey?: string,
+  // Always sent explicitly: the worker's own default is dry-run, which is right for
+  // automated triggers but not for a manager confirming their own claim.
+  dryRun = false,
 ): Promise<WaiverClaimResponse> {
   if (!addPlayer.espn_id) throw new Error('Claimed player has no ESPN ID.')
   if (!addPlayer.pro_team) throw new Error('Claimed player has no NFL team.')
@@ -406,6 +409,7 @@ export function triggerWaiverClaim(
       name: addPlayer.name,
       team: addPlayer.pro_team,
       idempotency_key: idempotencyKey ?? crypto.randomUUID(),
+      dry_run: dryRun,
       ...(dropPlayer ? { drop_player_id: dropPlayer.espn_id } : {}),
     }),
   })
