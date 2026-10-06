@@ -51,6 +51,8 @@ export interface MovePlayer {
   injury_status: string | null
   net_vorp?: number
   slot?: string
+  // ESPN team currently rostering the player; null for free agents.
+  on_team_id?: string | null
 }
 export interface MovePreview {
   before: MovePlayer[]

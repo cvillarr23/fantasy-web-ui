@@ -70,9 +70,50 @@ it('refreshes before confirmation and submits an add-only claim with the display
       expect.objectContaining({ espn_id: '1' }),
       undefined,
       expect.any(String),
+      false,
     ),
   )
   expect(previewMove).toHaveBeenCalledTimes(2)
+})
+it('submits a dry run when the toggle is checked', async () => {
+  start()
+  fireEvent.click(await screen.findByRole('button', { name: 'Review and submit ESPN claim' }))
+  const dialog = await screen.findByRole('dialog')
+  fireEvent.click(within(dialog).getByLabelText(/Dry run/))
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Run dry run' }))
+  await waitFor(() =>
+    expect(triggerWaiverClaim).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.any(Object),
+      undefined,
+      expect.any(String),
+      true,
+    ),
+  )
+  expect(await screen.findByText(/Dry run queued/)).toBeTruthy()
+})
+it('blocks a waiver for a player on another roster and offers a trade evaluation', async () => {
+  vi.mocked(previewMove).mockResolvedValue({
+    ...snapshot,
+    incoming: [{ ...incoming, on_team_id: '1' }],
+  })
+  start('/moves/review?kind=waiver&week=4&add=1&drop=2')
+  expect(await screen.findByText(/on another team's roster/)).toBeTruthy()
+  const submit = screen.getByRole('button', { name: 'Review and submit ESPN claim' })
+  expect((submit as HTMLButtonElement).disabled).toBe(true)
+  const trade = screen.getByRole('link', { name: 'Evaluate as a trade' })
+  expect(trade.getAttribute('href')).toBe('/moves/review?kind=trade&week=4&add=1&drop=2')
+  expect(triggerWaiverClaim).not.toHaveBeenCalled()
+})
+it('allows a player already on our own roster through to review', async () => {
+  vi.mocked(previewMove).mockResolvedValue({
+    ...snapshot,
+    incoming: [{ ...incoming, on_team_id: '8' }],
+  })
+  start()
+  const submit = await screen.findByRole('button', { name: 'Review and submit ESPN claim' })
+  expect((submit as HTMLButtonElement).disabled).toBe(false)
+  expect(screen.queryByText(/on another team's roster/)).toBeNull()
 })
 it('rejects a multi-player waiver rather than silently submitting only the first player', async () => {
   start('/moves/review?add=1&add=2')

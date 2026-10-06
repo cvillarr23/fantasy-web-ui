@@ -65,6 +65,17 @@ export function MoveOverviewPage() {
     [config.league_id, config.team_id, params.toString()],
   )
   const data = query.data
+  const [dryRun, setDryRun] = useState(false)
+  // Another manager's player can only be acquired by trade; ESPN rejects the claim.
+  const rosteredElsewhere = (preview: MovePreview | undefined) =>
+    kind === 'waiver'
+      ? (preview?.incoming ?? []).filter(
+          (p) => p.on_team_id && p.on_team_id !== String(config.team_id),
+        )
+      : []
+  const blocked = rosteredElsewhere(data)
+  const tradeParams = new URLSearchParams(params)
+  tradeParams.set('kind', 'trade')
   const reviewMutation = useMutation({
     mutationFn: async () => {
       if (invalidWaiver)
@@ -75,6 +86,11 @@ export function MoveOverviewPage() {
         fresh.outgoing.map((p) => p.espn_id).join() !== outgoing.join()
       )
         throw new Error('The proposal changed. Review your selections again.')
+      const taken = rosteredElsewhere(fresh)
+      if (taken.length)
+        throw new Error(
+          `${taken.map((p) => p.name).join(', ')} is on another team's roster. Propose a trade instead.`,
+        )
       return { scope, move: fresh }
     },
     onMutate: () => setError(null),
@@ -90,6 +106,7 @@ export function MoveOverviewPage() {
         { ...add, net_vorp: add.net_vorp ?? 0 },
         drop ? { ...drop, net_vorp: drop.net_vorp ?? 0 } : undefined,
         submissionKey,
+        dryRun,
       )
     },
     onMutate: () => setError(null),
@@ -293,8 +310,32 @@ export function MoveOverviewPage() {
                 </div>
               </details>
             ))}
+            {blocked.length > 0 && (
+              <Alert color="orange" title="Not available on waivers">
+                <Stack gap="xs">
+                  <Text size="sm">
+                    {blocked.map((p) => p.name).join(', ')} is on another team&apos;s roster,
+                    so they can&apos;t be claimed. Propose a trade instead.
+                  </Text>
+                  <Group>
+                    <Button
+                      component={Link}
+                      to={`/moves/review?${tradeParams.toString()}`}
+                      variant="light"
+                      size="xs"
+                    >
+                      Evaluate as a trade
+                    </Button>
+                  </Group>
+                </Stack>
+              </Alert>
+            )}
             {kind === 'waiver' && !tracking && (
-              <Button onClick={() => void review()} loading={busy} disabled={invalidWaiver}>
+              <Button
+                onClick={() => void review()}
+                loading={busy}
+                disabled={invalidWaiver || blocked.length > 0}
+              >
                 Review and submit ESPN claim
               </Button>
             )}
@@ -306,7 +347,7 @@ export function MoveOverviewPage() {
             )}
             {tracking && (
               <Alert color="teal">
-                Claim queued.{' '}
+                {dryRun ? 'Dry run queued. Nothing will be submitted to ESPN.' : 'Claim queued.'}{' '}
                 <Link to={`/activity/actions/${tracking}`}>
                   Track this submission and final outcome
                 </Link>
@@ -321,7 +362,7 @@ export function MoveOverviewPage() {
         <Modal
           opened={Boolean(confirmed)}
           onClose={() => !busy && setConfirmed(null)}
-          title="Confirm live waiver claim"
+          title={dryRun ? 'Confirm waiver dry run' : 'Confirm live waiver claim'}
         >
           <Stack>
             <Text>
@@ -334,8 +375,17 @@ export function MoveOverviewPage() {
               ) : (
                 ' without dropping a player'
               )}
-              . This submits a real ESPN claim against your current roster.
+              .{' '}
+              {dryRun
+                ? 'The worker checks your roster and logs the claim without submitting it.'
+                : 'This submits a real ESPN claim against your current roster.'}
             </Text>
+            <Checkbox
+              label="Dry run (don't submit to ESPN)"
+              checked={dryRun}
+              onChange={(e) => setDryRun(e.currentTarget.checked)}
+              disabled={busy}
+            />
             {confirmed?.warnings.map((warning, i) => (
               <Alert color="yellow" key={i}>
                 {warning}
@@ -343,7 +393,7 @@ export function MoveOverviewPage() {
             ))}
             {error && <Alert color="red">{error}</Alert>}
             <Button loading={busy} onClick={() => void submit()}>
-              Confirm claim
+              {dryRun ? 'Run dry run' : 'Confirm claim'}
             </Button>
             {submitMutation.isPending && <OperationProgress label="Submitting claim to ESPN" />}
           </Stack>

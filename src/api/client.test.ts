@@ -32,9 +32,19 @@ describe('triggerWaiverClaim', () => {
       player_id: '4046',
       name: 'Some Back',
       team: 'KC',
+      dry_run: false,
       drop_player_id: '9999',
     })
     expect(init.headers).toEqual({ 'Content-Type': 'application/json' })
+  })
+
+  it('sends dry_run=true only when asked', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ tracking_id: 't' }), { status: 202 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await triggerWaiverClaim(config, add, drop, 'key', true)
+
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).dry_run).toBe(true)
   })
 
   it('omits drop_player_id for an add-only request', async () => {
@@ -49,6 +59,7 @@ describe('triggerWaiverClaim', () => {
       player_id: '4046',
       name: 'Some Back',
       team: 'KC',
+      dry_run: false,
     })
   })
 
