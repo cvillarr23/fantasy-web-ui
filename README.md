@@ -6,6 +6,8 @@ player rankings, draft monitoring, and persistent bot/LLM activity.
 The mobile navigation drawer and desktop sidebar share the same pages. Weekly views
 follow the current league week unless a week is selected explicitly. Move reviews show
 who joins/leaves the roster, projected lineup impact, and warnings before a waiver request.
+The Trades page shows outgoing proposals awaiting approval, including the counterparty,
+players and pitch, alongside the manual VORP evaluator. Refresh the list to check for new proposals.
 
 - [Palette and UI conventions](docs/ui-design-system.md)
 - [Project architecture and rollout notes](https://github.com/cvillarr23/fantasy-project/blob/main/docs/season-management-ux.md)

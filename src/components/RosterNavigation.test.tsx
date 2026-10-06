@@ -15,6 +15,7 @@ vi.mock('../api/client', () => ({
   getRosterDeficits: vi.fn().mockResolvedValue({ teams: {} }),
   getWaiverRecommendations: vi.fn().mockResolvedValue({ recommendations: [] }),
   getMatchup: vi.fn().mockRejectedValue(new Error('No matchup')),
+  getOutgoingTradeOffers: vi.fn().mockResolvedValue([]), getTeamNames: vi.fn().mockResolvedValue({}),
   evaluateTrade: vi.fn(), searchPlayers: vi.fn().mockResolvedValue([]),
 }))
 vi.mock('./RosterDeficitsGrid', () => ({ RosterDeficitsGrid: () => <div>Roster deficits</div> }))

@@ -1,4 +1,4 @@
-import type { BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, ScoreboardResponse, TradeEvaluationResponse, VorpStat, WaiverPlayerSummary, WaiverRecommendationsResponse } from './types'
+import type { BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, ScoreboardResponse, TradeEvaluationResponse, TradeOffer, TradeOfferList, VorpStat, WaiverPlayerSummary, WaiverRecommendationsResponse } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -336,8 +336,9 @@ export function getScoreboard(season: number, week: number): Promise<ScoreboardR
   return request(`/v1/matchup/scoreboard?${params}`)
 }
 
-export function getTeamNames(): Promise<Record<string, string>> {
-  return request('/v1/league/teams')
+export function getTeamNames(leagueId?: string): Promise<Record<string, string>> {
+  const params = leagueId ? `?${new URLSearchParams({ league_id: leagueId })}` : ''
+  return request(`/v1/league/teams${params}`)
 }
 
 // Sourced from Team.roster (not box_scores()), so it works on a bye week - see
@@ -477,4 +478,25 @@ export function queryChat(
  * an expected, retry-later condition, not a bug. */
 export function isNoProviderError(err: unknown): boolean {
   return err instanceof ApiError && err.status === 503
+}
+
+export async function getOutgoingTradeOffers(config: DraftConfig): Promise<TradeOffer[]> {
+  const offers: TradeOffer[] = []
+  const limit = 100
+  // The API filters league/season but not source/team. Read all pages before filtering
+  // so other managers' offers cannot hide ours behind an apparently empty first page.
+  for (let offset = 0; ; offset += limit) {
+    const params = new URLSearchParams({
+      status: 'awaiting_approval', league_id: config.league_id,
+      season: String(config.season), limit: String(limit), offset: String(offset),
+    })
+    const page = await request<TradeOfferList>(`/v1/trade/offers?${params}`)
+    offers.push(...page.offers.filter((offer) =>
+      offer.league_id === config.league_id && offer.season === config.season &&
+      offer.from_team_id === config.team_id && offer.source === 'proposal' &&
+      offer.status === 'awaiting_approval' && Boolean(offer.to_team_id) &&
+      offer.to_team_id !== config.team_id,
+    ))
+    if (page.offers.length < limit) return offers
+  }
 }

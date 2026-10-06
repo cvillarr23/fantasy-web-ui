@@ -2,6 +2,7 @@ import { Button, Stack, Text } from '@mantine/core'
 import { Link } from 'react-router-dom'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { TradeBuilder } from './TradeBuilder'
+import { OutgoingTradeProposals } from './OutgoingTradeProposals'
 import { PageSkeleton } from './skeletons'
 
 export function TradePage() {
@@ -24,7 +25,10 @@ export function TradePage() {
 
   return (
     <div className="dashboard">
-      <TradeBuilder config={config} />
+      <Stack gap="lg">
+        <OutgoingTradeProposals config={config} />
+        <TradeBuilder config={config} />
+      </Stack>
     </div>
   )
 }
