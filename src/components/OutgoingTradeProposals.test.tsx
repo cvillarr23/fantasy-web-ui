@@ -52,10 +52,12 @@ it('shows a useful empty state without promising a proposal every scan', async (
 })
 
 it('allows retrying a failed read and keeps the error out of the empty state', async () => {
-  vi.mocked(getOutgoingTradeOffers).mockRejectedValueOnce(new Error('Offers unavailable'))
+  vi.mocked(getOutgoingTradeOffers).mockRejectedValue(new Error('Offers unavailable'))
   render(view())
   expect(await screen.findByText(/Could not load outgoing proposals/)).toBeTruthy()
   expect(screen.queryByText('No outgoing proposals awaiting approval.')).toBeNull()
+  expect(getOutgoingTradeOffers).toHaveBeenCalledOnce()
+  vi.mocked(getOutgoingTradeOffers).mockResolvedValue([offer])
   fireEvent.click(screen.getByRole('button', { name: 'Refresh proposals' }))
   expect(await screen.findByText('Some Back')).toBeTruthy()
 })
