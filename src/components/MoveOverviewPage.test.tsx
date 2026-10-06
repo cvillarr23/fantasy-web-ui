@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
-import { MemoryRouter } from 'react-router-dom'
+import { Link, MemoryRouter } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '../api/queryClient'
 import { previewMove } from '../api/dashboard'
@@ -50,6 +50,7 @@ function start(url = '/moves/review?add=1') {
       <MantineProvider>
         <MemoryRouter initialEntries={[url]}>
           <MoveOverviewPage />
+          <Link to="/moves/review?add=2">Change selection</Link>
         </MemoryRouter>
       </MantineProvider>
     </QueryClientProvider>,
@@ -91,3 +92,28 @@ it('does not open confirmation if the refreshed player ids differ', async () => 
 })
 
 afterEach(cleanup)
+
+it('discards a review completed after the selected players change', async () => {
+  let finish!: (value: typeof snapshot) => void
+  vi.mocked(previewMove)
+    .mockResolvedValueOnce(snapshot)
+    .mockImplementationOnce(
+      () => new Promise((resolve) => { finish = resolve }),
+    )
+    .mockResolvedValue({
+      ...snapshot,
+      incoming: [{ ...incoming, espn_id: '2', name: 'Second player' }],
+    })
+  start()
+  fireEvent.click(await screen.findByRole('button', { name: 'Review and submit ESPN claim' }))
+  await waitFor(() => expect(previewMove).toHaveBeenCalledTimes(2))
+  fireEvent.click(screen.getByRole('link', { name: 'Change selection' }))
+  await screen.findByText('Second player')
+  await act(async () => {
+    finish(snapshot)
+    // Let the mutation observer publish its settled state before asserting absence.
+    await new Promise((resolve) => setTimeout(resolve, 50))
+  })
+  expect(screen.queryByRole('dialog')).toBeNull()
+  expect(triggerWaiverClaim).not.toHaveBeenCalled()
+})
