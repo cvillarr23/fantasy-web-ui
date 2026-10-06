@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { DndContext, useDraggable, useDroppable, type DragEndEvent } from '@dnd-kit/core'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Alert, Badge, Button, Group, Tooltip } from '@mantine/core'
+import { Alert, Badge, Button, Group, Text, Tooltip } from '@mantine/core'
 import { getCurrentWeek, triggerLineupSwap } from '../api/client'
 import { queryClient } from '../api/queryClient'
 import { lineupRosterQuery } from '../api/weekReads'
@@ -42,30 +42,40 @@ function DraggablePlayerCard({ line }: { line: LineupPlayerLine }) {
     : undefined
 
   return (
-    <PlayerCard
-      variant="card"
-      innerRef={setNodeRef}
-      style={style}
-      dragHandleProps={{ ...listeners, ...attributes }}
-      player={{
-        id: line.player_id,
-        name: line.name,
-        position: line.position,
-        team: line.pro_team,
-        headshotUrl: line.headshot_url,
-      }}
-      badges={
-        <>
-          <InjuryBadge status={line.injury_status} />
-          <RumorBadge
-            sentiment={line.rumor_sentiment}
-            confidence={line.rumor_confidence}
-            suggestedAction={line.rumor_suggested_action}
-          />
-        </>
-      }
-      stats={line.net_vorp !== null ? `VORP ${line.net_vorp.toFixed(1)}` : null}
-    />
+    <div className="lineup-player-details">
+      <PlayerCard
+        variant="card"
+        innerRef={setNodeRef}
+        style={style}
+        dragHandleProps={{ ...listeners, ...attributes }}
+        player={{
+          id: line.player_id,
+          name: line.name,
+          position: line.position,
+          team: line.pro_team,
+          headshotUrl: line.headshot_url,
+        }}
+        badges={
+          <>
+            <InjuryBadge status={line.injury_status} />
+            {line.ir_suggestion && (
+              <Badge color="yellow" size="xs">
+                {line.ir_suggestion.action === 'move_to_ir' ? 'Move to IR' : 'Activate from IR'}
+              </Badge>
+            )}
+            <RumorBadge
+              sentiment={line.rumor_sentiment}
+              confidence={line.rumor_confidence}
+              suggestedAction={line.rumor_suggested_action}
+            />
+          </>
+        }
+        stats={line.net_vorp !== null ? `VORP ${line.net_vorp.toFixed(1)}` : null}
+      />
+      {line.ir_suggestion && (
+        <Text size="xs" c="dimmed" mt={4} mb="xs">{line.ir_suggestion.reason}</Text>
+      )}
+    </div>
   )
 }
 
@@ -277,7 +287,18 @@ export function LineupEditor({ config, week = '' }: Props) {
           submitting.
         </Alert>
       )}
+      {roster.ir_blocking_transactions && (
+        <Alert color="yellow" title="IR player needs activation" mb="md">
+          ESPN blocks lineup and waiver transactions while an active player is in IR.
+          Activate the player directly in ESPN before submitting roster changes.
+        </Alert>
+      )}
       <LineupIntro />
+      {[...roster.starters, ...roster.bench].some((line) => line.ir_suggestion) && (
+        <Text size="sm" c="dimmed" mb="md">
+          IR suggestions are display only. Make IR moves directly in ESPN.
+        </Text>
+      )}
       <LineupSuggestionPanel
         roster={roster}
         onApply={(starter, benchPlayer) => stageSwap(starter, benchPlayer, starter.slot)}

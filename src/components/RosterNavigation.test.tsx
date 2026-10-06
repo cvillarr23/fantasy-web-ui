@@ -124,3 +124,30 @@ it('rejects a submission if the live week rolled over after staging', async () =
   await screen.findByText(/Lineup changes can only be submitted for the current week/)
   expect(triggerLineupSwap).not.toHaveBeenCalled()
 })
+
+it('renders display-only IR hints for starters and bench with a blocking warning', async () => {
+  vi.mocked(getLineupRoster).mockResolvedValue({
+    starters: [{ ...player('Injured starter', 'RB'), ir_suggestion: { action: 'move_to_ir', reason: 'An IR slot is open.' } }],
+    bench: [{ ...player('Healthy stash', 'IR'), ir_suggestion: { action: 'activate_from_ir', reason: 'This player is active again.' } }],
+    ir_blocking_transactions: true,
+  })
+  start('/lineup?week=5')
+  expect(await screen.findByText('Move to IR')).toBeTruthy()
+  expect(screen.getByText('Activate from IR')).toBeTruthy()
+  expect(screen.getByText('An IR slot is open.')).toBeTruthy()
+  expect(screen.getByText('This player is active again.')).toBeTruthy()
+  expect(screen.getByRole('alert').textContent).toMatch(/ESPN blocks lineup and waiver transactions/)
+  expect(screen.queryByRole('button', { name: /Apply/ })).toBeNull()
+  const submit = screen.getByRole('button', { name: 'Submit lineup changes' }) as HTMLButtonElement
+  expect(submit.disabled).toBe(true)
+  fireEvent.click(submit)
+  expect(triggerLineupSwap).not.toHaveBeenCalled()
+})
+
+it('omits IR hints and warnings for older roster responses', async () => {
+  start('/lineup?week=5')
+  await screen.findByRole('button', { name: 'Apply hint' })
+  expect(screen.queryByText('Move to IR')).toBeNull()
+  expect(screen.queryByText('Activate from IR')).toBeNull()
+  expect(screen.queryByText(/ESPN blocks lineup and waiver transactions/)).toBeNull()
+})

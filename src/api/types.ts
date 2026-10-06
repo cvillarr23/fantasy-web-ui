@@ -264,6 +264,11 @@ export interface LineupSwapInstruction {
   slot: string
 }
 
+export interface IrSuggestion {
+  action: 'move_to_ir' | 'activate_from_ir'
+  reason: string
+}
+
 // Mirrors fantasy-core-pipeline's GET /v1/matchup/roster response models. Distinct from
 // PlayerLine (used by /v1/matchup) - no points/projected_points, since this view isn't
 // tied to a scoring period, it's "what's on my roster right now."
@@ -283,9 +288,11 @@ export interface LineupPlayerLine {
   rumor_sentiment: string | null
   rumor_confidence: number | null
   rumor_suggested_action: string | null
+  ir_suggestion?: IrSuggestion | null
 }
 
 export interface LineupRosterResponse {
+  ir_blocking_transactions?: boolean
   starters: LineupPlayerLine[]
   bench: LineupPlayerLine[]
 }
@@ -300,16 +307,26 @@ export interface WaiverPlayerSummary {
 }
 
 export interface WaiverRecommendation {
+  kind?: 'swap' | 'ir_and_add'
+  ir_player?: WaiverPlayerSummary | null
   position: string
   vorp_delta: number
   free_agent: WaiverPlayerSummary
-  bench_player: WaiverPlayerSummary
+  bench_player?: WaiverPlayerSummary | null
   rumor_sentiment: string | null
   rumor_confidence: number | null
   rumor_suggested_action: string | null
 }
 
+export interface WaiverIrMove {
+  action: 'move_to_ir'
+  position: string
+  player: WaiverPlayerSummary
+}
+
 export interface WaiverRecommendationsResponse {
+  open_ir_slots?: number
+  ir_moves?: WaiverIrMove[]
   season: number
   week: number
   recommendations: WaiverRecommendation[]

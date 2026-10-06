@@ -98,3 +98,19 @@ it('shows both sections and no errors when both calls succeed', async () => {
   expect(getRosterDeficits).toHaveBeenCalledWith(2026, 5)
   expect(getWaiverRecommendations).toHaveBeenCalledWith(2026, 5)
 })
+
+it('renders standalone IR moves and open slots even without waiver upgrades', async () => {
+  vi.mocked(getRosterDeficits).mockResolvedValue(deficits)
+  vi.mocked(getWaiverRecommendations).mockResolvedValue({
+    season: 2026, week: 5, recommendations: [], open_ir_slots: 1,
+    ir_moves: [{ action: 'move_to_ir', position: 'WR', player: {
+      espn_id: '456', name: 'Injured Receiver', pro_team: 'KC', injury_status: 'OUT', net_vorp: 4,
+    } }],
+  })
+  renderPage()
+  expect(await screen.findByText('Injured Receiver')).toBeTruthy()
+  expect(screen.getByText('1 open IR slot')).toBeTruthy()
+  expect(screen.getByText('Move to IR')).toBeTruthy()
+  expect(screen.getByText(/Make IR moves directly in ESPN/)).toBeTruthy()
+  expect(screen.queryByRole('link', { name: 'Review move' })).toBeNull()
+})
