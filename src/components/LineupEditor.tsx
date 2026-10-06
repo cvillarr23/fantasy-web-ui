@@ -516,6 +516,15 @@ export function LineupEditor({ config, week = '' }: Props) {
               This is a real change to your ESPN roster, not a dry run.
             </Text>
             {irTarget.ir_suggestion && <Text size="sm" c="dimmed">{irTarget.ir_suggestion.reason}</Text>}
+            {/* The worker moves only this one player, so it neither fills the slot a starter
+                leaves nor makes bench room for a returning player. */}
+            <Text size="sm">
+              {irMoving
+                ? irTarget.slot === 'BE' || irTarget.slot === 'BENCH'
+                  ? 'This frees a bench spot.'
+                  : `This leaves the ${irTarget.slot} slot empty until you start someone there.`
+                : 'ESPN needs an open bench spot for this, or it refuses the move.'}
+            </Text>
             <Text size="sm">
               ESPN can still refuse it. For example, it only allows IR for players listed OUT or
               on injured reserve, and only with a free IR slot. This page can't see that answer,

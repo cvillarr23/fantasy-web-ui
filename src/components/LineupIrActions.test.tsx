@@ -56,6 +56,7 @@ it('confirms a live move to IR and sends one IR entry by ESPN id', async () => {
   const dialog = await screen.findByRole('dialog')
   expect(within(dialog).getByText(/real change to your ESPN roster, not a dry run/)).toBeTruthy()
   expect(within(dialog).getByText('Out for weeks.')).toBeTruthy()
+  expect(within(dialog).getByText('This leaves the RB slot empty until you start someone there.')).toBeTruthy()
   fireEvent.click(within(dialog).getByRole('button', { name: 'Confirm IR move' }))
   await waitFor(() => expect(triggerLineupSwap).toHaveBeenCalledWith(
     '8', [{ kind: 'ir', player_id: 'espn-Hurt', player_name: 'Hurt', slot: 'IR' }], 'lineup-ir:123:8:2026:5:espn-Hurt:ir',
@@ -65,7 +66,9 @@ it('confirms a live move to IR and sends one IR entry by ESPN id', async () => {
 it('confirms an activation from IR onto the bench', async () => {
   start()
   fireEvent.click(await enabledButton('Activate Healed from IR'))
-  fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Confirm activation' }))
+  const dialog = await screen.findByRole('dialog')
+  expect(within(dialog).getByText(/needs an open bench spot/)).toBeTruthy()
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Confirm activation' }))
   await waitFor(() => expect(triggerLineupSwap).toHaveBeenCalledWith(
     '8', [{ kind: 'activate_ir', player_id: 'espn-Healed', player_name: 'Healed', slot: 'BENCH' }],
     'lineup-ir:123:8:2026:5:espn-Healed:activate_ir',
