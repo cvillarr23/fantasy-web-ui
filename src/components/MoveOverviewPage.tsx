@@ -29,7 +29,7 @@ export function MoveOverviewPage() {
   const incoming = params.getAll('add')
   const outgoing = params.getAll('drop')
   const [rest, setRest] = useState(false)
-  const [confirmed, setConfirmed] = useState<MovePreview | null>(null)
+  const [confirmation, setConfirmed] = useState<{ scope: string; move: MovePreview } | null>(null)
   const invalidWaiver = kind === 'waiver' && (incoming.length !== 1 || outgoing.length > 1)
   const [error, setError] = useState<string | null>(null)
   const [tracking, setTracking] = useState<string | null>(null)
@@ -41,6 +41,9 @@ export function MoveOverviewPage() {
     incoming_espn_ids: incoming,
     outgoing_espn_ids: outgoing,
   }
+  const scope = JSON.stringify([config.league_id, config.team_id, payload])
+  // Only the exact roster scope and proposal reviewed may be confirmed.
+  const confirmed = confirmation?.scope === scope ? confirmation.move : null
   const query = useQuery({
     queryKey: ['move-preview', config.league_id, config.team_id, payload],
     queryFn: () => previewMove(payload),
@@ -72,7 +75,7 @@ export function MoveOverviewPage() {
         fresh.outgoing.map((p) => p.espn_id).join() !== outgoing.join()
       )
         throw new Error('The proposal changed. Review your selections again.')
-      return fresh
+      return { scope, move: fresh }
     },
     onMutate: () => setError(null),
     onSuccess: (fresh) => setConfirmed(fresh),
