@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getOutgoingTradeOffers, getTeamNames, triggerWaiverClaim } from './client'
+import { getOutgoingTradeOffers, getTeamNames, triggerLineupSwap, triggerWaiverClaim } from './client'
 import type { DraftConfig, WaiverPlayerSummary } from './types'
 
 const config = { team_id: '7', league_id: '123' } as DraftConfig
@@ -69,6 +69,39 @@ describe('triggerWaiverClaim', () => {
     }), { status: 422 })))
 
     await expect(triggerWaiverClaim(config, add)).rejects.toThrow('team: Field required')
+  })
+})
+
+describe('triggerLineupSwap', () => {
+  it('sends an IR entry unchanged with the caller\'s idempotency key', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      status: 'accepted', tracking_id: 'track-ir',
+    }), { status: 202 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await triggerLineupSwap(
+      '7', [{ kind: 'ir', player_id: '4046', player_name: 'Some Back', slot: 'IR' }], 'lineup-ir:key',
+    )
+
+    expect(result).toEqual({ status: 'accepted', tracking_id: 'track-ir' })
+    const [path, init] = fetchMock.mock.calls[0]
+    expect(path).toBe('/v1/trigger/lineup')
+    expect(JSON.parse(init.body)).toEqual({
+      team_id: '7',
+      optimized_swaps: [{ kind: 'ir', player_id: '4046', player_name: 'Some Back', slot: 'IR' }],
+      idempotency_key: 'lineup-ir:key',
+    })
+  })
+
+  it('keeps legacy swaps free of a kind field', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ tracking_id: 't' }), { status: 202 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await triggerLineupSwap('7', [{ drop_player_id: '1', add_player_id: '2', slot: 'RB' }])
+
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).optimized_swaps).toEqual([
+      { drop_player_id: '1', add_player_id: '2', slot: 'RB' },
+    ])
   })
 })
 

@@ -126,7 +126,7 @@ it('rejects a submission if the live week rolled over after staging', async () =
   expect(triggerLineupSwap).not.toHaveBeenCalled()
 })
 
-it('renders display-only IR hints for starters and bench with a blocking warning', async () => {
+it('renders IR hints for starters and bench with a blocking warning', async () => {
   vi.mocked(getLineupRoster).mockResolvedValue({
     starters: [{ ...player('Injured starter', 'RB'), ir_suggestion: { action: 'move_to_ir', reason: 'An IR slot is open.' } }],
     bench: [{ ...player('Healthy stash', 'IR'), ir_suggestion: { action: 'activate_from_ir', reason: 'This player is active again.' } }],

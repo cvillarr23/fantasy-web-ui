@@ -258,11 +258,22 @@ export interface ScoreboardResponse {
   matchups: ScoreboardMatchup[]
 }
 
-export interface LineupSwapInstruction {
+/** Benches drop_player_id and starts add_player_id in slot. kind is optional and callers
+ * leave it out, so the payload stays identical to what the gateway accepted before IR moves. */
+export interface LineupSwapMove {
+  kind?: 'swap'
   drop_player_id: string
   add_player_id: string
   slot: string
 }
+
+/** Moves one player into or out of an IR slot. player_id is the ESPN id. The gateway rejects
+ * internal ids, and the worker addresses ESPN directly. */
+export type LineupIrMove =
+  | { kind: 'ir'; player_id: string; player_name?: string; slot: 'IR' }
+  | { kind: 'activate_ir'; player_id: string; player_name?: string; slot: 'BENCH' }
+
+export type LineupSwapInstruction = LineupSwapMove | LineupIrMove
 
 export interface IrSuggestion {
   action: 'move_to_ir' | 'activate_from_ir'

@@ -367,11 +367,16 @@ export function getCurrentWeek(season?: number): Promise<{
 // here only means the queue accepted the message, not that ESPN's roster actually changed.
 // lineup_bot.js verifies its own writes and dumps failure context to disk on error, but none
 // of that is visible from this UI.
+//
+// The same holds for IR entries: the worker checks IR eligibility and ESPN can still refuse
+// the move (a healthy player, a full IR slot) after this has already returned 202. status is
+// "duplicate" when the gateway already accepted this idempotency key; it is optional because
+// older gateways omit it.
 export function triggerLineupSwap(
   teamId: string,
   swaps: LineupSwapInstruction[],
   idempotencyKey: string = crypto.randomUUID(),
-): Promise<{ tracking_id: string }> {
+): Promise<{ status?: 'accepted' | 'duplicate'; tracking_id: string }> {
   return request('/v1/trigger/lineup', {
     method: 'POST',
     body: JSON.stringify({
