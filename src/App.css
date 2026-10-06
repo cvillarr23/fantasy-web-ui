@@ -874,6 +874,13 @@
   border: 1px dashed var(--border);
   border-radius: 6px;
 }
+.lineup-player-details {
+  flex: 1;
+  min-width: 0;
+}
+.lineup-player-details .player-card-name {
+  flex-wrap: wrap;
+}
 .lineup-slot-over {
   border-color: var(--accent);
   background: var(--accent-bg);
@@ -1048,6 +1055,12 @@
 }
 .move-side.outgoing {
   border-top: 3px solid var(--outgoing);
+}
+.move-side.ir {
+  border-top: 3px solid var(--warn);
+}
+.move-side.ir h3 {
+  color: var(--warn);
 }
 .move-side h3 {
   margin: 0 0 10px;

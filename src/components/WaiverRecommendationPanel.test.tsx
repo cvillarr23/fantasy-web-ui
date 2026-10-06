@@ -46,3 +46,32 @@ it('labels add/drop explicitly and links to a review without submitting', () => 
   expect(link.getAttribute('href')).toBe('/moves/review?kind=waiver&week=7&add=4046&drop=9999')
   expect(screen.queryByRole('button', { name: 'Confirm claim' })).toBeNull()
 })
+
+it('renders IR-and-add with no drop or review action alongside ordinary swaps', () => {
+  render(
+    <MantineProvider><MemoryRouter initialEntries={['/waivers?week=7']}>
+      <WaiverRecommendationPanel config={config} recommendations={[
+        recommendation,
+        { ...recommendation, kind: 'ir_and_add', bench_player: null,
+          free_agent: { ...recommendation.free_agent, espn_id: '1234', name: 'New Back' },
+          ir_player: { ...recommendation.bench_player!, name: 'Injured Back', injury_status: 'OUT' } },
+      ]} />
+    </MemoryRouter></MantineProvider>,
+  )
+  const irRow = screen.getByText('New Back').closest('li')!
+  expect(within(irRow).getByText('Move to IR')).toBeTruthy()
+  expect(within(irRow).getByText('Injured Back')).toBeTruthy()
+  expect(within(irRow).getByText('Nobody is dropped.')).toBeTruthy()
+  expect(within(irRow).getByText(/Make this IR move and add in ESPN/)).toBeTruthy()
+  expect(within(irRow).queryByText('Drop from your roster')).toBeNull()
+  expect(within(irRow).queryByRole('link', { name: 'Review move' })).toBeNull()
+  expect(screen.getAllByRole('link', { name: 'Review move' })).toHaveLength(1)
+})
+
+it('handles a swap with no bench player safely', () => {
+  render(<MantineProvider><MemoryRouter>
+    <WaiverRecommendationPanel config={config} recommendations={[{ ...recommendation, bench_player: null }]} />
+  </MemoryRouter></MantineProvider>)
+  expect(screen.getByText('Some Back')).toBeTruthy()
+  expect(screen.queryByRole('link', { name: 'Review move' })).toBeNull()
+})

@@ -79,6 +79,8 @@ export function WaiverPage() {
       ) : (
         <WaiverRecommendationPanel
           recommendations={recommendations}
+          openIrSlots={recommendationsQuery.data?.open_ir_slots}
+          irMoves={recommendationsQuery.data?.ir_moves}
           config={config}
           loading={recommendationsQuery.isLoading}
           updating={recommendationsQuery.isPlaceholderData}

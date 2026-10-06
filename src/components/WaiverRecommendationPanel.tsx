@@ -3,10 +3,12 @@ import { MoveSidesSkeleton, SkeletonRegion } from './skeletons'
 import { Link } from 'react-router-dom'
 import { InjuryBadge } from './InjuryBadge'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
-import type { DraftConfig, WaiverRecommendation } from '../api/types'
+import type { DraftConfig, WaiverIrMove, WaiverRecommendation } from '../api/types'
 interface Props {
   recommendations: WaiverRecommendation[]
   config: DraftConfig
+  openIrSlots?: number
+  irMoves?: WaiverIrMove[]
   /** First load: render placeholder rows inside the real panel chrome. */
   loading?: boolean
   /** Showing the previous week's recommendations while the next week loads. */
@@ -34,14 +36,33 @@ function RecommendationRowsSkeleton() {
   )
 }
 
-export function WaiverRecommendationPanel({ recommendations, loading = false, updating = false }: Props) {
+export function WaiverRecommendationPanel({ recommendations, openIrSlots = 0, irMoves = [], loading = false, updating = false }: Props) {
   const [week] = useSelectedWeek()
   return (
     <section className="waiver-recommendation-panel">
       <h3>Waiver upgrades</h3>
       <Text size="sm" c="dimmed" mb="md">
-        Compare who joins your roster and who leaves before submitting a claim.
+        Compare roster changes before submitting a claim. IR suggestions must be completed in ESPN.
       </Text>
+      {!loading && openIrSlots > 0 && (
+        <Text size="sm" mb="md">{openIrSlots} open IR {openIrSlots === 1 ? 'slot' : 'slots'}</Text>
+      )}
+      {!loading && irMoves.length > 0 && (
+        <section aria-label="Suggested IR moves" aria-busy={updating || undefined}>
+          <h3>Suggested IR moves</h3>
+          <Text size="sm" c="dimmed">Make IR moves directly in ESPN. These suggestions are display only.</Text>
+          <ul className="waiver-recommendation-list">
+            {irMoves.map((move) => (
+              <li className="waiver-recommendation-row" key={move.player.espn_id ?? move.player.name}>
+                <Badge color="yellow">Move to IR</Badge>
+                <Text fw={700}>{move.player.name}</Text>
+                <Text size="sm">{move.position} · {move.player.pro_team}</Text>
+                <InjuryBadge status={move.player.injury_status} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {loading ? (
         <RecommendationRowsSkeleton />
       ) : !recommendations.length ? (
@@ -51,13 +72,15 @@ export function WaiverRecommendationPanel({ recommendations, loading = false, up
       ) : (
         <ul className="waiver-recommendation-list" aria-busy={updating || undefined}>
           {recommendations.map((r) => {
+            const isIrAndAdd = r.kind === 'ir_and_add'
+            const outgoingPlayer = isIrAndAdd ? r.ir_player : r.bench_player
             const params = new URLSearchParams({
               kind: 'waiver',
               week: String(week),
               add: r.free_agent.espn_id ?? '',
-              drop: r.bench_player.espn_id ?? '',
+              drop: r.bench_player?.espn_id ?? '',
             })
-            const canReview = Boolean(r.free_agent.espn_id && r.bench_player.espn_id)
+            const canReview = !isIrAndAdd && (r.kind === undefined || r.kind === 'swap') && Boolean(r.free_agent.espn_id && r.bench_player?.espn_id)
             return (
               <li
                 className="waiver-recommendation-row"
@@ -72,15 +95,16 @@ export function WaiverRecommendationPanel({ recommendations, loading = false, up
                     </Text>
                     <InjuryBadge status={r.free_agent.injury_status} />
                   </div>
-                  <div className="move-side outgoing">
-                    <h3>Drop from your roster</h3>
-                    <Text fw={700}>{r.bench_player.name}</Text>
+                  <div className={`move-side ${isIrAndAdd ? 'ir' : 'outgoing'}`}>
+                    <h3>{isIrAndAdd ? 'Move to IR' : 'Drop from your roster'}</h3>
+                    <Text fw={700}>{outgoingPlayer?.name ?? '—'}</Text>
                     <Text size="sm">
-                      {r.position} · {r.bench_player.pro_team}
+                      {isIrAndAdd ? 'IR stash' : r.position} · {outgoingPlayer?.pro_team ?? '—'}
                     </Text>
-                    <InjuryBadge status={r.bench_player.injury_status} />
+                    <InjuryBadge status={outgoingPlayer?.injury_status ?? null} />
                   </div>
                 </div>
+                {isIrAndAdd && <Text size="sm" mt="sm">Nobody is dropped.</Text>}
                 <Group justify="space-between" mt="md">
                   <Stack gap={2}>
                     <Badge color="teal">
@@ -91,17 +115,18 @@ export function WaiverRecommendationPanel({ recommendations, loading = false, up
                       VORP compares player value; it is not your projected lineup score gain.
                     </Text>
                   </Stack>
-                  <Button
+                  {canReview && <Button
                     component={Link}
-                    to={canReview ? `/moves/review?${params}` : '#'}
-                    disabled={!canReview}
+                    to={`/moves/review?${params}`}
                   >
                     Review move
-                  </Button>
+                  </Button>}
                 </Group>
                 {!canReview && (
                   <Text size="xs" c="dimmed">
-                    An ESPN player identity is missing. Review this move in ESPN.
+                    {isIrAndAdd
+                      ? 'Make this IR move and add in ESPN. These suggestions are display only.'
+                      : 'An ESPN player identity is missing. Review this move in ESPN.'}
                   </Text>
                 )}
               </li>
