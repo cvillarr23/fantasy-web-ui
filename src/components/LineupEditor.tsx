@@ -2,10 +2,11 @@ import { useCurrentWeek } from '../hooks/useCurrentWeek'
 import { Link } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { DndContext, useDraggable, useDroppable, type DragEndEvent } from '@dnd-kit/core'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Alert, Badge, Button, Group, Tooltip } from '@mantine/core'
-import { getCurrentWeek, getLineupRoster, triggerLineupSwap } from '../api/client'
+import { getCurrentWeek, triggerLineupSwap } from '../api/client'
 import { queryClient } from '../api/queryClient'
+import { lineupRosterQuery } from '../api/weekReads'
 import { useToast } from '../hooks/useToast'
 import { RosterQuickActions } from './RosterQuickActions'
 import { InjuryBadge } from './InjuryBadge'
@@ -13,7 +14,7 @@ import { LineupSuggestionPanel, LineupSuggestionPanelSkeleton } from './LineupSu
 import { PlayerCard } from './PlayerCard'
 import { RumorBadge } from './RumorBadge'
 import { PlayerRowSkeleton, SkeletonRegion } from './skeletons'
-import type { DraftConfig, LineupPlayerLine, LineupRosterResponse } from '../api/types'
+import type { DraftConfig, LineupPlayerLine } from '../api/types'
 
 interface Props {
   config: DraftConfig
@@ -147,14 +148,16 @@ export function LineupEditor({ config, week = '' }: Props) {
   const currentWeek = useCurrentWeek()
   const canSubmit = Number(week) === currentWeek
   const submissionAttempt = useRef<{ signature: string; key: string } | null>(null)
-  const [roster, setRoster] = useState<LineupRosterResponse | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const rosterOptions = lineupRosterQuery(config, week)
+  const rosterQuery = useQuery(rosterOptions, queryClient)
+  const roster = rosterQuery.data ?? null
+  // Also true during background refreshes of a cached roster, so submits wait for them.
+  const loading = rosterQuery.isFetching
+  const error = rosterQuery.error ? String(rosterQuery.error) : null
   // Only identifiers survive navigation; player details come from the fresh roster.
   const draftKey = `fantasy.lineup-draft:${config.league_id}:${config.team_id}:${config.season}:${week}`
   const [pendingSwaps, setPendingSwaps] = useState<PendingSwap[]>([])
   const [draftNotice, setDraftNotice] = useState(false)
-  const loadVersion = useRef(0)
 
   function saveSwaps(swaps: PendingSwap[]) {
     setPendingSwaps(swaps)
@@ -186,47 +189,31 @@ export function LineupEditor({ config, week = '' }: Props) {
     },
   }, queryClient)
 
-  function loadRoster() {
-    setPendingSwaps([])
-    const version = ++loadVersion.current
-    setLoading(true)
-    setError(null)
-    // Through the query client (always fresh, never served from cache) so the read registers
-    // with the global progress bar; staged-swap restoration below needs the imperative result.
-    queryClient
-      .fetchQuery({
-        queryKey: ['lineup-roster', config.league_id, config.team_id, config.season, week],
-        queryFn: () => getLineupRoster(config.season, Number(week) || undefined),
-        staleTime: 0,
-      })
-      .then((fresh) => {
-        if (version !== loadVersion.current) return
-        setRoster(fresh)
-        try {
-          const saved: unknown = JSON.parse(window.sessionStorage.getItem(draftKey) ?? '[]')
-          if (!Array.isArray(saved)) return
-          const restored: PendingSwap[] = []
-          for (const item of saved) {
-            if (!item || typeof item.id !== 'string') continue
-            const dropPlayer = fresh.starters.find((p) => p.player_id === item.dropId && p.slot === item.slot)
-            const addPlayer = fresh.bench.find((p) => p.player_id === item.addId)
-            if (dropPlayer?.espn_id && addPlayer?.espn_id) {
-              restored.push({ id: item.id, slot: item.slot, dropPlayer, addPlayer })
-            }
-          }
-          setDraftNotice(restored.length !== saved.length)
-          saveSwaps(restored)
-        } catch { /* Ignore unavailable or corrupt draft storage. */ }
-      })
-      .catch((err) => { if (version === loadVersion.current) setError(String(err)) })
-      .finally(() => { if (version === loadVersion.current) setLoading(false) })
-  }
-
+  // Staged swaps live in session storage; rebuild them only against a settled roster (not
+  // another week's placeholder or a cached copy still being re-checked), because pruning
+  // writes back to storage and would otherwise drop swaps that are still valid.
+  const rosterSettled = !rosterQuery.isPlaceholderData && !rosterQuery.isFetching
   useEffect(() => {
-    loadRoster()
-    return () => { loadVersion.current += 1 }
+    setPendingSwaps([])
+    const fresh = rosterQuery.data
+    if (!fresh || !rosterSettled) return
+    try {
+      const saved: unknown = JSON.parse(window.sessionStorage.getItem(draftKey) ?? '[]')
+      if (!Array.isArray(saved)) return
+      const restored: PendingSwap[] = []
+      for (const item of saved) {
+        if (!item || typeof item.id !== 'string') continue
+        const dropPlayer = fresh.starters.find((p) => p.player_id === item.dropId && p.slot === item.slot)
+        const addPlayer = fresh.bench.find((p) => p.player_id === item.addId)
+        if (dropPlayer?.espn_id && addPlayer?.espn_id) {
+          restored.push({ id: item.id, slot: item.slot, dropPlayer, addPlayer })
+        }
+      }
+      setDraftNotice(restored.length !== saved.length)
+      saveSwaps(restored)
+    } catch { /* Ignore unavailable or corrupt draft storage. */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config.league_id, config.team_id, config.season, week])
+  }, [rosterQuery.data, rosterSettled, draftKey])
 
   function stageSwap(dropPlayer: LineupPlayerLine, addPlayer: LineupPlayerLine, slot: string) {
     if (!dropPlayer.espn_id || !addPlayer.espn_id) {
@@ -267,15 +254,15 @@ export function LineupEditor({ config, week = '' }: Props) {
         `Queued ${pendingSwaps.length} lineup swap(s). Waiting for verification.`,
       )
       saveSwaps([])
-      loadRoster()
+      void queryClient.invalidateQueries({ queryKey: rosterOptions.queryKey })
     } catch (err) {
       showToast('error', `Failed to submit lineup swaps: ${String(err)}`)
     }
   }
 
-  if (loading && !roster) return <LineupEditorSkeleton week={week} />
-  if (error) return <Alert color="red">{error}</Alert>
-  if (!roster) return null
+  if (rosterQuery.isLoading) return <LineupEditorSkeleton week={week} />
+  // A failed background refresh keeps showing the cached roster.
+  if (!roster) return error ? <Alert color="red">{error}</Alert> : null
 
   return (
     <section className="lineup-editor" aria-busy={loading || undefined}>

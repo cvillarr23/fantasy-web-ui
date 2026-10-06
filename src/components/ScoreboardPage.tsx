@@ -2,7 +2,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { queryClient } from '../api/queryClient'
 import { Alert, Button, Group, Skeleton, Stack, Text } from '@mantine/core'
 import { Link } from 'react-router-dom'
-import { getScoreboard } from '../api/client'
+import { scoreboardQuery } from '../api/weekReads'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { WeekSelector } from './WeekSelector'
@@ -69,12 +69,7 @@ export function ScoreboardPage() {
   const validWeek = Number.isFinite(weekValue) && weekValue > 0
 
   // Previous week's cards stay up (dimmed via aria-busy) while the next week loads.
-  const query = useQuery({
-    queryKey: ['scoreboard', config.league_id, config.season, weekValue],
-    queryFn: () => getScoreboard(config.season, weekValue),
-    enabled: isConfigured && validWeek,
-    placeholderData: keepPreviousData,
-  }, queryClient)
+  const query = useQuery({ ...scoreboardQuery(config, weekValue), placeholderData: keepPreviousData }, queryClient)
   const matchups = query.data?.matchups ?? null
   const error = query.error ? String(query.error) : null
 

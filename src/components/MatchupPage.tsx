@@ -4,7 +4,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { queryClient } from '../api/queryClient'
 import { Alert, Button, Group, Skeleton, Stack, Table, Text } from '@mantine/core'
 import { Link } from 'react-router-dom'
-import { ApiError, getMatchup } from '../api/client'
+import { matchupQuery } from '../api/weekReads'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { DeficitBadge, SwapBadge } from './DeficitBadge'
@@ -157,16 +157,11 @@ export function MatchupPage() {
 
   // The previous week stays visible (dimmed) while the next one loads, so a week change reads
   // as "updating" rather than a no-op or a blank page.
-  const query = useQuery({
-    queryKey: ['matchup', config.league_id, config.season, weekValue],
-    queryFn: () => getMatchup(config.season, weekValue),
-    enabled: isConfigured && validWeek,
-    placeholderData: keepPreviousData,
-  }, queryClient)
+  const query = useQuery({ ...matchupQuery(config, weekValue), placeholderData: keepPreviousData }, queryClient)
   const matchup = query.data ?? null
-  // A 404 is a bye week (or a week the season hasn't reached), not a failure.
-  const notFound = query.error instanceof ApiError && query.error.status === 404
-  const error = query.error && !notFound ? String(query.error) : null
+  // null is a cached bye week (or a week the season hasn't reached), not a failure.
+  const notFound = query.data === null
+  const error = query.error ? String(query.error) : null
 
   if (!isConfigured) {
     if (configLoading) return <PageSkeleton />

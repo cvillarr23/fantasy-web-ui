@@ -1,9 +1,12 @@
 import { QueryClient } from '@tanstack/react-query'
+import type { DraftConfig } from './types'
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 30_000,
+      // Revisiting a page within this window renders cached data with no request; after it,
+      // cached data still renders immediately while a background refetch runs.
+      staleTime: 2 * 60_000,
       gcTime: 15 * 60_000,
       retry: (attempt, error) =>
         attempt < 2 &&
@@ -14,6 +17,12 @@ export const queryClient = new QueryClient({
   },
 })
 let scope = 'unconfigured'
+export function scopeFor(config: Pick<DraftConfig, 'league_id' | 'team_id' | 'season'>) {
+  return `${config.league_id}:${config.team_id}:${config.season}`
+}
+/** Clears every cached read when the league, team or season changes. Seed it with the
+ * locally stored config at startup so the server copy arriving with the same values keeps
+ * the reads already in flight. */
 export function setQueryScope(next: string) {
   if (next !== scope) {
     queryClient.clear()
@@ -25,6 +34,6 @@ export function cacheKey(path: string) {
 }
 export function invalidateRoster() {
   return queryClient.invalidateQueries({
-    predicate: (q) => /roster|matchup|waiver|move-preview|league/.test(q.queryKey.join(':')),
+    predicate: (q) => /roster|matchup|scoreboard|waiver|move-preview|league/.test(q.queryKey.join(':')),
   })
 }

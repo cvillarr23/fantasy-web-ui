@@ -1,4 +1,4 @@
-import { setQueryScope } from '../api/queryClient'
+import { scopeFor, setQueryScope } from '../api/queryClient'
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ApiError, getDraftConfig, setDraftConfig } from '../api/client'
 import type { DraftConfig } from '../api/types'
@@ -8,11 +8,15 @@ import { DraftConfigContext, loadStoredConfig, saveStoredConfig } from '../hooks
 // returning browser renders immediately, then replaces it with the server copy so every
 // browser/device converges on whatever was saved last.
 export function DraftConfigProvider({ children }: { children: ReactNode }) {
-  const [config, setConfigState] = useState<DraftConfig>(loadStoredConfig)
+  const [config, setConfigState] = useState<DraftConfig>(() => {
+    const stored = loadStoredConfig()
+    setQueryScope(scopeFor(stored))
+    return stored
+  })
   const [loading, setLoading] = useState(true)
 
   const setConfig = useCallback((next: DraftConfig) => {
-    setQueryScope(`${next.league_id}:${next.team_id}:${next.season}`)
+    setQueryScope(scopeFor(next))
     saveStoredConfig(next)
     setConfigState(next)
   }, [])
