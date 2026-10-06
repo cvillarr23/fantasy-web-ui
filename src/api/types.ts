@@ -404,3 +404,27 @@ export interface BacktestResultDetail extends BacktestResultSummary {
     weeks: BacktestWeekBreakdown[]
   }
 }
+
+/** Staged trades use ESPN identities, unlike the manual VORP evaluator's player IDs. */
+export interface TradeOffer {
+  id: number
+  status: string
+  league_id: string | null
+  season: number | null
+  executed_at: string
+  offer_key?: string | null
+  source?: string | null
+  from_team_id?: string | null
+  to_team_id?: string | null
+  incoming_player_ids: string[]
+  outgoing_player_ids: string[]
+  incoming_players: { espn_id: string; name: string | null }[]
+  outgoing_players: { espn_id: string; name: string | null }[]
+  message?: string | null
+}
+
+export interface TradeOfferList {
+  offers: TradeOffer[]
+  limit: number
+  offset: number
+}

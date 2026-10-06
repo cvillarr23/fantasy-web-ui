@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { triggerWaiverClaim } from './client'
+import { getOutgoingTradeOffers, getTeamNames, triggerWaiverClaim } from './client'
 import type { DraftConfig, WaiverPlayerSummary } from './types'
 
 const config = { team_id: '7', league_id: '123' } as DraftConfig
@@ -70,4 +70,56 @@ describe('triggerWaiverClaim', () => {
 
     await expect(triggerWaiverClaim(config, add)).rejects.toThrow('team: Field required')
   })
+})
+
+describe('getOutgoingTradeOffers', () => {
+  const scope = { league_id: '123', team_id: '7', season: 2026 } as DraftConfig
+  const offer = (id: number, overrides = {}) => ({
+    id, status: 'awaiting_approval', league_id: '123', season: 2026,
+    source: 'proposal', from_team_id: '7', to_team_id: '8',
+    incoming_player_ids: ['4046'], outgoing_player_ids: ['9999'],
+    incoming_players: [{ espn_id: '4046', name: 'Some Back' }],
+    outgoing_players: [{ espn_id: '9999', name: 'Bench Back' }],
+    executed_at: '2026-10-05T13:00:00Z', message: 'An offer', ...overrides,
+  })
+
+  it('reads every page before filtering to our outgoing proposals, preserving ESPN identities', async () => {
+    const firstPage = Array.from({ length: 100 }, (_, id) => offer(id, { from_team_id: '9' }))
+    const expected = offer(100)
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ offers: firstPage, limit: 100, offset: 0 })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ offers: [expected], limit: 100, offset: 100 })))
+    vi.stubGlobal('fetch', fetchMock)
+
+    expect(await getOutgoingTradeOffers(scope)).toEqual([expected])
+    expect(fetchMock.mock.calls.map(([path]) => path)).toEqual([
+      '/v1/trade/offers?status=awaiting_approval&league_id=123&season=2026&limit=100&offset=0',
+      '/v1/trade/offers?status=awaiting_approval&league_id=123&season=2026&limit=100&offset=100',
+    ])
+    expect(fetchMock.mock.calls.every(([, init]) => !init.method || init.method === 'GET')).toBe(true)
+  })
+
+  it('excludes other scopes, reactive counters, incomplete teams and nonpending offers', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ offers: [
+      offer(1, { league_id: '456' }), offer(2, { season: 2025 }),
+      offer(3, { from_team_id: '8' }), offer(4, { source: 'counter' }),
+      offer(5, { to_team_id: null }), offer(6, { to_team_id: '7' }),
+      offer(7, { status: 'submitted' }), offer(8, { source: null }),
+    ], limit: 100, offset: 0 }))))
+    expect(await getOutgoingTradeOffers(scope)).toEqual([])
+  })
+
+  it('fails rather than displaying an incomplete list when a later page fails', async () => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ offers: Array.from({ length: 100 }, (_, id) => offer(id)), limit: 100, offset: 0 })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ detail: 'Offers unavailable' }), { status: 503 })))
+    await expect(getOutgoingTradeOffers(scope)).rejects.toThrow('Offers unavailable')
+  })
+})
+
+it('scopes proposal team-name lookups to the selected league', async () => {
+  const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ '8': 'Rival Team' })))
+  vi.stubGlobal('fetch', fetchMock)
+  expect(await getTeamNames('123')).toEqual({ '8': 'Rival Team' })
+  expect(fetchMock.mock.calls[0][0]).toBe('/v1/league/teams?league_id=123')
 })
