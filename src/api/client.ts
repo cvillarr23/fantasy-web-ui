@@ -505,3 +505,12 @@ export async function getOutgoingTradeOffers(config: DraftConfig): Promise<Trade
     if (page.offers.length < limit) return offers
   }
 }
+
+export function getTradeContext(
+  leagueId: string, season: number, week: number, horizon = 4, signal?: AbortSignal,
+): Promise<import('./types').LeagueTradeContext> {
+  const params = new URLSearchParams({
+    league_id: leagueId, season: String(season), week: String(week), horizon: String(horizon),
+  })
+  return request(`/v1/trade/context?${params}`, { signal })
+}
