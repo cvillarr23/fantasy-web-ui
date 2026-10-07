@@ -449,6 +449,7 @@ export interface TradeOffer {
   incoming_players: { espn_id: string; name: string | null }[]
   outgoing_players: { espn_id: string; name: string | null }[]
   message?: string | null
+  approval?: { tracking_id?: string; approved_by?: string; approved_at?: string; publish_error?: string } | null
 }
 
 export interface TradeOfferList {

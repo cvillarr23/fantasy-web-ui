@@ -4,6 +4,7 @@ import { getOutgoingTradeOffers, getTeamNames } from '../api/client'
 import { queryClient } from '../api/queryClient'
 import type { DraftConfig, TradeOffer } from '../api/types'
 import { SkeletonRegion, TextSkeleton } from './skeletons'
+import { TradeOfferApproval, TradeApprovalStatus } from './TradeOfferApproval'
 
 function ProposalPlayers({ label, players }: {
   label: string
@@ -76,9 +77,13 @@ export function OutgoingTradeProposals({ config }: { config: DraftConfig }) {
             <Text size="xs" c="dimmed" mt="sm">
               Generated <time dateTime={offer.executed_at}>{new Date(offer.executed_at).toLocaleString()}</time>
             </Text>
+            <TradeOfferApproval key={`${config.league_id}:${config.team_id}:${config.season}:${config.mode}:${offer.offer_key || offer.id}`}
+              config={config} offer={offer} counterparty={(offer.to_team_id && names.data?.[offer.to_team_id]) || `Team ${offer.to_team_id}`}
+              disabled={query.isError || query.isFetching} />
           </Card>
         ))}
       </Stack>
+      <TradeApprovalStatus key={`${config.league_id}:${config.team_id}:${config.season}:${config.mode}`} config={config} />
     </section>
   )
 }

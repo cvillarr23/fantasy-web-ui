@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
+import { getTradeProposalStates } from '../api/tradeApproval'
 import { getOutgoingTradeOffers, getTeamNames } from '../api/client'
 import { OutgoingTradeProposals } from './OutgoingTradeProposals'
 import type { DraftConfig, TradeOffer } from '../api/types'
 
+vi.mock('../api/tradeApproval', async importOriginal => ({ ...await importOriginal<typeof import('../api/tradeApproval')>(), getTradeProposalStates: vi.fn().mockResolvedValue([]), approveTradeOffer: vi.fn() }))
 vi.mock('../api/client', () => ({ getOutgoingTradeOffers: vi.fn(), getTeamNames: vi.fn() }))
 const config: DraftConfig = { league_id: '123', team_id: '7', season: 2026, mode: 'live' }
 const offer: TradeOffer = {
@@ -16,6 +18,7 @@ const offer: TradeOffer = {
   executed_at: '2026-10-05T13:00:00Z', message: 'Improve our receiving depth.',
 }
 beforeEach(() => {
+  vi.mocked(getTradeProposalStates).mockResolvedValue([])
   vi.mocked(getTeamNames).mockResolvedValue({ '8': 'Rival Team' })
   vi.mocked(getOutgoingTradeOffers).mockResolvedValue([offer])
 })
