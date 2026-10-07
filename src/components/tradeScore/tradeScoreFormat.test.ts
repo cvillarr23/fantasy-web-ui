@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import { completeScore, proposalEvaluation } from './fixtures'
-import { isProposalEvaluation, lineupMoves, resolvePointer, scoreInputSignature, signedScore } from './tradeScoreFormat'
+import { formatEvidenceValue, isProposalEvaluation, lineupMoves, resolvePointer, scoreInputSignature, signedScore } from './tradeScoreFormat'
 
 it('formats returned values with an explicit sign', () => {
   expect(signedScore(3.14159)).toBe('+3.1')
@@ -43,4 +43,23 @@ it('accepts only the evaluation envelope and score version it understands', () =
   expect(isProposalEvaluation({ ...proposalEvaluation(), version: 'proposal-evaluation-v2' })).toBe(false)
   expect(isProposalEvaluation({ ...proposalEvaluation(), score: { ...completeScore(), scoring_version: 'trade-score-v2' } })).toBe(false)
   expect(isProposalEvaluation({ ...proposalEvaluation(), score: { scoring_version: 'trade-score-v1' } })).toBe(false)
+})
+
+it('formats scalar evidence values', () => {
+  expect(formatEvidenceValue(-1.1)).toBe('-1.1')
+  expect(formatEvidenceValue(13.84000001)).toBe('13.84')
+  expect(formatEvidenceValue(true)).toBe('yes')
+  expect(formatEvidenceValue(false)).toBe('no')
+  expect(formatEvidenceValue(null)).toBe('unknown')
+  expect(formatEvidenceValue('scheduled')).toBe('scheduled')
+})
+
+it('formats the object values the proposal generator cites, never as raw JSON', () => {
+  const score = completeScore()
+  expect(formatEvidenceValue(score.send[0])).toBe('Sent Back (RB, KC)')
+  expect(formatEvidenceValue({ ...score.receive[0], name: null, nfl_team: null })).toBe('ESPN player 200 (WR)')
+  expect(formatEvidenceValue(score.roster_impact.counterparty.weeks[0].starters_after[0])).toBe('Sent Back (RB, 4.3 VORP)')
+  expect(formatEvidenceValue({ week: 8, reasons: ['lineup_unfillable', 'brand_new_reason'] }))
+    .toBe('Week 8 not scored: Lineup could not be filled; Unrecognized reason (brand_new_reason)')
+  expect(formatEvidenceValue({ something: 'else' })).toBe('{"something":"else"}')
 })

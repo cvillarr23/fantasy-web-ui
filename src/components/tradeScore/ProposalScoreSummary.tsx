@@ -2,14 +2,7 @@ import { Alert, Badge, Group, List, Stack, Text } from '@mantine/core'
 import type { ProposalEvaluation, TradeOffer } from '../../api/types'
 import { reasonLabel } from './tradeScoreReasons'
 import { TradeScoreBreakdown } from './TradeScoreBreakdown'
-import { isProposalEvaluation, resolvePointer, signedScore } from './tradeScoreFormat'
-
-function evidenceValue(value: unknown): string {
-  if (value === null) return 'unknown'
-  if (typeof value === 'boolean') return value ? 'yes' : 'no'
-  if (typeof value === 'number') return String(Number(value.toFixed(2)))
-  return typeof value === 'string' ? value : JSON.stringify(value)
-}
+import { formatEvidenceValue, isProposalEvaluation, resolvePointer, signedScore } from './tradeScoreFormat'
 
 function PitchEvidence({ evaluation, message }: { evaluation: ProposalEvaluation; message: string | null | undefined }) {
   const pitch = evaluation.pitch
@@ -31,7 +24,7 @@ function PitchEvidence({ evaluation, message }: { evaluation: ProposalEvaluation
               <Text size="xs" c="dimmed">
                 {value === undefined
                   ? `Score field ${item.path} not found in the stored score.`
-                  : `Score field: ${item.path} = ${evidenceValue(value)}`}
+                  : `Score field: ${item.path} = ${formatEvidenceValue(value)}`}
               </Text>
             </List.Item>
           )
