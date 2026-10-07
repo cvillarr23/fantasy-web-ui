@@ -49,7 +49,11 @@ export function ProposalScoreSummary({ offer, teamNames }: {
 }) {
   const evaluation = offer.evaluation
   let body
-  if (evaluation == null) {
+  // JSON can't carry undefined, so a missing field means the API didn't send evidence at all,
+  // while null means the API looked and the generator stored none. Only null says "not stored".
+  if (evaluation === undefined) {
+    body = <Text size="sm" c="dimmed">Score evidence isn't available from the API for this proposal.</Text>
+  } else if (evaluation === null) {
     body = <Text size="sm" c="dimmed">No score evidence was stored for this proposal.</Text>
   } else if (!isProposalEvaluation(evaluation)) {
     const version = (evaluation as { version?: unknown }).version
@@ -75,6 +79,11 @@ export function ProposalScoreSummary({ offer, teamNames }: {
         {final == null && (
           <Text size="sm">{score.score.final_score_unavailable_reasons.map((code) => reasonLabel(code).label).join('; ')}</Text>
         )}
+        {/* Kept outside the collapsed breakdown: a proposal ranked by our lineup gain has no
+            final score, and our value must stay distinct from what the trade does to them. */}
+        <Text size="sm" aria-label="Score terms summary">
+          {`Our lineup gain ${signedScore(score.score.our_lineup_gain)} · Counterparty change ${signedScore(score.score.counterparty_lineup_change)} · Our schedule adjustment ${signedScore(score.score.our_schedule_adjustment)}`}
+        </Text>
         <Text size="xs" c="dimmed">
           Scored for week {request.week} with a {request.horizon}-week horizon at{' '}
           <time dateTime={evaluation.evaluated_at}>{new Date(evaluation.evaluated_at).toLocaleString()}</time>

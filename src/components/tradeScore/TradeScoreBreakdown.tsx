@@ -19,6 +19,25 @@ function ReasonList({ codes }: { codes: string[] }) {
   )
 }
 
+// Core's raw VORP sums each side as if an uncounted player were worth 0: unmapped players are
+// dropped and players without a row for the week add nothing. A side with nobody counted is
+// therefore unknown, and a side missing only some players is a lower bound.
+function rawVorpCells(score: TradeScore) {
+  const { raw_vorp: raw } = score
+  const missing = new Set(raw.missing_player_ids)
+  const side = (players: TradeScore['send'], total: number) => {
+    const uncounted = players.filter((p) => !p.player_id || missing.has(p.player_id)).length
+    if (uncounted === players.length) return { known: false, text: 'Not available' }
+    return { known: true, text: uncounted ? `${total.toFixed(1)} (incomplete)` : total.toFixed(1) }
+  }
+  const received = side(score.receive, raw.incoming_total)
+  const sent = side(score.send, raw.outgoing_total)
+  const gaps = raw.missing_player_ids.length > 0 || raw.unmapped_espn_ids.length > 0
+  const net = !received.known || !sent.known ? 'Not available'
+    : gaps ? `${signedScore(raw.delta_vorp)} (incomplete)` : signedScore(raw.delta_vorp)
+  return { received: received.text, sent: sent.text, net }
+}
+
 function weight(value: number | null): string {
   return value == null ? 'Unknown' : `×${value.toFixed(2)}`
 }
@@ -52,6 +71,7 @@ export function TradeScoreBreakdown({ score, teamNames }: {
   const playerName = (espnId: string) => playerNames.get(espnId) || `ESPN player ${espnId}`
   const scoredCount = horizon.scored_weeks.length
   const totalWeeks = horizon.end_week - horizon.start_week + 1
+  const rawCells = rawVorpCells(score)
 
   return (
     <Stack gap="md" aria-label="Trade score breakdown" component="section">
@@ -76,11 +96,11 @@ export function TradeScoreBreakdown({ score, teamNames }: {
       <Table.ScrollContainer minWidth={420}>
         <Table aria-label="Score terms">
           <Table.Tbody>
-            <TermRow label={`Raw VORP received (week ${raw.week})`} value={raw.incoming_total.toFixed(1)}
+            <TermRow label={`Raw VORP received (week ${raw.week})`} value={rawCells.received}
               detail="Single-week VORP of the players you receive, the same total Compare VORP shows." />
-            <TermRow label={`Raw VORP sent (week ${raw.week})`} value={raw.outgoing_total.toFixed(1)}
+            <TermRow label={`Raw VORP sent (week ${raw.week})`} value={rawCells.sent}
               detail="Single-week VORP of the players you send." />
-            <TermRow label={`Raw VORP net (week ${raw.week})`} value={signedScore(raw.delta_vorp)}
+            <TermRow label={`Raw VORP net (week ${raw.week})`} value={rawCells.net}
               detail={`Received minus sent, week ${raw.week} only; it ignores lineups and schedule.`} />
             <TermRow label="Our lineup gain (G)" value={signedScore(terms.our_lineup_gain)}
               detail={`Change in ${ours}'s best starting-lineup VORP, summed over scored weeks.`} />

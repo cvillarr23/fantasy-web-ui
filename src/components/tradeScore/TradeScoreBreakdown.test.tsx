@@ -125,3 +125,32 @@ it('says when no coverage gaps were reported', () => {
   view(completeScore())
   expect(screen.getByText('No coverage gaps reported.')).toBeTruthy()
 })
+
+it('shows raw VORP as not available when a side has no counted players, never as zero', () => {
+  const score = completeScore()
+  score.raw_vorp = { ...score.raw_vorp, incoming_total: 0, delta_vorp: -4.25, missing_player_ids: ['p200'] }
+  view(score)
+  expect(within(term(/Raw VORP received/)).getByText('Not available')).toBeTruthy()
+  expect(within(term(/Raw VORP net/)).getByText('Not available')).toBeTruthy()
+  expect(within(term(/Raw VORP sent/)).getByText('4.3')).toBeTruthy()
+  for (const name of [/Raw VORP received/, /Raw VORP net/]) expect(term(name).textContent).not.toMatch(/0\.0|-4\.3/)
+})
+
+it('treats an unmapped traded player as uncounted in raw VORP', () => {
+  const score = completeScore()
+  score.send = [{ ...score.send[0], player_id: null }]
+  score.raw_vorp = { ...score.raw_vorp, outgoing_total: 0, delta_vorp: 7.75, unmapped_espn_ids: ['100'] }
+  view(score)
+  expect(within(term(/Raw VORP sent/)).getByText('Not available')).toBeTruthy()
+  expect(within(term(/Raw VORP net/)).getByText('Not available')).toBeTruthy()
+})
+
+it('marks raw VORP totals that leave out some players as incomplete', () => {
+  const score = completeScore()
+  score.receive = [...score.receive, { espn_id: '201', player_id: 'p201', name: 'Second Wideout', position: 'WR', nfl_team: 'SF' }]
+  score.raw_vorp = { ...score.raw_vorp, missing_player_ids: ['p201'] }
+  view(score)
+  expect(within(term(/Raw VORP received/)).getByText('7.8 (incomplete)')).toBeTruthy()
+  expect(within(term(/Raw VORP sent/)).getByText('4.3')).toBeTruthy()
+  expect(within(term(/Raw VORP net/)).getByText('+3.5 (incomplete)')).toBeTruthy()
+})
