@@ -154,3 +154,13 @@ it('marks raw VORP totals that leave out some players as incomplete', () => {
   expect(within(term(/Raw VORP sent/)).getByText('4.3')).toBeTruthy()
   expect(within(term(/Raw VORP net/)).getByText('+3.5 (incomplete)')).toBeTruthy()
 })
+
+it('keeps an exact empty side and does not flag the net for gaps outside the traded players', () => {
+  const score = completeScore()
+  score.send = []
+  score.raw_vorp = { ...score.raw_vorp, outgoing_total: 0, delta_vorp: 7.75, missing_player_ids: ['p999'], unmapped_espn_ids: ['-16002'] }
+  view(score)
+  expect(within(term(/Raw VORP sent/)).getByText('0.0')).toBeTruthy()
+  expect(within(term(/Raw VORP received/)).getByText('7.8')).toBeTruthy()
+  expect(within(term(/Raw VORP net/)).getByText('+7.8')).toBeTruthy()
+})

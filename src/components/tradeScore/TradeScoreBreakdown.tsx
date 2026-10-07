@@ -27,14 +27,13 @@ function rawVorpCells(score: TradeScore) {
   const missing = new Set(raw.missing_player_ids)
   const side = (players: TradeScore['send'], total: number) => {
     const uncounted = players.filter((p) => !p.player_id || missing.has(p.player_id)).length
-    if (uncounted === players.length) return { known: false, text: 'Not available' }
-    return { known: true, text: uncounted ? `${total.toFixed(1)} (incomplete)` : total.toFixed(1) }
+    if (players.length > 0 && uncounted === players.length) return { known: false, partial: false, text: 'Not available' }
+    return { known: true, partial: uncounted > 0, text: uncounted ? `${total.toFixed(1)} (incomplete)` : total.toFixed(1) }
   }
   const received = side(score.receive, raw.incoming_total)
   const sent = side(score.send, raw.outgoing_total)
-  const gaps = raw.missing_player_ids.length > 0 || raw.unmapped_espn_ids.length > 0
   const net = !received.known || !sent.known ? 'Not available'
-    : gaps ? `${signedScore(raw.delta_vorp)} (incomplete)` : signedScore(raw.delta_vorp)
+    : received.partial || sent.partial ? `${signedScore(raw.delta_vorp)} (incomplete)` : signedScore(raw.delta_vorp)
   return { received: received.text, sent: sent.text, net }
 }
 
@@ -97,7 +96,7 @@ export function TradeScoreBreakdown({ score, teamNames }: {
         <Table aria-label="Score terms">
           <Table.Tbody>
             <TermRow label={`Raw VORP received (week ${raw.week})`} value={rawCells.received}
-              detail="Single-week VORP of the players you receive, the same total Compare VORP shows." />
+              detail="Single-week VORP of the players you receive, from the same data as Compare VORP; players without data are flagged here instead of counted as 0." />
             <TermRow label={`Raw VORP sent (week ${raw.week})`} value={rawCells.sent}
               detail="Single-week VORP of the players you send." />
             <TermRow label={`Raw VORP net (week ${raw.week})`} value={rawCells.net}

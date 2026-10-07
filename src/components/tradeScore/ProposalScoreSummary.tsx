@@ -80,9 +80,13 @@ export function ProposalScoreSummary({ offer, teamNames }: {
           <Text size="sm">{score.score.final_score_unavailable_reasons.map((code) => reasonLabel(code).label).join('; ')}</Text>
         )}
         {/* Kept outside the collapsed breakdown: a proposal ranked by our lineup gain has no
-            final score, and our value must stay distinct from what the trade does to them. */}
+            final score, and our value must stay distinct from what the trade does to them.
+            G + adjustment + C* is the final score, so the line reconciles with the headline. */}
         <Text size="sm" aria-label="Score terms summary">
-          {`Our lineup gain ${signedScore(score.score.our_lineup_gain)} · Counterparty change ${signedScore(score.score.counterparty_lineup_change)} · Our schedule adjustment ${signedScore(score.score.our_schedule_adjustment)}`}
+          {`Our lineup gain ${signedScore(score.score.our_lineup_gain)} · Our schedule adjustment ${signedScore(score.score.our_schedule_adjustment)} · Counterparty weighted benefit ${signedScore(score.score.counterparty_weighted_benefit)}`}
+        </Text>
+        <Text size="xs" c="dimmed" aria-label="Counterparty lineup change">
+          {`Their lineup changes by ${signedScore(score.score.counterparty_lineup_change)} (negative means the trade weakens them).`}
         </Text>
         <Text size="xs" c="dimmed">
           Scored for week {request.week} with a {request.horizon}-week horizon at{' '}
