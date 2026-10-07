@@ -1,13 +1,14 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
 import { getTradeProposalStates } from '../api/tradeApproval'
-import { getOutgoingTradeOffers, getTeamNames } from '../api/client'
+import { getOutgoingTradeOffers, getTeamNames, scoreTrade } from '../api/client'
 import { OutgoingTradeProposals } from './OutgoingTradeProposals'
 import type { DraftConfig, TradeOffer } from '../api/types'
+import { partialScore, proposalEvaluation } from './tradeScore/fixtures'
 
 vi.mock('../api/tradeApproval', async importOriginal => ({ ...await importOriginal<typeof import('../api/tradeApproval')>(), getTradeProposalStates: vi.fn().mockResolvedValue([]), approveTradeOffer: vi.fn() }))
-vi.mock('../api/client', () => ({ getOutgoingTradeOffers: vi.fn(), getTeamNames: vi.fn() }))
+vi.mock('../api/client', () => ({ getOutgoingTradeOffers: vi.fn(), getTeamNames: vi.fn(), scoreTrade: vi.fn() }))
 const config: DraftConfig = { league_id: '123', team_id: '7', season: 2026, mode: 'live' }
 const offer: TradeOffer = {
   id: 1, status: 'awaiting_approval', league_id: '123', season: 2026,
@@ -102,4 +103,65 @@ it('warns when refresh fails while retaining the previously loaded proposals', a
   fireEvent.click(screen.getByRole('button', { name: 'Refresh proposals' }))
   expect(await screen.findByText(/Previously loaded proposals.*out of date/)).toBeTruthy()
   expect(screen.getByText('Some Back')).toBeTruthy()
+})
+
+it('shows stored score evidence on a generated proposal and expands to the full breakdown', async () => {
+  vi.mocked(getOutgoingTradeOffers).mockResolvedValue([{ ...offer, evaluation: proposalEvaluation() }])
+  render(view())
+  const summary = await screen.findByRole('region', { name: 'Proposal score' })
+  expect(within(summary).getAllByText('+15.9').length).toBeGreaterThan(0)
+  expect(within(summary).getAllByText('Weeks 5–8 · 4 of 4 scored').length).toBeGreaterThan(0)
+  expect(within(summary).getByText(/Scored for week 5 with a 4-week horizon/)).toBeTruthy()
+  expect(within(summary).getByText(/Ranked 1 of 2 eligible packages by final score/)).toBeTruthy()
+  const breakdown = within(summary).getByRole('group', { name: 'Score breakdown' })
+  expect(within(breakdown).getByRole('table', { name: 'Score terms' })).toBeTruthy()
+  expect(scoreTrade).not.toHaveBeenCalled()
+})
+
+it('grounds the pitch in the stored evidence it cites', async () => {
+  vi.mocked(getOutgoingTradeOffers).mockResolvedValue([{ ...offer, evaluation: proposalEvaluation() }])
+  render(view())
+  const evidence = await screen.findByRole('list', { name: 'Pitch evidence' })
+  const cited = within(evidence).getByText(/Your week 5 lineup changes by -1.1/).closest('li')!
+  expect(within(cited).getByText('Cited in pitch')).toBeTruthy()
+  expect(within(cited).getByText(/roster_impact\/counterparty\/weeks\/0\/delta = -1.1/)).toBeTruthy()
+  const uncited = within(evidence).getByText(/We play each other in week 6/).closest('li')!
+  expect(within(uncited).queryByText('Cited in pitch')).toBeNull()
+  expect(within(uncited).getByText(/head_to_head = yes/)).toBeTruthy()
+})
+
+it('flags pitch evidence that does not resolve and a pitch that differs from the offer', async () => {
+  const evaluation = proposalEvaluation()
+  evaluation.pitch!.evidence[0].path = '/score/nope'
+  evaluation.pitch!.message = 'A different pitch'
+  vi.mocked(getOutgoingTradeOffers).mockResolvedValue([{ ...offer, evaluation }])
+  render(view())
+  expect(await screen.findByText(/not found in the stored score/)).toBeTruthy()
+  expect(screen.getByText(/stored pitch differs from this offer's message/)).toBeTruthy()
+})
+
+it('shows an unavailable stored score with its reasons rather than zero', async () => {
+  vi.mocked(getOutgoingTradeOffers).mockResolvedValue([{ ...offer, evaluation: proposalEvaluation(partialScore()) }])
+  render(view())
+  const summary = await screen.findByRole('region', { name: 'Proposal score' })
+  expect(within(summary).getAllByText('Score unavailable').length).toBeGreaterThan(0)
+  expect(within(summary).getAllByText('Partial horizon').length).toBeGreaterThan(0)
+})
+
+it.each([undefined, null])('says a proposal without stored evidence (%s) is not scored, never zero', async (evaluation) => {
+  vi.mocked(getOutgoingTradeOffers).mockResolvedValue([{ ...offer, evaluation }])
+  render(view())
+  const summary = await screen.findByRole('region', { name: 'Proposal score' })
+  expect(within(summary).getByText('No score evidence was stored for this proposal.')).toBeTruthy()
+  expect(summary.textContent).not.toMatch(/\d\.\d/)
+  expect(scoreTrade).not.toHaveBeenCalled()
+})
+
+it('does not misread stored evidence in an unrecognized format', async () => {
+  const evaluation = { ...proposalEvaluation(), version: 'proposal-evaluation-v2' } as unknown as TradeOffer['evaluation']
+  vi.mocked(getOutgoingTradeOffers).mockResolvedValue([{ ...offer, evaluation }])
+  render(view())
+  const summary = await screen.findByRole('region', { name: 'Proposal score' })
+  expect(within(summary).getByText(/format this page does not recognize/)).toBeTruthy()
+  expect(within(summary).queryByRole('table')).toBeNull()
 })
