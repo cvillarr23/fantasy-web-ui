@@ -514,3 +514,10 @@ export function getTradeContext(
   })
   return request(`/v1/trade/context?${params}`, { signal })
 }
+
+/** Read-only deterministic trade score; the UI displays its evidence and never rescores. */
+export function scoreTrade(
+  body: import('./types').TradeScoreRequest,
+): Promise<import('./types').TradeScore> {
+  return request('/v1/trade/score', { method: 'POST', body: JSON.stringify(body) })
+}

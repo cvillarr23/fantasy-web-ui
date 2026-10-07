@@ -5,6 +5,7 @@ import { queryClient } from '../api/queryClient'
 import type { DraftConfig, TradeOffer } from '../api/types'
 import { SkeletonRegion, TextSkeleton } from './skeletons'
 import { TradeOfferApproval, TradeApprovalStatus } from './TradeOfferApproval'
+import { ProposalScoreSummary } from './tradeScore/ProposalScoreSummary'
 
 function ProposalPlayers({ label, players }: {
   label: string
@@ -71,6 +72,7 @@ export function OutgoingTradeProposals({ config }: { config: DraftConfig }) {
               <ProposalPlayers label="You receive" players={offer.incoming_players} />
               <ProposalPlayers label="You send" players={offer.outgoing_players} />
             </SimpleGrid>
+            <ProposalScoreSummary offer={offer} teamNames={names.data} />
             <Text size="sm" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
               {offer.message || 'No explanation provided.'}
             </Text>

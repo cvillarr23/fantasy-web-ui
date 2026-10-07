@@ -450,6 +450,8 @@ export interface TradeOffer {
   outgoing_players: { espn_id: string; name: string | null }[]
   message?: string | null
   approval?: { tracking_id?: string; approved_by?: string; approved_at?: string; publish_error?: string } | null
+  /** Score evidence stored by the proposal generator; null or absent means not scored. */
+  evaluation?: import('./tradeScoreTypes').ProposalEvaluation | null
 }
 
 export interface TradeOfferList {
@@ -459,3 +461,4 @@ export interface TradeOfferList {
 }
 
 export type { LeagueTradeContext, TradeContextTeam, TradeContextPlayer, FantasyScheduleWeek } from './tradeContextTypes'
+export type { TradeScore, TradeScoreRequest, TradeScoreLineupWeek, TradeScoreScheduleWeek, TradeScoreStarter, TradeScoreTeamImpact, ProposalEvaluation } from './tradeScoreTypes'

@@ -12,9 +12,13 @@ import { PlayerPicker } from './PlayerPicker'
 import { useToast } from '../hooks/useToast'
 import { OperationProgress } from './skeletons'
 import type { DraftConfig, PlayerSearchResult, TradeEvaluationResponse } from '../api/types'
+import type { TradeContextControls } from '../hooks/useTradeContextControls'
+import { TradeScorePanel } from './tradeScore/TradeScorePanel'
 
 interface Props {
   config: DraftConfig
+  /** Counterparty and horizon shared with the league trade context panel. */
+  controls?: TradeContextControls
 }
 
 interface Side {
@@ -55,7 +59,7 @@ function TradeSideColumn({ side }: { side: Side }) {
   )
 }
 
-export function TradeBuilder({ config }: Props) {
+export function TradeBuilder({ config, controls }: Props) {
   const [incoming, setIncoming] = useState<PlayerSearchResult[]>([])
   const [outgoing, setOutgoing] = useState<PlayerSearchResult[]>([])
   // number | string, same reasoning as LineupPage's week field - NumberInput passes
@@ -149,6 +153,8 @@ export function TradeBuilder({ config }: Props) {
           )}
         </div>
       )}
+
+      {controls && <TradeScorePanel config={config} week={week} incoming={incoming} outgoing={outgoing} controls={controls} />}
 
       {toast && <p className={`status-message toast toast-${toast.tone}`}>{toast.message}</p>}
     </section>

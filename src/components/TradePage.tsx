@@ -31,7 +31,7 @@ export function TradePage() {
       <Stack gap="lg">
         <OutgoingTradeProposals config={config} />
         <TradeContextPanel config={config} controls={tradeContextControls} />
-        <TradeBuilder config={config} />
+        <TradeBuilder config={config} controls={tradeContextControls} />
       </Stack>
     </div>
   )
