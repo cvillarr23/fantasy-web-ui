@@ -140,6 +140,23 @@ it('flags pitch evidence that does not resolve and a pitch that differs from the
   expect(screen.getByText(/stored pitch differs from this offer's message/)).toBeTruthy()
 })
 
+it('shows our gain, counterparty change and schedule adjustment without expanding the breakdown', async () => {
+  vi.mocked(getOutgoingTradeOffers).mockResolvedValue([{ ...offer, evaluation: proposalEvaluation() }])
+  render(view())
+  const terms = await screen.findByLabelText('Score terms summary')
+  expect(terms.textContent).toBe('Our lineup gain +12.6 · Our schedule adjustment +1.2 · Counterparty weighted benefit +2.1')
+  expect(screen.getByLabelText('Counterparty lineup change').textContent).toMatch(/-4\.4 \(negative means the trade weakens them\)/)
+})
+
+it('shows our lineup gain on a proposal ranked by it when the final score is withheld', async () => {
+  const evaluation = proposalEvaluation(partialScore())
+  evaluation.ranking!.basis = 'our_lineup_gain'
+  vi.mocked(getOutgoingTradeOffers).mockResolvedValue([{ ...offer, evaluation }])
+  render(view())
+  const terms = await screen.findByLabelText('Score terms summary')
+  expect(terms.textContent).toBe('Our lineup gain +6.3 · Our schedule adjustment +0.8 · Counterparty weighted benefit Not available')
+})
+
 it('shows an unavailable stored score with its reasons rather than zero', async () => {
   vi.mocked(getOutgoingTradeOffers).mockResolvedValue([{ ...offer, evaluation: proposalEvaluation(partialScore()) }])
   render(view())
@@ -148,11 +165,21 @@ it('shows an unavailable stored score with its reasons rather than zero', async 
   expect(within(summary).getAllByText('Partial horizon').length).toBeGreaterThan(0)
 })
 
-it.each([undefined, null])('says a proposal without stored evidence (%s) is not scored, never zero', async (evaluation) => {
-  vi.mocked(getOutgoingTradeOffers).mockResolvedValue([{ ...offer, evaluation }])
+it('says a proposal the generator stored no evidence for is not scored, never zero', async () => {
+  vi.mocked(getOutgoingTradeOffers).mockResolvedValue([{ ...offer, evaluation: null }])
   render(view())
   const summary = await screen.findByRole('region', { name: 'Proposal score' })
   expect(within(summary).getByText('No score evidence was stored for this proposal.')).toBeTruthy()
+  expect(summary.textContent).not.toMatch(/\d\.\d/)
+  expect(scoreTrade).not.toHaveBeenCalled()
+})
+
+it('does not claim evidence is missing when the API omits the evaluation field', async () => {
+  vi.mocked(getOutgoingTradeOffers).mockResolvedValue([offer])
+  render(view())
+  const summary = await screen.findByRole('region', { name: 'Proposal score' })
+  expect(within(summary).getByText(/isn't available from the API/)).toBeTruthy()
+  expect(within(summary).queryByText(/No score evidence was stored/)).toBeNull()
   expect(summary.textContent).not.toMatch(/\d\.\d/)
   expect(scoreTrade).not.toHaveBeenCalled()
 })
