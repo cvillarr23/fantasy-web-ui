@@ -5,7 +5,7 @@ import { ApiError } from '../api/client'
 import { approveTradeOffer, getTradeProposalStates, validApprover, validOfferKey } from '../api/tradeApproval'
 import { queryClient } from '../api/queryClient'
 import type { DraftConfig, TradeOffer } from '../api/types'
-import { canReview, offerFingerprint, retryProven, readApprovalAttempt, saveApprovalAttempt, scope, statusCopy, useApprovalAttempt, useApprovalAttempts } from './tradeApprovalState'
+import { canReview, offerFingerprint, retryProven, readApprovalAttempt, recordApprovalOutcome, saveApprovalAttempt, scope, statusCopy, useApprovalAttempt, useApprovalAttempts } from './tradeApprovalState'
 
 function useTradeStatuses(config: DraftConfig, poll = false) {
   const attempts = useApprovalAttempts(config)
@@ -93,15 +93,15 @@ function OfferApprovalDialog({ config, offer, counterparty, disabled }: Approval
       saveApprovalAttempt(key, { ...details, message: 'Approval outcome is unknown. Checking status…', priorTrackingId })
       sent = true
       const response = await approveTradeOffer(key, label.trim())
-      saveApprovalAttempt(key, { ...details, response, message: response.duplicate
+      recordApprovalOutcome(key, { ...details, response, message: response.duplicate
         ? 'This offer was already approved; no additional offer was queued.'
         : 'Offer queued. ESPN submission is not yet confirmed.' })
     } catch (error) {
       if (sent) {
         if (error instanceof ApiError && error.status === 422) {
-          saveApprovalAttempt(key, null)
+          recordApprovalOutcome(key, null)
         } else {
-          saveApprovalAttempt(key, { ...details, message: approvalError(error), publicationFailed: error instanceof ApiError && error.status === 503,
+          recordApprovalOutcome(key, { ...details, message: approvalError(error), publicationFailed: error instanceof ApiError && error.status === 503,
             priorTrackingId })
         }
       }
@@ -116,6 +116,7 @@ function OfferApprovalDialog({ config, offer, counterparty, disabled }: Approval
   }
   return <Stack gap="xs" mt="sm">
     <Button size="xs" variant="light" disabled={!eligible || busy} onClick={() => { void review() }}>Review approval</Button>
+    {attempt && !attempt.configScope && <Alert color="yellow">{attempt.message}</Alert>}
     {!validOfferKey(key) && <Text size="sm">Approval unavailable: no valid supplied offer key.</Text>}
     {message && !attempt && !open && <Alert color="yellow">{message}</Alert>}
     <Modal opened={open} onClose={() => { if (!busy) setOpen(false) }} title="Review trade approval" closeOnClickOutside={!busy} closeOnEscape={!busy} withCloseButton={!busy}>

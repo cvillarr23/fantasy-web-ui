@@ -189,3 +189,18 @@ it('keeps a late approval response scoped to its original configuration', async 
   expect(screen.queryByLabelText('Approver label')).toBeNull()
   expect(approveTradeOffer).toHaveBeenCalledOnce()
 })
+it('retains the pre-request guard if storage fails while recording the response', async () => {
+  render(view()); await review()
+  const original = Storage.prototype.setItem
+  let saves = 0
+  const spy = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (this: Storage, key, value) {
+    if (++saves > 1) throw new Error('Storage became unavailable')
+    original.call(this, key, value)
+  })
+  confirm()
+  await waitFor(() => expect(approveTradeOffer).toHaveBeenCalledOnce())
+  await waitFor(() => expect(screen.queryByRole('button', { name: 'Requesting approval…' })).toBeNull())
+  expect((screen.getByRole('button', { name: 'Review approval' }) as HTMLButtonElement).disabled).toBe(true)
+  expect(sessionStorage.getItem(`fantasy-web-ui.trade-approval.${offer.offer_key}`)).toContain('Approval outcome is unknown')
+  spy.mockRestore()
+})

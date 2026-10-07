@@ -47,6 +47,13 @@ export function saveApprovalAttempt(key: string, attempt: ApprovalAttempt | null
   else sessionStorage.removeItem(prefix + key)
   listeners.forEach(listener => listener())
 }
+export function recordApprovalOutcome(key: string, attempt: ApprovalAttempt | null) {
+  try { saveApprovalAttempt(key, attempt) }
+  catch {
+    // The pre-request marker is already durable. If storage stops accepting writes,
+    // retain that unknown outcome instead of clearing the guard or throwing again.
+  }
+}
 export function scope(config: DraftConfig) {
   return `${config.league_id}:${config.team_id}:${config.season}:${config.mode}`
 }
