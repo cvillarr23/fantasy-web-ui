@@ -1,3 +1,4 @@
+import { reasonLabel } from './tradeScoreReasons'
 import type { ProposalEvaluation, TradeScoreLineupWeek, TradeScoreRequest, TradeScoreStarter } from '../../api/types'
 
 /** Formats a value core returned. A missing value is unknown, so it never reads as zero. */
@@ -48,4 +49,26 @@ export function isProposalEvaluation(value: unknown): value is ProposalEvaluatio
     && !!score && score.scoring_version === 'trade-score-v1'
     && !!score.score && !!score.horizon && !!score.raw_vorp && !!score.roster_impact
     && !!score.schedule && !!score.coverage && !!score.weights
+}
+
+/** Readable text for the score value a pitch-evidence pointer resolves to. The generator
+ * cites whole traded players, starters and unscored weeks as well as plain numbers. */
+export function formatEvidenceValue(value: unknown): string {
+  if (value === null) return 'unknown'
+  if (typeof value === 'boolean') return value ? 'yes' : 'no'
+  if (typeof value === 'number') return String(Number(value.toFixed(2)))
+  if (typeof value !== 'object') return String(value)
+  const record = value as Record<string, unknown>
+  if (typeof record.espn_id === 'string') {
+    const name = typeof record.name === 'string' && record.name ? record.name : `ESPN player ${record.espn_id}`
+    const details = typeof record.vorp_score === 'number'
+      ? [record.position, `${record.vorp_score.toFixed(1)} VORP`]
+      : [record.position, record.nfl_team]
+    const shown = details.filter((part) => typeof part === 'string' && part)
+    return shown.length ? `${name} (${shown.join(', ')})` : name
+  }
+  if (typeof record.week === 'number' && Array.isArray(record.reasons)) {
+    return `Week ${record.week} not scored: ${record.reasons.map((code) => reasonLabel(String(code)).label).join('; ')}`
+  }
+  return JSON.stringify(value)
 }

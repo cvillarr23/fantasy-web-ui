@@ -192,3 +192,19 @@ it('does not misread stored evidence in an unrecognized format', async () => {
   expect(within(summary).getByText(/format this page does not recognize/)).toBeTruthy()
   expect(within(summary).queryByRole('table')).toBeNull()
 })
+
+it('shows cited players, starters and unscored weeks readably instead of as raw JSON', async () => {
+  const evaluation = proposalEvaluation(partialScore())
+  evaluation.pitch!.evidence = [
+    { id: 'e1', path: '/send/0', text: 'You would receive Sent Back' },
+    { id: 'e2', path: '/roster_impact/counterparty/weeks/0/starters_after/0', text: 'Sent Back would start for you in week 5' },
+    { id: 'e3', path: '/horizon/unscored_weeks/0', text: 'Week 7 could not be evaluated' },
+  ]
+  vi.mocked(getOutgoingTradeOffers).mockResolvedValue([{ ...offer, evaluation }])
+  render(view())
+  const evidence = await screen.findByRole('list', { name: 'Pitch evidence' })
+  expect(within(evidence).getByText('Score field: /send/0 = Sent Back (RB, KC)')).toBeTruthy()
+  expect(within(evidence).getByText(/starters_after\/0 = Sent Back \(RB, 4\.3 VORP\)/)).toBeTruthy()
+  expect(within(evidence).getByText(/unscored_weeks\/0 = Week 7 not scored: No metrics for this week/)).toBeTruthy()
+  expect(evidence.textContent).not.toMatch(/[{}]/)
+})
