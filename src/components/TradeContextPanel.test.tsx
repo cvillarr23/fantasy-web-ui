@@ -4,6 +4,7 @@ import { MantineProvider } from '@mantine/core'
 import { MemoryRouter } from 'react-router-dom'
 import { getTradeContext, getCurrentWeek, getOutgoingTradeOffers, getTeamNames } from '../api/client'
 import { TradeContextPanel } from './TradeContextPanel'
+import { useTradeContextControls } from '../hooks/useTradeContextControls'
 import { TradePage } from './TradePage'
 import { DraftConfigContext } from '../hooks/useDraftConfig'
 import type { DraftConfig } from '../api/types'
@@ -40,8 +41,12 @@ beforeEach(() => {
   vi.mocked(getTradeContext).mockResolvedValue(fixture())
 })
 afterEach(() => { cleanup(); vi.resetAllMocks() })
+function ContextHarness({ config }: { config: DraftConfig }) {
+  const controls = useTradeContextControls(config)
+  return <TradeContextPanel config={config} controls={controls} />
+}
 function view(scope = config) {
-  return <MantineProvider><MemoryRouter initialEntries={['/trades?week=5']}><DraftConfigContext.Provider value={{ config: scope, loading: false, saveConfig: vi.fn(), setConfig: vi.fn() }}><TradeContextPanel config={scope} /></DraftConfigContext.Provider></MemoryRouter></MantineProvider>
+  return <MantineProvider><MemoryRouter initialEntries={['/trades?week=5']}><DraftConfigContext.Provider value={{ config: scope, loading: false, saveConfig: vi.fn(), setConfig: vi.fn() }}><ContextHarness config={scope} /></DraftConfigContext.Provider></MemoryRouter></MantineProvider>
 }
 async function selectRival() {
   const select = await screen.findByRole('combobox', { name: 'Counterparty' })
@@ -120,13 +125,13 @@ it('handles missing configured team and empty regular-season schedules', async (
 })
 
 it('follows the live week when the URL has no selection', async () => {
-  render(<MantineProvider><MemoryRouter><TradeContextPanel config={config} /></MemoryRouter></MantineProvider>)
+  render(<MantineProvider><MemoryRouter><ContextHarness config={config} /></MemoryRouter></MantineProvider>)
   await screen.findByRole('combobox', { name: 'Counterparty' })
   expect(getTradeContext).toHaveBeenCalledWith('123', 2026, 5, 4, expect.any(AbortSignal))
 })
 it('defers context until a live week is available', () => {
   vi.mocked(getCurrentWeek).mockReturnValue(new Promise(() => {}))
-  render(<MantineProvider><MemoryRouter><TradeContextPanel config={config} /></MemoryRouter></MantineProvider>)
+  render(<MantineProvider><MemoryRouter><ContextHarness config={config} /></MemoryRouter></MantineProvider>)
   expect(getTradeContext).not.toHaveBeenCalled()
   expect(screen.getByText(/Select a valid league, season and week/)).toBeTruthy()
 })
