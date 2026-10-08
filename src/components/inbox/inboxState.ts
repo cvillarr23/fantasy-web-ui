@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { retryableResponse } from '../../api/tradeResponseRetry'
 import type { DraftConfig } from '../../api/types'
 import type { InboxAction, IncomingTrade, PublicationReceipt } from '../../api/tradeInboxTypes'
 export function inboxScope(config: DraftConfig) {
@@ -52,7 +53,7 @@ export function actionReason(
     return 'Player identities are invalid or duplicated.'
   if (row.publications.some((p) => p.status !== 'failed_before_publish'))
     return 'An action is queued, pending or unknown. Reconciliation is required.'
-  if (row.decision && Object.keys(row.decision).length > 0)
+  if (row.response || (row.decision && Object.keys(row.decision).length > 0))
     return 'Worker response evidence requires reconciliation before another action.'
   if (action === 'decline') return null
   const score = row.score
@@ -89,7 +90,12 @@ export function actionReason(
   return null
 }
 export function outcomeCopy(row: IncomingTrade): string {
-  const outcome = row.decision?.outcome
+  const outcome =
+    row.response?.status === 'response_unknown'
+      ? 'unknown'
+      : row.response?.status === 'responding'
+        ? 'pending'
+        : (row.decision?.outcome ?? (row.response?.status === 'rejected' ? 'rejected' : null))
   if (outcome === 'unknown')
     return 'Outcome unknown — manual verification required in Activity and ESPN. Once ESPN shows the offer unanswered, it can be retried.'
   if (outcome === 'blocked')
@@ -115,6 +121,8 @@ export function outcomeCopy(row: IncomingTrade): string {
   if (outcome != null)
     return `Unrecognized worker outcome ${String(outcome)} — reconciliation required.`
   if (confirmed[row.status]) return confirmed[row.status]
+  if (row.response?.status === 'responded')
+    return 'Worker recorded a response — confirmed outcome details unavailable. Verify in Activity.'
   const statuses: Record<string, string> = {
     open: 'Open',
     unparsed: 'Unparsed — actions unavailable',
@@ -128,6 +136,7 @@ export function outcomeCopy(row: IncomingTrade): string {
 }
 export interface InboxAttempt {
   message: string
+  transactionId?: string
   signature: string
   action: InboxAction
   comment: string | null
@@ -244,4 +253,36 @@ export function snapshotAttempts(scope: string) {
   } catch {
     return '[]'
   }
+}
+
+export function retryReason(
+  row: IncomingTrade,
+  config: DraftConfig,
+  week: number | undefined,
+): string | null {
+  const kind = retryableResponse(row.response)
+  if (!kind || (row.response?.action !== 'accept' && row.response?.action !== 'decline'))
+    return 'No retryable worker response.'
+  if (
+    (kind === 'rejected' && row.status !== 'open') ||
+    (kind === 'unknown' && row.status !== 'responding')
+  )
+    return 'Worker response does not match the current offer state.'
+  if (
+    row.publications.some(
+      (p) =>
+        p.status !== 'failed_before_publish' &&
+        (p.status === 'pending' ||
+          p.kind !== 'decision' ||
+          p.decision_key !== row.response?.decision_key ||
+          p.retry_of === row.response?.id),
+    )
+  )
+    return 'A publication is pending, queued for this retry, or requires reconciliation.'
+  return actionReason(
+    { ...row, status: 'open', publications: [], decision: null, response: null },
+    config,
+    week,
+    row.response.action,
+  )
 }
