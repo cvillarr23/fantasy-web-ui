@@ -401,3 +401,35 @@ it('only a new matching failed-before-publication claim permits another explicit
   confirm()
   await waitFor(() => expect(publishIncoming).toHaveBeenCalledTimes(2))
 })
+it('blocks a retry when the inbox refresh fails', async () => {
+  vi.mocked(getIncomingTrades).mockResolvedValue([
+    {
+      ...offer,
+      decision: { outcome: 'rejected', comment: 'Previous response' },
+      response: { id: 41, status: 'rejected', action: 'accept', decision_key: 'b'.repeat(64) },
+    },
+  ])
+  start()
+  await screen.findByRole('button', { name: 'Retry accept' })
+  vi.mocked(getIncomingTrades).mockRejectedValue(new Error('Read failed'))
+  fireEvent.click(screen.getByRole('button', { name: 'Refresh inbox' }))
+  await screen.findByText(/Previously loaded offers may be out of date/)
+  expect((screen.getByRole('button', { name: 'Retry accept' }) as HTMLButtonElement).disabled).toBe(
+    true,
+  )
+})
+it('accept retry requires a current non-stale score too', async () => {
+  vi.mocked(getIncomingTrades).mockResolvedValue([
+    {
+      ...offer,
+      score: { ...offer.score!, stale: true },
+      decision: { outcome: 'rejected' },
+      response: { id: 41, status: 'rejected', action: 'accept', decision_key: 'b'.repeat(64) },
+    },
+  ])
+  start()
+  await screen.findByRole('button', { name: 'Retry accept' })
+  expect((screen.getByRole('button', { name: 'Retry accept' }) as HTMLButtonElement).disabled).toBe(
+    true,
+  )
+})

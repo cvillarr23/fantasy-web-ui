@@ -114,7 +114,9 @@ it('separates worker confirmation from queue acceptance and preserves unknown ou
     }),
   ).toContain('pending processing')
   expect(outcomeCopy({ ...offer, status: 'accepted' })).toContain('accepted')
-  expect(outcomeCopy({ ...offer, decision: { outcome: 'rejected' } })).toContain('Retry it explicitly')
+  expect(outcomeCopy({ ...offer, decision: { outcome: 'rejected' } })).toContain(
+    'Retry it explicitly',
+  )
 })
 it('includes the original note in review identity even though worker fingerprint excludes it', () => {
   expect(reviewSignature({ ...offer, comment: 'Changed' })).not.toBe(reviewSignature(offer))
@@ -169,4 +171,63 @@ it.each([
   expect(
     await decisionKey({ ...offer, league_id: '456', our_team_id: '8' }, 'accept', comment),
   ).toBe(expected)
+})
+it('blocks new actions when a worker response is listed without decision metadata', () => {
+  expect(
+    actionReason(
+      {
+        ...offer,
+        response: {
+          id: 41,
+          status: 'response_unknown',
+          action: 'accept',
+          decision_key: 'b'.repeat(64),
+        },
+      },
+      config,
+      5,
+      'accept',
+    ),
+  ).toBeTruthy()
+  expect(
+    outcomeCopy({
+      ...offer,
+      response: {
+        id: 41,
+        status: 'response_unknown',
+        action: 'accept',
+        decision_key: 'b'.repeat(64),
+      },
+    }),
+  ).toContain('manual verification')
+})
+it('does not expose a retry for an outstanding or uncertain publication', async () => {
+  const { retryReason } = await import('./inboxState')
+  const row = {
+    ...offer,
+    response: {
+      id: 41,
+      status: 'rejected' as const,
+      action: 'accept',
+      decision_key: 'b'.repeat(64),
+    },
+    decision: { outcome: 'rejected' },
+  }
+  const publication = {
+    kind: 'decision' as const,
+    status: 'queued' as const,
+    tracking_id: 't',
+    approved_by: 'Manager',
+    approved_at: new Date().toISOString(),
+    fingerprint: offer.fingerprint!,
+    decision_key: 'b'.repeat(64),
+    action: 'accept' as const,
+  }
+  expect(retryReason({ ...row, publications: [publication] }, config, 5)).toBeNull()
+  expect(
+    retryReason({ ...row, publications: [{ ...publication, status: 'pending' }] }, config, 5),
+  ).toBeTruthy()
+  expect(
+    retryReason({ ...row, publications: [{ ...publication, retry_of: 41 }] }, config, 5),
+  ).toBeTruthy()
 })

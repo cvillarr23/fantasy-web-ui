@@ -315,7 +315,7 @@ export function IncomingTradeActions({
             onChange={(e) => setChecked(e.currentTarget.checked)}
           />
           {busy && !verified && <Text>Verifying current offer…</Text>}
-          {error && <Alert color="red">{error}</Alert>}
+          {action && error && <Alert color="red">{error}</Alert>}
           <Group>
             <Button variant="default" disabled={busy} onClick={() => setAction(null)}>
               Cancel

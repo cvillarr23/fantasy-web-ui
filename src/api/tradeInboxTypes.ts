@@ -44,6 +44,7 @@ export interface PublicationReceipt {
   duplicate: boolean
   decision_key: string | null
   action: 'accept' | 'decline' | null
+  retry_of?: number | null
 }
 export interface IncomingTrade {
   id: number

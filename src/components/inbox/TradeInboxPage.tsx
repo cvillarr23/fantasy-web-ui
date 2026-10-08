@@ -17,6 +17,8 @@ import {
   reviewSignature,
   subscribeAttempts,
   snapshotAttempts,
+  retryReason,
+  attemptKey,
 } from './inboxState'
 import type { InboxAttempt } from './inboxState'
 function expiryCopy(date: string | null, now: number) {
@@ -149,14 +151,15 @@ export function TradeInboxPage() {
           <Text>No incoming offers in this view.</Text>
         )}
         {attempts.map(([id, attempt]) => {
-          const copies = outcomes.data?.filter((r) => r.espn_transaction_id === id) ?? []
+          const transactionId = attempt.transactionId ?? id
+          const copies = outcomes.data?.filter((r) => r.espn_transaction_id === transactionId) ?? []
           const observed = copies.length === 1 ? copies[0] : undefined
           const copy = observed ? outcomeCopy(observed) : null
           const terminal = observed && observed.status !== 'open' && observed.status !== 'unparsed'
-          if (rows.some((r) => r.espn_transaction_id === id) && !terminal) return null
+          if (rows.some((r) => r.espn_transaction_id === transactionId) && !terminal) return null
           return (
             <Alert key={id} color="blue">
-              <Text fw={600}>Offer {id}</Text>
+              <Text fw={600}>Offer {transactionId}</Text>
               <Text>{copy && copy !== 'Open' ? copy : attempt.message}</Text>
               {outcomes.isError && (
                 <Text>
@@ -194,7 +197,8 @@ export function TradeInboxPage() {
                 </Group>
               </Group>
               <Text>{outcomeCopy(row)}</Text>
-              {(row.decision?.outcome === 'unknown' ||
+              {(Boolean(row.response) ||
+                row.decision?.outcome === 'unknown' ||
                 row.status === 'closed_unknown' ||
                 row.status === 'responding') && (
                 <Button component={Link} to="/activity?tab=attention" variant="subtle">
@@ -245,8 +249,42 @@ export function TradeInboxPage() {
                 </Text>
               ))}
               <RetryResponseButton
-                key={`retry:${scope}:${row.response?.id ?? 'none'}`}
-                offer={row}
+                key={`retry:${scope}:${reviewSignature(row)}:${row.response?.id ?? 'none'}`}
+                offer={{
+                  ...row,
+                  responseComment:
+                    typeof row.decision?.comment === 'string' ? row.decision.comment : null,
+                }}
+                safetyKey={`${attemptKey(config, row.espn_transaction_id)}:retry:${row.response?.id}`}
+                disabled={
+                  query.isError ||
+                  query.isFetching ||
+                  rows.filter((r) => r.espn_transaction_id === row.espn_transaction_id).length !==
+                    1 ||
+                  Boolean(retryReason(row, config, !week.isError ? week.data?.week : undefined))
+                }
+                verify={async () => {
+                  const [latest, period] = await Promise.all([
+                    getIncomingTrades(config, 'all', 'all'),
+                    row.response?.action === 'accept'
+                      ? getCurrentWeek(config.season)
+                      : Promise.resolve({ week: week.data?.week }),
+                  ])
+                  const copies = latest.filter(
+                    (r) => r.espn_transaction_id === row.espn_transaction_id,
+                  )
+                  if (
+                    copies.length !== 1 ||
+                    reviewSignature(copies[0]) !== reviewSignature(row) ||
+                    JSON.stringify(copies[0].response) !== JSON.stringify(row.response) ||
+                    (copies[0].decision?.comment ?? null) !== (row.decision?.comment ?? null)
+                  )
+                    throw new Error(
+                      'Offer changed or response cannot be uniquely verified. Refresh and review again.',
+                    )
+                  const reason = retryReason(copies[0], config, period.week)
+                  if (reason) throw new Error(reason)
+                }}
                 onQueued={refresh}
               />
               <IncomingTradeTriage
