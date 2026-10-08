@@ -12,6 +12,7 @@ const GROUPS = [
       ['/matchup', 'Matchup'],
       ['/waivers', 'Waivers'],
       ['/trades', 'Trades'],
+      ['/inbox', 'Inbox'],
     ],
   },
   {
