@@ -30,6 +30,10 @@ const TradePage = lazy(() =>
 import { WaiverPage } from './components/WaiverPage'
 import './App.css'
 
+const TradeInboxPage = lazy(() =>
+  import('./components/inbox/TradeInboxPage').then((m) => ({ default: m.TradeInboxPage })),
+)
+
 function App() {
   return (
     <DraftConfigProvider>
@@ -43,6 +47,7 @@ function App() {
               <Route path="lineup" element={<LineupPage />} />
               <Route path="matchup" element={<MatchupPage />} />
               <Route path="scoreboard" element={<ScoreboardPage />} />
+              <Route path="inbox" element={<TradeInboxPage />} />
               <Route path="trades" element={<TradePage />} />
               <Route path="chat" element={<ChatPage />} />
               <Route path="analytics" element={<AnalyticsPage />} />

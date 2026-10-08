@@ -25,6 +25,19 @@ server {
         error_page 401 = @waiver_auth_error;
     }
 
+    location ~ ^/v1/trade/incoming/[^/]+/(triage|decision|decision/retry|counter)$ {
+        limit_except POST { deny all; }
+        proxy_set_header X-API-Key "${TRIGGER_API_KEY}";
+        proxy_pass http://$backend$request_uri;
+        proxy_intercept_errors on;
+        error_page 401 = @inbox_auth_error;
+    }
+
+    location @inbox_auth_error {
+        default_type application/json;
+        return 502 '{"detail":"Inbox service authentication failed. Contact an administrator."}';
+    }
+
     location @waiver_auth_error {
         default_type application/json;
         return 502 '{"detail":"Claim service authentication failed. Contact an administrator."}';
