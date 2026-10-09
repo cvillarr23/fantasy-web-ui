@@ -17,6 +17,7 @@ import { validApprover } from '../../api/tradeApproval'
 import type { DraftConfig } from '../../api/types'
 import type { InboxAction, IncomingTrade } from '../../api/tradeInboxTypes'
 import {
+  reviewConflict,
   actionReason,
   outcomeCopy,
   attemptKey,
@@ -35,11 +36,13 @@ export function IncomingTradeActions({
   week,
   disabled,
   refresh,
+  onOfferChanged,
 }: {
   row: IncomingTrade
   config: DraftConfig
   week?: number
   disabled: boolean
+  onOfferChanged: (row: IncomingTrade) => void
   refresh: () => void
 }) {
   const key = attemptKey(config, row.espn_transaction_id)
@@ -51,6 +54,8 @@ export function IncomingTradeActions({
   const [label, setLabel] = useState('')
   const [comment, setComment] = useState('')
   const [error, setError] = useState('')
+  // Verification may refresh evidence, but approval stays bound to the displayed offer.
+  const [reviewed, setReviewed] = useState(row)
   const lock = useRef(false)
   const active = useRef(true)
   useEffect(() => {
@@ -75,14 +80,17 @@ export function IncomingTradeActions({
         ? 'Decision queued — ESPN outcome unconfirmed.'
         : attempt?.message
 
-  async function verify(selected: InboxAction) {
+  async function verify(selected: InboxAction, snapshot = reviewed) {
     const [rows, period] = await Promise.all([
       getIncomingTrades(config, 'all', 'all'),
       selected === 'decline' ? Promise.resolve({ week }) : getCurrentWeek(config.season),
     ])
     const copies = rows.filter((r) => r.espn_transaction_id === row.espn_transaction_id)
-    if (copies.length !== 1 || reviewSignature(copies[0]) !== reviewSignature(row))
+    if (copies.length !== 1 || reviewSignature(copies[0]) !== reviewSignature(snapshot)) {
+      onOfferChanged(snapshot)
+      setAction(null)
       throw new Error('Offer changed or cannot be uniquely verified. Refresh and review again.')
+    }
     if (selected !== 'decline' && period.week !== week)
       throw new Error('Current week changed. Refresh and review again.')
     const reason = actionReason(copies[0], config, period.week, selected)
@@ -92,6 +100,7 @@ export function IncomingTradeActions({
   async function review(selected: InboxAction) {
     if (lock.current || blocked || actionReason(row, config, week, selected)) return
     lock.current = true
+    setReviewed(row)
     setAction(selected)
     setBusy(true)
     setVerified(false)
@@ -100,7 +109,7 @@ export function IncomingTradeActions({
     setComment('')
     setError('')
     try {
-      await verify(selected)
+      await verify(selected, row)
       if (active.current) setVerified(true)
     } catch (err) {
       if (active.current) setError(err instanceof Error ? err.message : 'Verification failed.')
@@ -156,9 +165,14 @@ export function IncomingTradeActions({
       const response = await publishIncoming(
         current.espn_transaction_id,
         action === 'counter'
-          ? { approved_by: label.trim(), week: week! }
+          ? {
+              approved_by: label.trim(),
+              week: week!,
+              review_token: reviewed.review_token,
+            }
           : {
               action,
+              review_token: reviewed.review_token,
               approved_by: label.trim(),
               ...(normalized ? { comment: normalized } : {}),
             },
@@ -182,8 +196,10 @@ export function IncomingTradeActions({
             : status === 422
               ? `Request rejected — correct input and review again. ${reason}`
               : `Outcome unknown — manual verification required. ${reason}`
-      if (sent && marker) recordAttempt(key, status === 422 ? null : { ...marker, message })
-      if (active.current) setError(sent ? message : reason)
+      if (sent && marker)
+        recordAttempt(key, status === 422 || reviewConflict(err) ? null : { ...marker, message })
+      if (reviewConflict(err)) onOfferChanged(reviewed)
+      if (active.current && !reviewConflict(err)) setError(sent ? message : reason)
     } finally {
       lock.current = false
       if (active.current) {
@@ -260,13 +276,13 @@ export function IncomingTradeActions({
         <Stack>
           <Text>
             League {config.league_id} · Season {config.season} · Your team {config.team_id} ·
-            Proposer Team {row.proposing_team_id} · Offer {row.espn_transaction_id}
+            Proposer Team {reviewed.proposing_team_id} · Offer {reviewed.espn_transaction_id}
           </Text>
           {(['receive', 'send'] as const).map((side) => (
             <div key={side}>
               <Text fw={600}>You {side}</Text>
               <ul>
-                {row[`${side}_players`].map((p) => (
+                {reviewed[`${side}_players`].map((p) => (
                   <li key={p.espn_id}>
                     {p.name || 'Unnamed player'} (ESPN {p.espn_id})
                   </li>
@@ -276,10 +292,10 @@ export function IncomingTradeActions({
           ))}
           <Text fw={600}>Original proposer note</Text>
           <Text style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
-            {row.comment ?? 'No note provided.'}
+            {reviewed.comment ?? 'No note provided.'}
           </Text>
-          {row.other_items.length > 0 && (
-            <Text>Other trade items: {JSON.stringify(row.other_items)}</Text>
+          {reviewed.other_items.length > 0 && (
+            <Text>Other trade items: {JSON.stringify(reviewed.other_items)}</Text>
           )}
           <Alert color="yellow">
             {action === 'counter'

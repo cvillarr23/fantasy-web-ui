@@ -38,19 +38,20 @@ it('treats a missing or malformed response as not retryable', () => {
 it('posts the claim id, trimmed approver and attestation to the retry route', async () => {
   const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify(receipt), { status: 202 }))
   vi.stubGlobal('fetch', fetch)
-  expect(await retryIncomingDecision('123', rejected, ' Manager ', false)).toEqual(receipt)
+  expect(await retryIncomingDecision('123', rejected, ' Manager ', false, key)).toEqual(receipt)
   expect(fetch.mock.calls[0][0]).toBe('/v1/trade/incoming/123/decision/retry')
   expect(fetch.mock.calls[0][1].method).toBe('POST')
   expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({
     approved_by: 'Manager',
     of_claim_id: 41,
+    review_token: key,
     verified_not_answered: false,
   })
 })
 
 it('refuses to send an unknown retry without the ESPN check', async () => {
   const fetch = vi.fn(); vi.stubGlobal('fetch', fetch)
-  await expect(retryIncomingDecision('123', { ...rejected, status: 'response_unknown' }, 'Manager', false)).rejects.toThrow(/checked ESPN/)
+  await expect(retryIncomingDecision('123', { ...rejected, status: 'response_unknown' }, 'Manager', false, key)).rejects.toThrow(/checked ESPN/)
   expect(fetch).not.toHaveBeenCalled()
 })
 
@@ -59,7 +60,7 @@ it.each([
   ['a response that is still in flight', { ...rejected, status: 'responding' as const }, 'Manager'],
 ])('refuses %s before sending', async (_label, response, approver) => {
   const fetch = vi.fn(); vi.stubGlobal('fetch', fetch)
-  await expect(retryIncomingDecision('123', response, approver, true)).rejects.toThrow()
+  await expect(retryIncomingDecision('123', response, approver, true, key)).rejects.toThrow()
   expect(fetch).not.toHaveBeenCalled()
 })
 
@@ -72,10 +73,23 @@ it.each([
   { tracking_id: '' },
 ])('treats a mismatched receipt %j as an unknown outcome', async change => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ ...receipt, ...change }), { status: 202 })))
-  await expect(retryIncomingDecision('123', rejected, 'Manager', false)).rejects.toThrow(/unverified/i)
+  await expect(retryIncomingDecision('123', rejected, 'Manager', false, key)).rejects.toThrow(/unverified/i)
 })
 
 it.each([404, 409, 422, 503])('preserves rejection status %s', async status => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ detail: 'Reason' }), { status })))
-  await expect(retryIncomingDecision('123', rejected, 'Manager', false)).rejects.toEqual(new ApiError(status, 'Reason'))
+  await expect(retryIncomingDecision('123', rejected, 'Manager', false, key)).rejects.toEqual(new ApiError(status, 'Reason'))
+})
+
+it('accepts a duplicate retry receipt without replaying the publication', async () => {
+  const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ...receipt, duplicate: true })))
+  vi.stubGlobal('fetch', fetcher)
+  expect(await retryIncomingDecision('123', rejected, 'Manager', false, key)).toMatchObject({ duplicate: true })
+  expect(fetcher).toHaveBeenCalledOnce()
+})
+it.each(['', 'bad', undefined])('refuses an unavailable review token %s before retrying', async token => {
+  const fetcher = vi.fn()
+  vi.stubGlobal('fetch', fetcher)
+  await expect(retryIncomingDecision('123', rejected, 'Manager', false, token as string)).rejects.toThrow(/review version/)
+  expect(fetcher).not.toHaveBeenCalled()
 })

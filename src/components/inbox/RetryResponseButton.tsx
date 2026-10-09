@@ -5,10 +5,12 @@ import { ApiError } from '../../api/client'
 import { validApprover } from '../../api/tradeApproval'
 import { retryableResponse, retryIncomingDecision } from '../../api/tradeResponseRetry'
 import type { InboxResponse, RetryReceipt } from '../../api/tradeResponseRetry'
-import { readAttempt, recordAttempt, saveAttempt, useAttempt } from './inboxState'
+import { readAttempt, recordAttempt, saveAttempt, useAttempt, reviewConflict } from './inboxState'
 import type { InboxAttempt } from './inboxState'
 
 export interface RetryableOffer {
+  review_token: string
+  other_items: Record<string, unknown>[]
   espn_transaction_id: string
   proposing_team_id: string | null
   comment: string | null
@@ -47,18 +49,22 @@ function failure(err: unknown): Outcome {
 }
 
 export function RetryResponseButton({
-  offer,
+  offer: listedOffer,
+  onOfferChanged,
   onQueued,
   disabled = false,
   verify,
   safetyKey,
 }: {
   offer: RetryableOffer
+  onOfferChanged?: () => void
   onQueued?: (receipt: RetryReceipt) => void
   disabled?: boolean
   verify?: () => Promise<void>
   safetyKey?: string
 }) {
+  const [snapshot, setSnapshot] = useState<RetryableOffer | null>(null)
+  const offer = snapshot ?? listedOffer
   const kind = retryableResponse(offer.response)
   const key =
     safetyKey ?? `fantasy-web-ui.inbox-retry.${offer.espn_transaction_id}:${offer.response?.id}`
@@ -83,6 +89,7 @@ export function RetryResponseButton({
   const action = response.action as 'accept' | 'decline'
   const ready =
     !disabled &&
+    /^[a-f0-9]{64}$/.test(offer.review_token ?? '') &&
     !busy &&
     !attempt &&
     validApprover(label) &&
@@ -120,6 +127,7 @@ export function RetryResponseButton({
         response,
         label,
         kind === 'unknown' && checked,
+        offer.review_token,
       )
       recordAttempt(key, {
         ...marker,
@@ -134,6 +142,13 @@ export function RetryResponseButton({
         })
       onQueued?.(receipt)
     } catch (err) {
+      if (reviewConflict(err)) {
+        if (sent) recordAttempt(key, null)
+        setOpen(false)
+        setSnapshot(null)
+        onOfferChanged?.()
+        return
+      }
       const next = failure(err)
       if (sent && marker)
         recordAttempt(key, next.final ? { ...marker, message: next.message } : null)
@@ -154,8 +169,9 @@ export function RetryResponseButton({
         <Button
           variant="light"
           color="orange"
-          disabled={disabled || busy}
+          disabled={disabled || busy || !/^[a-f0-9]{64}$/.test(listedOffer.review_token ?? '')}
           onClick={() => {
+            setSnapshot(listedOffer)
             setOpen(true)
             setLabel('')
             setReviewed(false)
@@ -205,6 +221,9 @@ export function RetryResponseButton({
           <Text style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
             {offer.comment ?? 'No note provided.'}
           </Text>
+          {offer.other_items.length > 0 && (
+            <Text>Other trade items: {JSON.stringify(offer.other_items)}</Text>
+          )}
           <Text fw={600}>Previously approved response comment</Text>
           <Text
             data-testid="retry-response-comment"

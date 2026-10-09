@@ -45,8 +45,11 @@ export async function retryIncomingDecision(
   response: InboxResponse,
   approver: string,
   verifiedNotAnswered: boolean,
+  reviewToken: string,
 ): Promise<RetryReceipt> {
   const kind = retryableResponse(response)
+  if (!/^[a-f0-9]{64}$/.test(reviewToken ?? ''))
+    throw new Error('Offer review version is unavailable. Refresh and review again.')
   if (!kind || !validApprover(approver)) throw new Error('This response cannot be retried.')
   if (kind === 'unknown' && !verifiedNotAnswered) {
     throw new Error("Retrying an unknown outcome needs confirmation that someone checked ESPN and it wasn't answered.")
@@ -58,6 +61,7 @@ export async function retryIncomingDecision(
       body: JSON.stringify({
         approved_by: approver.trim(),
         of_claim_id: response.id,
+        review_token: reviewToken,
         verified_not_answered: kind === 'unknown' && verifiedNotAnswered,
       }),
     },

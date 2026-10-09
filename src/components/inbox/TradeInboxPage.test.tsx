@@ -4,13 +4,18 @@ import { MantineProvider } from '@mantine/core'
 import { MemoryRouter } from 'react-router-dom'
 import { TradeInboxPage } from './TradeInboxPage'
 import { getIncomingTrades, publishIncoming, triageIncoming } from '../../api/tradeInbox'
-import { getCurrentWeek, getTeamNames } from '../../api/client'
+import { retryIncomingDecision } from '../../api/tradeResponseRetry'
+import { ApiError, getCurrentWeek, getTeamNames } from '../../api/client'
 import { CONFIG_STORAGE_KEY } from '../../hooks/useDraftConfig'
 import { config, offer, receipt } from './inboxFixtures'
 vi.mock('../../api/tradeInbox', () => ({
   getIncomingTrades: vi.fn(),
   publishIncoming: vi.fn(),
   triageIncoming: vi.fn(),
+}))
+vi.mock('../../api/tradeResponseRetry', async original => ({
+  ...(await original<typeof import('../../api/tradeResponseRetry')>()),
+  retryIncomingDecision: vi.fn(),
 }))
 vi.mock('../../api/client', async (original) => ({
   ...(await original<typeof import('../../api/client')>()),
@@ -101,6 +106,7 @@ it('requires exact confirmation, permits cancellation and guards repeat clicks',
   expect(publishIncoming).toHaveBeenCalledWith('123', {
     action: 'accept',
     approved_by: 'Manager',
+    review_token: offer.review_token,
     comment: 'Yes',
   })
   resolve(receipt)
@@ -155,6 +161,7 @@ it('queues counter negotiation only with a separately confirmed audit label', as
   await waitFor(() =>
     expect(publishIncoming).toHaveBeenCalledWith('123', {
       approved_by: 'Manager',
+    review_token: offer.review_token,
       week: 5,
     }),
   )
@@ -301,6 +308,7 @@ it('decline remains usable when the current week cannot be read', async () => {
     expect(publishIncoming).toHaveBeenCalledWith('123', {
       action: 'decline',
       approved_by: 'Manager',
+    review_token: offer.review_token,
     }),
   )
 })
@@ -432,4 +440,107 @@ it('accept retry requires a current non-stale score too', async () => {
   expect((screen.getByRole('button', { name: 'Retry accept' }) as HTMLButtonElement).disabled).toBe(
     true,
   )
+})
+
+const changedOffer = {
+  ...offer,
+  review_token: 'd'.repeat(64),
+  send_espn_ids: ['333'],
+  send_players: [{ espn_id: '333', name: 'New Send' }],
+  other_items: [{ draft_pick: 2 }],
+  comment: 'Updated proposer note',
+}
+it.each(['Accept', 'Decline', 'Counter'])('blocks %s when only the review token changes before POST', async action => {
+  start()
+  await review(action)
+  vi.mocked(getIncomingTrades).mockResolvedValue([{ ...offer, review_token: changedOffer.review_token }])
+  confirm(action.toLowerCase())
+  await screen.findByText(/Offer changed since review/)
+  expect(publishIncoming).not.toHaveBeenCalled()
+})
+it.each(['Accept', 'Decline', 'Counter'])('refreshes a %s token conflict and requires a new review without replay', async action => {
+  vi.mocked(publishIncoming).mockImplementationOnce(async () => {
+    vi.mocked(getIncomingTrades).mockResolvedValue([changedOffer])
+    throw new ApiError(409, 'The offer changed since it was reviewed; reload it and review again.')
+  })
+  start()
+  await review(action)
+  confirm(action.toLowerCase())
+  await screen.findByText(/Offer changed since review/)
+  await screen.findByText('New Send')
+  expect(screen.getByText(/Previous proposer note/).textContent).toContain(offer.comment)
+  expect(screen.getByTestId('incoming-note').textContent).toBe(changedOffer.comment)
+  expect(screen.getByText(/Other trade items:/).textContent).toContain('draft_pick')
+  expect(publishIncoming).toHaveBeenCalledOnce()
+  expect(vi.mocked(publishIncoming).mock.calls[0][1].review_token).toBe(offer.review_token)
+  expect(sessionStorage.getItem('fantasy-web-ui.inbox-action.123:7:2026:live:123')).toBeNull()
+  await review('Decline')
+  expect((screen.getByRole('button', { name: 'Confirm decline and queue' }) as HTMLButtonElement).disabled).toBe(true)
+  confirm('decline')
+  await waitFor(() => expect(publishIncoming).toHaveBeenCalledTimes(2))
+  expect(vi.mocked(publishIncoming).mock.calls[1][1].review_token).toBe(changedOffer.review_token)
+})
+it('permits advisory and name updates while sending the reviewed token', async () => {
+  start()
+  await review()
+  vi.mocked(getIncomingTrades).mockResolvedValue([{
+    ...offer,
+    send_players: [{ espn_id: '111', name: 'Resolved name' }],
+    score: { ...offer.score!, scored_at: '2026-10-08T12:00:00Z' },
+    last_seen_at: '2026-10-08T12:00:00Z',
+    triage: { state: 'seen' },
+  }])
+  confirm()
+  await waitFor(() => expect(publishIncoming).toHaveBeenCalledOnce())
+  expect(vi.mocked(publishIncoming).mock.calls[0][1].review_token).toBe(offer.review_token)
+})
+it.each(['', 'bad', undefined])('disables publications for an unavailable review token %s', async token => {
+  vi.mocked(getIncomingTrades).mockResolvedValue([{ ...offer, review_token: token as string }])
+  start()
+  await screen.findByText('Received Back')
+  for (const name of ['Accept', 'Decline', 'Counter'])
+    expect((screen.getByRole('button', { name }) as HTMLButtonElement).disabled).toBe(true)
+  expect(publishIncoming).not.toHaveBeenCalled()
+})
+it('refreshes a Retry token conflict without replay and sends the new reviewed version only after confirmation', async () => {
+  const response = { id: 41, status: 'rejected' as const, action: 'decline', decision_key: 'a'.repeat(64) }
+  const row = { ...offer, response }
+  vi.mocked(getIncomingTrades).mockResolvedValue([row])
+  vi.mocked(retryIncomingDecision).mockImplementationOnce(async () => {
+    vi.mocked(getIncomingTrades).mockResolvedValue([{ ...changedOffer, response }])
+    throw new ApiError(409, 'The offer changed since it was reviewed')
+  })
+  start()
+  async function retryReview() {
+    await waitFor(() => expect((screen.getByRole('button', { name: 'Retry decline' }) as HTMLButtonElement).disabled).toBe(false))
+    fireEvent.click(screen.getByRole('button', { name: 'Retry decline' }))
+    await screen.findByLabelText('Approver label')
+    fireEvent.change(screen.getByLabelText('Approver label'), { target: { value: 'Manager' } })
+    fireEvent.click(screen.getByLabelText('I reviewed these exact players and notes.'))
+    fireEvent.click(screen.getByRole('button', { name: 'Retry decline and queue' }))
+  }
+  await retryReview()
+  await screen.findByText(/Offer changed since review/)
+  await screen.findByText('New Send')
+  expect(retryIncomingDecision).toHaveBeenCalledOnce()
+  expect(retryIncomingDecision).toHaveBeenCalledWith('123', response, 'Manager', false, offer.review_token)
+  vi.mocked(retryIncomingDecision).mockResolvedValue({ ...receipt, action: 'decline', decision_key: response.decision_key, kind: 'decision', retry_of: 41 })
+  await retryReview()
+  await waitFor(() => expect(retryIncomingDecision).toHaveBeenCalledTimes(2))
+  expect(retryIncomingDecision).toHaveBeenLastCalledWith('123', response, 'Manager', false, changedOffer.review_token)
+})
+
+it('does not retry when the final re-read returns a different review token', async () => {
+  const response = { id: 41, status: 'rejected' as const, action: 'decline', decision_key: 'a'.repeat(64) }
+  vi.mocked(getIncomingTrades).mockResolvedValue([{ ...offer, response }])
+  start()
+  await waitFor(() => expect((screen.getByRole('button', { name: 'Retry decline' }) as HTMLButtonElement).disabled).toBe(false))
+  fireEvent.click(screen.getByRole('button', { name: 'Retry decline' }))
+  await screen.findByLabelText('Approver label')
+  vi.mocked(getIncomingTrades).mockResolvedValue([{ ...changedOffer, response }])
+  fireEvent.change(screen.getByLabelText('Approver label'), { target: { value: 'Manager' } })
+  fireEvent.click(screen.getByLabelText('I reviewed these exact players and notes.'))
+  fireEvent.click(screen.getByRole('button', { name: 'Retry decline and queue' }))
+  await screen.findByText(/Offer changed since review/)
+  expect(retryIncomingDecision).not.toHaveBeenCalled()
 })

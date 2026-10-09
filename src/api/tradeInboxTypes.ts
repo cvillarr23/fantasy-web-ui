@@ -69,6 +69,7 @@ export interface IncomingTrade {
   expiration_date: string | null
   comment: string | null
   fingerprint: string | null
+  review_token: string
   parse_issues: string[]
   triage: {
     state: TriageState
@@ -93,10 +94,11 @@ export interface IncomingTrade {
 }
 export type DecisionRequest = {
   action: 'accept' | 'decline'
+  review_token: string
   approved_by: string
   comment?: string
 }
-export type CounterRequest = { approved_by: string; week: number }
+export type CounterRequest = { approved_by: string; week: number; review_token: string }
 export type TriageRequest = {
   state: TriageState
   by: string

@@ -38,6 +38,7 @@ it('posts exact decision body and accepts a duplicate queue receipt', async () =
     await publishIncoming('123', {
       action: 'accept',
       approved_by: 'Manager',
+    review_token: offer.review_token,
       comment: 'Yes',
     }),
   ).toMatchObject({ duplicate: true, status: 'queued' })
@@ -45,6 +46,7 @@ it('posts exact decision body and accepts a duplicate queue receipt', async () =
   expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({
     action: 'accept',
     approved_by: 'Manager',
+    review_token: offer.review_token,
     comment: 'Yes',
   })
 })
@@ -57,10 +59,10 @@ it.each([
 ])('rejects an unverified receipt', async (bad) => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(bad))))
   await expect(
-    publishIncoming('123', { action: 'accept', approved_by: 'Manager' }),
+    publishIncoming('123', { action: 'accept', approved_by: 'Manager', review_token: offer.review_token }),
   ).rejects.toThrow(/unknown/i)
 })
-it('counter posts a week and audit label only', async () => {
+it('counter posts the reviewed token, week and audit label', async () => {
   const fetcher = vi.fn().mockResolvedValue(
     new Response(
       JSON.stringify({
@@ -72,11 +74,12 @@ it('counter posts a week and audit label only', async () => {
     ),
   )
   vi.stubGlobal('fetch', fetcher)
-  await publishIncoming('123', { week: 5, approved_by: 'Manager' })
+  await publishIncoming('123', { week: 5, approved_by: 'Manager', review_token: offer.review_token })
   expect(fetcher.mock.calls[0][0]).toContain('/counter')
   expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({
     week: 5,
     approved_by: 'Manager',
+    review_token: offer.review_token,
   })
 })
 it('triage sends aware snooze timestamp without decision fields', async () => {

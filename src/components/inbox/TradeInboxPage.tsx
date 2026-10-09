@@ -20,6 +20,7 @@ import {
   retryReason,
   attemptKey,
 } from './inboxState'
+import type { IncomingTrade } from '../../api/tradeInboxTypes'
 import type { InboxAttempt } from './inboxState'
 function expiryCopy(date: string | null, now: number) {
   const expires = Date.parse(date ?? '')
@@ -30,6 +31,7 @@ function expiryCopy(date: string | null, now: number) {
 }
 export function TradeInboxPage() {
   const { config, loading } = useDraftConfig()
+  const [changedReview, setChangedReview] = useState<IncomingTrade | null>(null)
   const [hidden, setHidden] = useState(false)
   const [history, setHistory] = useState(false)
   const [now, setNow] = useState(() => Date.now())
@@ -91,6 +93,10 @@ export function TradeInboxPage() {
     void week.refetch()
     if (attempts.length) void outcomes.refetch()
   }
+  const offerChanged = (row: IncomingTrade) => {
+    setChangedReview(row)
+    refresh()
+  }
   if (!configured)
     return loading ? (
       <PageSkeleton />
@@ -117,6 +123,24 @@ export function TradeInboxPage() {
           off). Decisions are queued requests; ESPN acceptance or decline requires a confirmed
           worker outcome.
         </Alert>
+        {changedReview && (
+          <Alert color="yellow" title={`Offer ${changedReview.espn_transaction_id} changed since review`}>
+            <Text>
+              Offer changed since review. Review the refreshed players, other items and note
+              below, then confirm again. No request was queued.
+            </Text>
+            <Text>
+              Previously reviewed: proposer Team {changedReview.proposing_team_id}; you send{' '}
+              {changedReview.send_players.map(p => `${p.name || 'Unnamed player'} (ESPN ${p.espn_id})`).join(', ')};
+              you receive{' '}
+              {changedReview.receive_players.map(p => `${p.name || 'Unnamed player'} (ESPN ${p.espn_id})`).join(', ')}.
+            </Text>
+            <Text style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+              Previous proposer note: {changedReview.comment ?? 'No note provided.'}
+            </Text>
+            <Text>Previous other items: {JSON.stringify(changedReview.other_items)}</Text>
+          </Alert>
+        )}
         <Text size="sm">
           Scheduled inbox refresh: every two hours from 08:00 to 22:00 Central. Refresh inbox reads
           stored offers; it does not trigger an ESPN refresh. Last refreshed below is per-offer
@@ -224,6 +248,9 @@ export function TradeInboxPage() {
               >
                 {row.comment ?? 'No note provided.'}
               </Text>
+              {row.other_items.length > 0 && (
+                <Text>Other trade items: {JSON.stringify(row.other_items)}</Text>
+              )}
               <Text size="sm">{expiryCopy(row.expiration_date, now)}</Text>
               <Text size="xs">
                 Last refreshed:{' '}
@@ -278,13 +305,14 @@ export function TradeInboxPage() {
                     reviewSignature(copies[0]) !== reviewSignature(row) ||
                     JSON.stringify(copies[0].response) !== JSON.stringify(row.response) ||
                     (copies[0].decision?.comment ?? null) !== (row.decision?.comment ?? null)
-                  )
-                    throw new Error(
-                      'Offer changed or response cannot be uniquely verified. Refresh and review again.',
-                    )
+                  ) {
+                    offerChanged(row)
+                    throw new Error('Offer changed or response cannot be uniquely verified. Refresh and review again.')
+                  }
                   const reason = retryReason(copies[0], config, period.week)
                   if (reason) throw new Error(reason)
                 }}
+                onOfferChanged={() => offerChanged(row)}
                 onQueued={refresh}
               />
               <IncomingTradeTriage
@@ -308,6 +336,7 @@ export function TradeInboxPage() {
                   rows.filter((r) => r.espn_transaction_id === row.espn_transaction_id).length !== 1
                 }
                 refresh={refresh}
+                onOfferChanged={offerChanged}
               />
             </Stack>
           </Card>
