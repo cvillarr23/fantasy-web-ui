@@ -3,6 +3,8 @@
 Fantasy team management console for lineup, matchup, waivers, trades, league standings,
 player rankings, draft monitoring, and persistent bot/LLM activity.
 
+This project is unofficial and not affiliated with ESPN or Disney. It is for personal use on your own leagues. Read the [disclaimer and scope](https://github.com/cvillarr23/fantasy-project/blob/main/DISCLAIMER.md) before using it.
+
 The mobile navigation drawer and desktop sidebar share the same pages. Weekly views
 follow the current league week unless a week is selected explicitly. Move reviews show
 who joins/leaves the roster, projected lineup impact, and warnings before a waiver request.
