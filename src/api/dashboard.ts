@@ -71,10 +71,21 @@ export interface MovePreview {
   }[]
   updated_at: string
 }
-export const getActions = (offset = 0, attention = false) =>
-  request<{ items: ActivityAction[] }>(
+export const getActions = async (offset = 0, attention = false, includeDependencies = true) => {
+  const page = await request<{ items: ActivityAction[] }>(
     `/v1/activity/actions?offset=${offset}&attention=${attention}`,
   )
+  // The list omits events, which are the source of truth for dependency holds.
+  // Read waiver timelines before displaying or filtering these submissions.
+  return {
+    ...page,
+    items: await Promise.all(page.items.map(async (action) =>
+      includeDependencies && action.kind === 'waiver_actions' && !action.events
+        ? { ...action, ...await getAction(action.id), unread: action.unread }
+        : action,
+    )),
+  }
+}
 export const getAction = (id: string) =>
   request<ActivityAction>(`/v1/activity/actions/${encodeURIComponent(id)}`)
 export const checkAction = (id: string) =>

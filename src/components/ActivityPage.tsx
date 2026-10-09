@@ -20,12 +20,18 @@ import {
   getSession,
   getSessions,
   markActivityRead,
+  type ActivityAction,
 } from '../api/dashboard'
 import { request } from '../api/client'
 import { queryClient, invalidateRoster } from '../api/queryClient'
+import { actionDependency, dependencyEvent, isHeldAction } from './activityDependency'
 
 const label = (value: string) => value.replaceAll('_', ' ')
 const stamp = (value: string) => new Date(value).toLocaleString()
+function DependencyBadge({ action }: { action: ActivityAction }) {
+  const dependency = actionDependency(action)
+  return dependency && <Badge color={dependency.color}>{dependency.label}</Badge>
+}
 function Payload({ value }: { value: unknown }) {
   return (
     <pre className="payload">
@@ -57,7 +63,7 @@ function ActivityDetailSkeleton({ label }: { label: string }) {
 export function ActivityIndicator() {
   const query = useQuery({
     queryKey: ['activity-indicator'],
-    queryFn: () => getActions(),
+    queryFn: () => getActions(0, false, false),
     refetchInterval: 30_000,
   })
   const seen = useRef<Set<string> | null>(null)
@@ -128,6 +134,7 @@ export function ActivityPage() {
     refetchInterval: 5000,
   })
   const query = tab === 'sessions' ? sessions : actions
+  const visibleActions = actions.data?.items.filter((a) => tab !== 'attention' || !isHeldAction(a))
   return (
     <div className="dashboard">
       <Stack>
@@ -189,9 +196,9 @@ export function ActivityPage() {
           />
         )}
         {query.error && <Alert color="red">Could not load activity: {query.error.message}</Alert>}
-        {query.data?.items.length === 0 && (
+        {(tab === 'sessions' ? sessions.data?.items.length === 0 : visibleActions?.length === 0) && (
           <Text c="dimmed">
-            No {tab === 'attention' ? 'items need attention' : 'activity recorded yet'}.
+            No {tab === 'attention' ? 'items need attention on this page' : 'activity recorded yet'}.
           </Text>
         )}
         {tab === 'sessions'
@@ -208,14 +215,15 @@ export function ActivityPage() {
                   </Text>
                 </Link>
               ))
-          : actions.data?.items
-              .filter((a) => `${a.title} ${a.kind}`.toLowerCase().includes(search.toLowerCase()))
+          : visibleActions
+              ?.filter((a) => `${a.title} ${a.kind}`.toLowerCase().includes(search.toLowerCase()))
               .map((a) => (
                 <Link className="activity-item" key={a.id} to={`/activity/actions/${a.id}`}>
                   <Group justify="space-between">
                     <Text fw={600}>{a.title}</Text>
                     <Group gap="xs">
                       {a.unread && <Badge variant="dot">New</Badge>}
+                      <DependencyBadge action={a} />
                       <Badge>{label(a.execution)}</Badge>
                       <Badge
                         variant="outline"
@@ -266,6 +274,7 @@ export function ActionDetailPage() {
         : 5000,
   })
   const action = query.data
+  const dependency = action && actionDependency(action)
   async function markRead() {
     setCheckError(null)
     try {
@@ -307,9 +316,19 @@ export function ActionDetailPage() {
               <Text size="sm">Last updated {stamp(action.updated_at)}</Text>
             </Group>
             <Text size="sm" c="dimmed">
-              Submission to ESPN and final completion are tracked separately. Unknown means
-              verification is still needed.
+              {isHeldAction(action)
+                ? 'This claim is held and has not been sent to ESPN. It is waiting for its IR move.'
+                : 'Submission to ESPN and final completion are tracked separately. Unknown means verification is still needed.'}
             </Text>
+            {dependency && (
+              <Alert color={dependency.color} title={dependency.label}>
+                <Text size="sm">{dependency.description}</Text>
+                {dependency.reason && <Text size="sm">{dependency.reason}</Text>}
+                {dependency.parentId && (
+                  <Link to={`/activity/actions/${encodeURIComponent(dependency.parentId)}`}>View IR move</Link>
+                )}
+              </Alert>
+            )}
             <Group>
               <Button loading={checking} onClick={() => void check()}>
                 Check status
@@ -329,15 +348,26 @@ export function ActionDetailPage() {
             </Group>
             {checkError && <Alert color="red">{checkError}</Alert>}
             <h3>Progress</h3>
-            {action.events?.map((e) => (
+            {action.events?.map((e) => {
+              const eventDependency = dependencyEvent(e)
+              return (
               <div className="timeline-event" key={e.id}>
-                <Text fw={600}>{label(e.stage)}</Text>
+                <Text fw={600}>{eventDependency?.label ?? label(e.stage)}</Text>
                 <Text size="xs" c="dimmed">
                   {stamp(e.created_at)}
                 </Text>
-                {Object.keys(e.detail).length > 0 && <Payload value={e.detail} />}
+                {eventDependency ? (
+                  <>
+                    <Text size="sm">{eventDependency.description}</Text>
+                    {eventDependency.reason && <Text size="sm">{eventDependency.reason}</Text>}
+                    {eventDependency.parentId && (
+                      <Link to={`/activity/actions/${encodeURIComponent(eventDependency.parentId)}`}>View IR move</Link>
+                    )}
+                  </>
+                ) : Object.keys(e.detail).length > 0 && <Payload value={e.detail} />}
               </div>
-            ))}
+              )
+            })}
             <details>
               <summary>Submission details</summary>
               <Payload value={action.payload} />
