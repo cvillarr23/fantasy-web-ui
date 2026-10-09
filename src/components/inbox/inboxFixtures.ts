@@ -17,6 +17,7 @@ export const offer: IncomingTrade = {
   espn_type: 'TRADE_PROPOSAL',
   espn_status: 'PENDING',
   fingerprint: 'a'.repeat(64),
+  review_token: 'c'.repeat(64),
   send_espn_ids: ['111'],
   receive_espn_ids: ['222'],
   send_players: [{ espn_id: '111', name: 'Sent Back' }],

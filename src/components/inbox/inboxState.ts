@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { ApiError } from '../../api/client'
 import { retryableResponse } from '../../api/tradeResponseRetry'
 import type { DraftConfig } from '../../api/types'
 import type { InboxAction, IncomingTrade, PublicationReceipt } from '../../api/tradeInboxTypes'
@@ -7,6 +8,7 @@ export function inboxScope(config: DraftConfig) {
 }
 export function reviewSignature(row: IncomingTrade) {
   return JSON.stringify([
+    row.review_token,
     row.espn_transaction_id,
     row.league_id,
     row.season,
@@ -15,8 +17,6 @@ export function reviewSignature(row: IncomingTrade) {
     row.fingerprint,
     row.send_espn_ids,
     row.receive_espn_ids,
-    row.send_players,
-    row.receive_players,
     row.comment,
     row.expiration_date,
     row.other_items,
@@ -45,6 +45,8 @@ export function actionReason(
     !/^[a-f0-9]{64}$/.test(row.fingerprint ?? '')
   )
     return 'Only open, parsed offers are actionable.'
+  if (!/^[a-f0-9]{64}$/.test(row.review_token ?? ''))
+    return 'Offer review version is unavailable. Refresh and review again.'
   const expiry = Date.parse(row.expiration_date ?? '')
   if (!Number.isFinite(expiry) || expiry <= now + 300000)
     return 'Offer is expired, has no verified expiry, or expires within five minutes.'
@@ -284,5 +286,13 @@ export function retryReason(
     config,
     week,
     row.response.action,
+  )
+}
+
+export function reviewConflict(err: unknown): boolean {
+  return (
+    err instanceof ApiError &&
+    err.status === 409 &&
+    err.message.startsWith('The offer changed since it was reviewed')
   )
 }

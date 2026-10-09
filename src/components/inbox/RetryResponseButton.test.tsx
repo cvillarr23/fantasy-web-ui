@@ -14,6 +14,8 @@ vi.mock('../../api/tradeResponseRetry', async (importOriginal) => ({
 
 const key = 'a'.repeat(64)
 const offer: RetryableOffer = {
+  review_token: key,
+  other_items: [],
   espn_transaction_id: '123',
   proposing_team_id: '3',
   comment: 'Their note',
@@ -88,7 +90,7 @@ it('retries a rejected response after review, once', async () => {
   fireEvent.click(confirm)
   await screen.findByText(/Retry queued/)
   expect(retryIncomingDecision).toHaveBeenCalledTimes(1)
-  expect(retryIncomingDecision).toHaveBeenCalledWith('123', offer.response, 'Manager', false)
+  expect(retryIncomingDecision).toHaveBeenCalledWith('123', offer.response, 'Manager', false, offer.review_token)
   expect(onQueued).toHaveBeenCalledWith(receipt)
   expect(screen.queryByRole('button', { name: 'Retry decline' })).toBeNull()
 })
@@ -111,7 +113,7 @@ it('needs the ESPN check before retrying an unknown outcome', async () => {
   expect(confirm.disabled).toBe(false)
   fireEvent.click(confirm)
   await waitFor(() =>
-    expect(retryIncomingDecision).toHaveBeenCalledWith('123', unknown.response, 'Manager', true),
+    expect(retryIncomingDecision).toHaveBeenCalledWith('123', unknown.response, 'Manager', true, offer.review_token),
   )
 })
 
