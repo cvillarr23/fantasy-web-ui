@@ -34,6 +34,13 @@ Set `TRIGGER_API_KEY` in the dev server environment to use protected move and in
 controls. It is injected by the server proxy and must never be put in a `VITE_*`
 variable or browser storage. Production nginx reads the same server-side variable.
 
+To prefill the league and team on every reload, put them in a gitignored `.env.local`:
+
+```bash
+VITE_DEV_LEAGUE_ID=123456
+VITE_DEV_TEAM_ID=1
+```
+
 ## Deployment
 
 CI publishes `ghcr.io/<owner>/fantasy-web-ui` images on `master` (`latest` + commit
