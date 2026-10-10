@@ -1,4 +1,4 @@
-import type { BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, ScoreboardResponse, TradeEvaluationResponse, TradeOffer, TradeOfferList, VorpStat, WaiverPlayerSummary, WaiverRecommendationsResponse } from './types'
+import type { BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, ScoreboardResponse, TradeEvaluationResponse, TradeOffer, TradeOfferList, VorpStat, WaiverPlayerSummary, WaiverRecommendationsResponse, FreeAgentSort, FreeAgentsResponse } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -320,6 +320,23 @@ export function getRosterDeficits(season: number, week: number): Promise<RosterD
 export function getWaiverRecommendations(season: number, week: number): Promise<WaiverRecommendationsResponse> {
   const params = new URLSearchParams({ season: String(season), week: String(week) })
   return request(`/v1/waiver/recommendations?${params}`)
+}
+
+export interface FreeAgentQuery {
+  season: number
+  week: number
+  position?: string
+  q?: string
+  sort: FreeAgentSort
+  limit: number
+  offset: number
+}
+
+export function getWaiverFreeAgents({ season, week, position, q, sort, limit, offset }: FreeAgentQuery): Promise<FreeAgentsResponse> {
+  const params = new URLSearchParams({ season: String(season), week: String(week), sort, limit: String(limit), offset: String(offset) })
+  if (position) params.set('position', position)
+  if (q?.trim()) params.set('q', q.trim())
+  return request(`/v1/waiver/free-agents?${params}`)
 }
 
 // Live ESPN fetch (see matchup_service.py) - no historical data, always "this week as ESPN

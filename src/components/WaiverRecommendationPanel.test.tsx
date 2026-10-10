@@ -75,3 +75,24 @@ it('handles a swap with no bench player safely', () => {
   expect(screen.getByText('Some Back')).toBeTruthy()
   expect(screen.queryByRole('link', { name: 'Review move' })).toBeNull()
 })
+
+it('renders an add-only pickup with no drop side and reviews it without a drop', () => {
+  render(<MantineProvider><MemoryRouter initialEntries={['/waivers?week=7']}>
+    <WaiverRecommendationPanel config={config} openRosterSlots={1} recommendations={[
+      { ...recommendation, kind: 'add', bench_player: null },
+    ]} />
+  </MemoryRouter></MantineProvider>)
+  expect(screen.getByText('1 open roster slot')).toBeTruthy()
+  const row = screen.getByText('Some Back').closest('li')!
+  expect(within(row).queryByText('Drop from your roster')).toBeNull()
+  expect(within(row).getByText(/fills an open roster slot/)).toBeTruthy()
+  expect(within(row).getByRole('link', { name: 'Review move' }).getAttribute('href'))
+    .toBe('/moves/review?kind=waiver&week=7&add=4046')
+})
+
+it('hides the open roster slot count when the roster is full', () => {
+  render(<MantineProvider><MemoryRouter>
+    <WaiverRecommendationPanel config={config} openRosterSlots={0} recommendations={[recommendation]} />
+  </MemoryRouter></MantineProvider>)
+  expect(screen.queryByText(/open roster slot/)).toBeNull()
+})

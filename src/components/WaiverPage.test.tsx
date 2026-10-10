@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
 import { MemoryRouter } from 'react-router-dom'
 import { WaiverPage } from './WaiverPage'
-import { ApiError, getRosterDeficits, getWaiverRecommendations } from '../api/client'
+import { ApiError, getRosterDeficits, getWaiverFreeAgents, getWaiverRecommendations } from '../api/client'
 import { CONFIG_STORAGE_KEY } from '../hooks/useDraftConfig'
 import type { RosterDeficitsResponse, WaiverRecommendationsResponse } from '../api/types'
 
@@ -13,6 +13,7 @@ vi.mock('../api/client', async (importOriginal) => {
     ApiError: actual.ApiError,
     getRosterDeficits: vi.fn(),
     getWaiverRecommendations: vi.fn(),
+    getWaiverFreeAgents: vi.fn(),
     getCurrentWeek: vi.fn().mockResolvedValue({ week: 5 }),
     triggerWaiverClaim: vi.fn(),
   }
@@ -113,4 +114,26 @@ it('renders standalone IR moves and open slots even without waiver upgrades', as
   expect(screen.getByText('Move to IR')).toBeTruthy()
   expect(screen.getByText(/Make IR moves directly in ESPN/)).toBeTruthy()
   expect(screen.queryByRole('link', { name: 'Review move' })).toBeNull()
+})
+
+it('fetches the free-agent pool only once Browse free agents is opened', async () => {
+  vi.mocked(getRosterDeficits).mockResolvedValue(deficits)
+  vi.mocked(getWaiverRecommendations).mockResolvedValue({ ...recommendations, open_roster_slots: 1 })
+  vi.mocked(getWaiverFreeAgents).mockResolvedValue({
+    season: 2026, week: 5, total: 1, limit: 25, offset: 0, free_agents: [{
+      player_id: 'p2', espn_id: '5050', name: 'Pool Receiver', position: 'WR', pro_team: 'BUF',
+      injury_status: null, projected_points: 8, vorp_score: 3,
+    }],
+  })
+  renderPage()
+  expect(await screen.findByText('1 open roster slot')).toBeTruthy()
+  expect(getWaiverFreeAgents).not.toHaveBeenCalled()
+
+  const details = screen.getByText('Browse free agents').closest('details')!
+  details.open = true
+  fireEvent(details, new Event('toggle'))
+
+  expect(await screen.findByText('Pool Receiver')).toBeTruthy()
+  expect(getWaiverFreeAgents).toHaveBeenCalledWith(expect.objectContaining({ season: 2026, week: 5 }))
+  expect(screen.getByRole('link', { name: 'Add to open slot' })).toBeTruthy()
 })
