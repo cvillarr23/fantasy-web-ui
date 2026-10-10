@@ -5,9 +5,13 @@ import type { DraftConfig } from '../api/types'
 export const CONFIG_STORAGE_KEY = 'fantasy-web-ui.draft-config'
 
 // Dev-only convenience so local `npm run dev` doesn't require manual config
-// entry every reload; import.meta.env.DEV keeps this out of production builds.
+// entry every reload. The values come from a gitignored `.env.local` so no real
+// league is committed; import.meta.env.DEV keeps this out of production builds.
 const DEV_DEFAULTS = import.meta.env.DEV
-  ? { league_id: '1248158344', team_id: '8' }
+  ? {
+      league_id: import.meta.env.VITE_DEV_LEAGUE_ID ?? '',
+      team_id: import.meta.env.VITE_DEV_TEAM_ID ?? '',
+    }
   : { league_id: '', team_id: '' }
 
 export function loadStoredConfig(): DraftConfig {
