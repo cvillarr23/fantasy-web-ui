@@ -1,4 +1,8 @@
-# UI design system
+---
+title: Design system
+description: Palette tokens, labeling rules and layout conventions for the web UI.
+sidebar_position: 4
+---
 
 Edit `src/theme.ts` to change the application palette. It exports the semantic `palette`, Mantine `theme`, and `cssVariablesResolver`; `src/main.tsx` installs all three through MantineProvider. Do not add page-specific hex colors.
 

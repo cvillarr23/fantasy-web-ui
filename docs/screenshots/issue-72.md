@@ -1,4 +1,8 @@
-# Issue #72: lineup quick actions
+---
+title: Quick-action screenshots
+description: Captured screenshots of the lineup, waiver and trade quick actions.
+sidebar_position: 5
+---
 
 Captured from the running Vite app in Chromium with deterministic API fixtures (not live league data). Desktop viewport: 1440 × 1100; mobile viewport: 390 × 844.
 

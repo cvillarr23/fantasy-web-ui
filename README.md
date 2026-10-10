@@ -22,7 +22,18 @@ negotiation history. That is every offer and counter in the thread in order,
 whose move it is, and how many of the thread's counters you have used. Counter
 is disabled once the thread reaches its limit.
 
-- [Palette and UI conventions](docs/ui-design-system.md)
+## Documentation
+
+| Read | For |
+|---|---|
+| [User guide](docs/user-guide/index.md) | What each page shows, its API endpoints and which actions need confirmation |
+| [Developer guide](docs/developer/index.md) | Stack, layout, API client, state, testing and running locally |
+| [Authentication](docs/auth.md) | oauth2-proxy sign-in and how write endpoints are protected |
+| [Design system](docs/design-system.md) | Palette and UI conventions |
+
+These pages are also published on the project documentation site built from
+[`fantasy-project`](https://github.com/cvillarr23/fantasy-project).
+
 - [Project architecture and rollout notes](https://github.com/cvillarr23/fantasy-project/blob/main/docs/season-management-ux.md)
 
 ## Running locally
