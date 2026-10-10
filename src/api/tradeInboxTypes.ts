@@ -46,6 +46,45 @@ export interface PublicationReceipt {
   action: 'accept' | 'decline' | null
   retry_of?: number | null
 }
+export type InboxPlayer = { espn_id: string; name: string | null }
+export interface OurCounter {
+  espn_transaction_id: string
+  status: string
+  send_players: InboxPlayer[]
+  receive_players: InboxPlayer[]
+  proposed_date: string | null
+  expiration_date: string | null
+  missed_reads: number
+  exit_reason: string | null
+  seen_at: string | null
+}
+export type ThreadState =
+  | 'awaiting_us'
+  | 'awaiting_them'
+  | 'agreed'
+  | 'rejected'
+  | 'expired'
+  | 'abandoned'
+export interface ThreadTurn {
+  side: 'theirs' | 'ours'
+  espn_transaction_id: string
+  status: string
+  proposing_team_id: string | null
+  counters: string | null
+  comment: string | null
+  send_players: InboxPlayer[]
+  receive_players: InboxPlayer[]
+  proposed_date: string | null
+  expiration_date: string | null
+  exit_reason: string | null
+}
+export interface NegotiationThread {
+  thread_root_id: string
+  state: ThreadState | null
+  our_counters: number
+  counter_limit: number
+  turns: ThreadTurn[]
+}
 export interface IncomingTrade {
   id: number
   status: string
@@ -91,6 +130,7 @@ export interface IncomingTrade {
   exit_reason?: string | null
   publications: InboxPublication[]
   response?: InboxResponse | null
+  our_counter?: OurCounter | null
 }
 export type DecisionRequest = {
   action: 'accept' | 'decline'

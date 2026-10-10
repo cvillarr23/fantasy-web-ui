@@ -6,6 +6,7 @@ import type {
   InboxFilter,
   InboxVisibility,
   IncomingTrade,
+  NegotiationThread,
   PublicationReceipt,
   TriageRequest,
 } from './tradeInboxTypes'
@@ -81,4 +82,23 @@ export async function triageIncoming(id: string, body: TriageRequest): Promise<I
   if (!row || row.espn_transaction_id !== id || row.triage?.state !== body.state)
     throw new Error('Triage outcome could not be verified. Refresh before retrying.')
   return row
+}
+export async function getIncomingThread(
+  config: DraftConfig,
+  id: string,
+): Promise<NegotiationThread> {
+  const params = new URLSearchParams({ league_id: config.league_id })
+  const thread = await request<NegotiationThread>(
+    `/v1/trade/incoming/${encodeURIComponent(id)}/thread?${params}`,
+  )
+  if (
+    !thread ||
+    typeof thread.thread_root_id !== 'string' ||
+    !Array.isArray(thread.turns) ||
+    !thread.turns.some((t) => t.side === 'theirs' && t.espn_transaction_id === id) ||
+    !Number.isInteger(thread.our_counters) ||
+    !Number.isInteger(thread.counter_limit)
+  )
+    throw new Error('Negotiation history could not be verified.')
+  return thread
 }

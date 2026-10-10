@@ -3,12 +3,18 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { MantineProvider } from '@mantine/core'
 import { MemoryRouter } from 'react-router-dom'
 import { TradeInboxPage } from './TradeInboxPage'
-import { getIncomingTrades, publishIncoming, triageIncoming } from '../../api/tradeInbox'
+import {
+  getIncomingThread,
+  getIncomingTrades,
+  publishIncoming,
+  triageIncoming,
+} from '../../api/tradeInbox'
 import { retryIncomingDecision } from '../../api/tradeResponseRetry'
 import { ApiError, getCurrentWeek, getTeamNames } from '../../api/client'
 import { CONFIG_STORAGE_KEY } from '../../hooks/useDraftConfig'
 import { config, offer, receipt } from './inboxFixtures'
 vi.mock('../../api/tradeInbox', () => ({
+  getIncomingThread: vi.fn(),
   getIncomingTrades: vi.fn(),
   publishIncoming: vi.fn(),
   triageIncoming: vi.fn(),
@@ -543,4 +549,98 @@ it('does not retry when the final re-read returns a different review token', asy
   fireEvent.click(screen.getByRole('button', { name: 'Retry decline and queue' }))
   await screen.findByText(/Offer changed since review/)
   expect(retryIncomingDecision).not.toHaveBeenCalled()
+})
+const reply = { ...offer, related_transaction_id: 'ours-1', thread_root_id: '100' }
+function threadOf(ourCounters: number) {
+  const turns = []
+  for (let i = 1; i <= ourCounters; i += 1) {
+    turns.push({
+      side: 'theirs' as const,
+      espn_transaction_id: i === 1 ? '100' : `reply-${i - 1}`,
+      status: 'countered',
+      proposing_team_id: '8',
+      counters: null,
+      comment: null,
+      send_players: [{ espn_id: '111', name: 'Sent Back' }],
+      receive_players: [{ espn_id: '333', name: 'Earlier Ask' }],
+      proposed_date: `2026-10-0${i}T12:00:00Z`,
+      expiration_date: null,
+      exit_reason: null,
+    })
+    turns.push({
+      side: 'ours' as const,
+      espn_transaction_id: `ours-${i}`,
+      status: 'countered',
+      proposing_team_id: null,
+      counters: i === 1 ? '100' : `reply-${i - 1}`,
+      comment: null,
+      send_players: [{ espn_id: '444', name: 'Our Offer' }],
+      receive_players: [{ espn_id: '333', name: 'Earlier Ask' }],
+      proposed_date: `2026-10-0${i}T14:00:00Z`,
+      expiration_date: null,
+      exit_reason: null,
+    })
+  }
+  turns.push({
+    side: 'theirs' as const,
+    espn_transaction_id: '123',
+    status: 'open',
+    proposing_team_id: '8',
+    counters: null,
+    comment: null,
+    send_players: offer.send_players,
+    receive_players: offer.receive_players,
+    proposed_date: '2026-10-07T12:00:00Z',
+    expiration_date: offer.expiration_date,
+    exit_reason: null,
+  })
+  return {
+    thread_root_id: '100',
+    state: 'awaiting_us' as const,
+    our_counters: ourCounters,
+    counter_limit: 3,
+    turns,
+  }
+}
+it('does not read a thread for an offer that starts no negotiation', async () => {
+  start()
+  await screen.findByText(/Offer 123/)
+  expect(getIncomingThread).not.toHaveBeenCalled()
+  expect(screen.queryByLabelText('Negotiation history')).toBeNull()
+})
+it('shows a reply’s negotiation history with every turn in order', async () => {
+  vi.mocked(getIncomingTrades).mockResolvedValue([reply])
+  vi.mocked(getIncomingThread).mockResolvedValue(threadOf(1))
+  start()
+  await screen.findByText('Your move')
+  expect(getIncomingThread).toHaveBeenCalledWith(config, '123')
+  expect(screen.getByText('1 of 3 counters used')).toBeTruthy()
+  const turns = screen.getAllByRole('listitem').map((li) => li.textContent ?? '')
+  const history = turns.filter((t) => / offered| countered/.test(t))
+  expect(history[0]).toMatch(/^Rival offered: you receive Earlier Ask; you send Sent Back · countered/)
+  expect(history[1]).toMatch(/^You countered: you receive Earlier Ask; you send Our Offer · countered/)
+  expect(history[2]).toMatch(/^Rival offered \(this offer\): you receive Received Back/)
+  await waitFor(() =>
+    expect((screen.getByRole('button', { name: 'Counter' }) as HTMLButtonElement).disabled).toBe(false),
+  )
+})
+it('disables Counter once the negotiation reached its counter limit', async () => {
+  vi.mocked(getIncomingTrades).mockResolvedValue([reply])
+  vi.mocked(getIncomingThread).mockResolvedValue(threadOf(3))
+  start()
+  await screen.findByText('3 of 3 counters used')
+  expect((screen.getByRole('button', { name: 'Counter' }) as HTMLButtonElement).disabled).toBe(true)
+  expect(screen.getAllByText(/already has 3 counters from you/).length).toBeGreaterThan(0)
+  await waitFor(() =>
+    expect((screen.getByRole('button', { name: 'Decline' }) as HTMLButtonElement).disabled).toBe(false),
+  )
+})
+it('keeps the offer actionable when its history cannot be read', async () => {
+  vi.mocked(getIncomingTrades).mockResolvedValue([reply])
+  vi.mocked(getIncomingThread).mockRejectedValue(new Error('core down'))
+  start()
+  await screen.findByText('Negotiation history unavailable: core down')
+  await waitFor(() =>
+    expect((screen.getByRole('button', { name: 'Counter' }) as HTMLButtonElement).disabled).toBe(false),
+  )
 })

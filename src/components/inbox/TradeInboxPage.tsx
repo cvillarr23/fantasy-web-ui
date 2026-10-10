@@ -11,6 +11,7 @@ import { IncomingTradeScoreSummary } from './IncomingTradeScoreSummary'
 import { IncomingTradeActions } from './IncomingTradeActions'
 import { RetryResponseButton } from './RetryResponseButton'
 import { IncomingTradeTriage } from './IncomingTradeTriage'
+import { IncomingTradeThread } from './IncomingTradeThread'
 import {
   inboxScope,
   outcomeCopy,
@@ -263,6 +264,7 @@ export function TradeInboxPage() {
                 <Alert color="yellow">Parse issues: {row.parse_issues.join('; ')}</Alert>
               )}
               <IncomingTradeScoreSummary row={row} />
+              <IncomingTradeThread row={row} config={config} teamNames={names.data} />
               {row.publications.map((p) => (
                 <Text key={p.tracking_id} size="sm">
                   {p.status === 'queued'

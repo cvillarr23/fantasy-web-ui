@@ -17,6 +17,10 @@ Queue receipts are separate from confirmed ESPN outcomes; unavailable score brea
 remain explicitly unavailable.
 A response that ESPN rejected, or whose outcome is unknown, offers a reviewed Retry; an
 unknown outcome also needs confirmation that ESPN shows the offer unanswered.
+An offer that answers one of your counters, or that you countered, shows its
+negotiation history. That is every offer and counter in the thread in order,
+whose move it is, and how many of the thread's counters you have used. Counter
+is disabled once the thread reaches its limit.
 
 - [Palette and UI conventions](docs/ui-design-system.md)
 - [Project architecture and rollout notes](https://github.com/cvillarr23/fantasy-project/blob/main/docs/season-management-ux.md)

@@ -30,6 +30,7 @@ import {
   useAttempt,
 } from './inboxState'
 import type { InboxAttempt } from './inboxState'
+import { counterLimitReason, useIncomingThread } from './incomingThread'
 export function IncomingTradeActions({
   row,
   config,
@@ -45,6 +46,9 @@ export function IncomingTradeActions({
   onOfferChanged: (row: IncomingTrade) => void
   refresh: () => void
 }) {
+  const thread = useIncomingThread(config, row)
+  const reasonFor = (a: InboxAction) =>
+    actionReason(row, config, week, a) ?? (a === 'counter' ? counterLimitReason(thread.data) : null)
   const key = attemptKey(config, row.espn_transaction_id)
   const attempt = useAttempt(key)
   const [action, setAction] = useState<InboxAction | null>(null)
@@ -98,7 +102,7 @@ export function IncomingTradeActions({
     return copies[0]
   }
   async function review(selected: InboxAction) {
-    if (lock.current || blocked || actionReason(row, config, week, selected)) return
+    if (lock.current || blocked || reasonFor(selected)) return
     lock.current = true
     setReviewed(row)
     setAction(selected)
@@ -224,7 +228,7 @@ export function IncomingTradeActions({
             disabled={
               blocked ||
               busy ||
-              Boolean(actionReason(row, config, week, a)) ||
+              Boolean(reasonFor(a)) ||
               (retry && attempt?.action !== a)
             }
             onClick={() => {
@@ -236,7 +240,7 @@ export function IncomingTradeActions({
         ))}
       </Group>
       {(['accept', 'decline', 'counter'] as const).map((a) => {
-        const reason = actionReason(row, config, week, a)
+        const reason = reasonFor(a)
         return reason ? (
           <Text key={a} size="xs">
             {a[0].toUpperCase() + a.slice(1)} unavailable: {reason}
