@@ -6,6 +6,16 @@ sidebar_position: 2
 
 All calls go through `request()` in `src/api/client.ts`. It sends JSON, parses JSON, and throws on failure.
 
+```mermaid
+flowchart TD
+    R[request] --> F{fetch outcome}
+    F -->|401| S[Redirect to sign-in<br/>promise never settles]
+    F -->|non-2xx| E[throw ApiError]
+    F -->|timer fires| T[throw ApiTimeoutError]
+    F -->|204| U[return undefined]
+    F -->|2xx| J[return parsed JSON]
+```
+
 ## What does request() do?
 
 | Behavior | Detail |

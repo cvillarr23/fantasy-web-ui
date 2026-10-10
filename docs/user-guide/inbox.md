@@ -11,6 +11,16 @@ Route: `/inbox`. Incoming offers appear in the API's rank order, with score evid
 - Each offer's players, notes, score breakdown and expiry. Unavailable breakdowns say so explicitly.
 - For an offer that answers or follows your counter, the thread: every offer in order, whose move it is, and how many of the thread's counters you have used.
 
+```mermaid
+flowchart LR
+    O[Incoming offer] -->|Accept / Decline| D[Response queued]
+    O -->|Counter| N[Negotiation queued]
+    N --> A[Outgoing approval on Trades]
+    D --> C{ESPN outcome}
+    C -->|rejected or unknown| RT[Reviewed Retry]
+    RT --> D
+```
+
 ## Which endpoints does it call?
 
 | Endpoint | Purpose |
