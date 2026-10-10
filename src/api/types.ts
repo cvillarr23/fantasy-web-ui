@@ -318,7 +318,9 @@ export interface WaiverPlayerSummary {
 }
 
 export interface WaiverRecommendation {
-  kind?: 'swap' | 'ir_and_add'
+  // "add" fills an open roster slot (no drop), "swap" drops bench_player, "ir_and_add" moves
+  // ir_player to IR before the add.
+  kind?: 'add' | 'swap' | 'ir_and_add'
   ir_player?: WaiverPlayerSummary | null
   position: string
   vorp_delta: number
@@ -336,11 +338,44 @@ export interface WaiverIrMove {
 }
 
 export interface WaiverRecommendationsResponse {
+  open_roster_slots?: number
   open_ir_slots?: number
   ir_moves?: WaiverIrMove[]
   season: number
   week: number
   recommendations: WaiverRecommendation[]
+}
+
+// Mirrors fantasy-core-pipeline's GET /v1/waiver/free-agents response models.
+export interface FreeAgentPlayer {
+  player_id: string
+  espn_id: string
+  name: string
+  position: string
+  pro_team: string
+  injury_status: string | null
+  projected_points: number | null
+  vorp_score: number | null
+}
+
+export interface FreeAgentEntry extends FreeAgentPlayer {
+  // Our weakest bench player at this position, and the VORP gained by swapping them out.
+  bench_player?: FreeAgentPlayer | null
+  vorp_delta?: number | null
+}
+
+export type FreeAgentSort = 'vorp' | 'projected'
+
+export interface FreeAgentsResponse {
+  season: number
+  week: number
+  free_agents: FreeAgentEntry[]
+  total: number
+  limit: number
+  offset: number
+  // "rolling_prior_weeks" before the target week's projections land.
+  source_mode?: 'target_week' | 'rolling_prior_weeks'
+  source_weeks?: number[]
 }
 
 // Mirrors fantasy-core-pipeline's REST wrapper for evaluate_proposed_trade

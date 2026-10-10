@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { queryClient } from '../api/queryClient'
 import { Alert, Button, Group, Stack, Text } from '@mantine/core'
@@ -8,6 +9,7 @@ import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { RosterDeficitsGrid } from './RosterDeficitsGrid'
 import { WaiverRecommendationPanel } from './WaiverRecommendationPanel'
+import { FreeAgentBrowser } from './FreeAgentBrowser'
 import { RosterQuickActions } from './RosterQuickActions'
 import { WeekSelector } from './WeekSelector'
 import { PageSkeleton } from './skeletons'
@@ -21,6 +23,8 @@ export function WaiverPage() {
   const isConfigured = Boolean(config.league_id && config.team_id)
 
   const [week, setWeek] = useSelectedWeek()
+  // The free-agent pool is only fetched once the manager opens the browser.
+  const [browseOpen, setBrowseOpen] = useState(false)
   const weekValue = Number(week)
   const enabled = isConfigured && Number.isInteger(weekValue) && weekValue > 0
   const deficitsQuery = useQuery(
@@ -80,12 +84,23 @@ export function WaiverPage() {
         <WaiverRecommendationPanel
           recommendations={recommendations}
           openIrSlots={recommendationsQuery.data?.open_ir_slots}
+          openRosterSlots={recommendationsQuery.data?.open_roster_slots}
           irMoves={recommendationsQuery.data?.ir_moves}
           config={config}
           loading={recommendationsQuery.isLoading}
           updating={recommendationsQuery.isPlaceholderData}
         />
       )}
+      <details className="secondary-panel" onToggle={(e) => setBrowseOpen(e.currentTarget.open)}>
+        <summary>Browse free agents</summary>
+        {browseOpen && (
+          <FreeAgentBrowser
+            config={config}
+            week={weekValue}
+            openRosterSlots={recommendationsQuery.data?.open_roster_slots ?? 0}
+          />
+        )}
+      </details>
       <details className="secondary-panel">
         <summary>League position depth</summary>
         {(loading || deficits) && (

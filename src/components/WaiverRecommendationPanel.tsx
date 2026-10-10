@@ -8,6 +8,7 @@ interface Props {
   recommendations: WaiverRecommendation[]
   config: DraftConfig
   openIrSlots?: number
+  openRosterSlots?: number
   irMoves?: WaiverIrMove[]
   /** First load: render placeholder rows inside the real panel chrome. */
   loading?: boolean
@@ -36,7 +37,7 @@ function RecommendationRowsSkeleton() {
   )
 }
 
-export function WaiverRecommendationPanel({ recommendations, openIrSlots = 0, irMoves = [], loading = false, updating = false }: Props) {
+export function WaiverRecommendationPanel({ recommendations, openIrSlots = 0, openRosterSlots = 0, irMoves = [], loading = false, updating = false }: Props) {
   const [week] = useSelectedWeek()
   return (
     <section className="waiver-recommendation-panel">
@@ -44,6 +45,9 @@ export function WaiverRecommendationPanel({ recommendations, openIrSlots = 0, ir
       <Text size="sm" c="dimmed" mb="md">
         Compare roster changes before submitting a claim. IR suggestions must be completed in ESPN.
       </Text>
+      {!loading && openRosterSlots > 0 && (
+        <Text size="sm" mb="md">{openRosterSlots} open roster {openRosterSlots === 1 ? 'slot' : 'slots'}</Text>
+      )}
       {!loading && openIrSlots > 0 && (
         <Text size="sm" mb="md">{openIrSlots} open IR {openIrSlots === 1 ? 'slot' : 'slots'}</Text>
       )}
@@ -73,20 +77,24 @@ export function WaiverRecommendationPanel({ recommendations, openIrSlots = 0, ir
         <ul className="waiver-recommendation-list" aria-busy={updating || undefined}>
           {recommendations.map((r) => {
             const isIrAndAdd = r.kind === 'ir_and_add'
+            const isAddOnly = r.kind === 'add'
             const outgoingPlayer = isIrAndAdd ? r.ir_player : r.bench_player
             const params = new URLSearchParams({
               kind: 'waiver',
               week: String(week),
               add: r.free_agent.espn_id ?? '',
-              drop: r.bench_player?.espn_id ?? '',
             })
-            const canReview = !isIrAndAdd && (r.kind === undefined || r.kind === 'swap') && Boolean(r.free_agent.espn_id && r.bench_player?.espn_id)
+            // No drop param: the review page submits an add-only claim into the open slot.
+            if (!isAddOnly) params.set('drop', r.bench_player?.espn_id ?? '')
+            const canReview = isAddOnly
+              ? Boolean(r.free_agent.espn_id)
+              : (r.kind === undefined || r.kind === 'swap') && Boolean(r.free_agent.espn_id && r.bench_player?.espn_id)
             return (
               <li
                 className="waiver-recommendation-row"
                 key={`${r.position}-${r.free_agent.espn_id ?? r.free_agent.name}`}
               >
-                <div className="move-sides">
+                <div className={isAddOnly ? 'move-sides single' : 'move-sides'}>
                   <div className="move-side incoming">
                     <h3>Add to your roster</h3>
                     <Text fw={700}>{r.free_agent.name}</Text>
@@ -95,16 +103,17 @@ export function WaiverRecommendationPanel({ recommendations, openIrSlots = 0, ir
                     </Text>
                     <InjuryBadge status={r.free_agent.injury_status} />
                   </div>
-                  <div className={`move-side ${isIrAndAdd ? 'ir' : 'outgoing'}`}>
+                  {!isAddOnly && <div className={`move-side ${isIrAndAdd ? 'ir' : 'outgoing'}`}>
                     <h3>{isIrAndAdd ? 'Move to IR' : 'Drop from your roster'}</h3>
                     <Text fw={700}>{outgoingPlayer?.name ?? '—'}</Text>
                     <Text size="sm">
                       {isIrAndAdd ? 'IR stash' : r.position} · {outgoingPlayer?.pro_team ?? '—'}
                     </Text>
                     <InjuryBadge status={outgoingPlayer?.injury_status ?? null} />
-                  </div>
+                  </div>}
                 </div>
                 {isIrAndAdd && <Text size="sm" mt="sm">Nobody is dropped.</Text>}
+                {isAddOnly && <Text size="sm" mt="sm">Nobody is dropped. This fills an open roster slot.</Text>}
                 <Group justify="space-between" mt="md">
                   <Stack gap={2}>
                     <Badge color="teal">

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getOutgoingTradeOffers, getTeamNames, triggerLineupSwap, triggerWaiverClaim } from './client'
+import { getOutgoingTradeOffers, getTeamNames, getWaiverFreeAgents, triggerLineupSwap, triggerWaiverClaim } from './client'
 import type { DraftConfig, WaiverPlayerSummary } from './types'
 
 const config = { team_id: '7', league_id: '123' } as DraftConfig
@@ -155,4 +155,19 @@ it('scopes proposal team-name lookups to the selected league', async () => {
   vi.stubGlobal('fetch', fetchMock)
   expect(await getTeamNames('123')).toEqual({ '8': 'Rival Team' })
   expect(fetchMock.mock.calls[0][0]).toBe('/v1/league/teams?league_id=123')
+})
+
+describe('getWaiverFreeAgents', () => {
+  it('sends filters, sort and paging, and omits empty filters', async () => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ free_agents: [] }))))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await getWaiverFreeAgents({ season: 2026, week: 5, position: 'RB', q: ' back ', sort: 'projected', limit: 25, offset: 50 })
+    await getWaiverFreeAgents({ season: 2026, week: 5, q: '  ', sort: 'vorp', limit: 25, offset: 0 })
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      '/v1/waiver/free-agents?season=2026&week=5&sort=projected&limit=25&offset=50&position=RB&q=back',
+    )
+    expect(fetchMock.mock.calls[1][0]).toBe('/v1/waiver/free-agents?season=2026&week=5&sort=vorp&limit=25&offset=0')
+  })
 })
