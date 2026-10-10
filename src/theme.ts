@@ -1,6 +1,6 @@
 import { createTheme, type CSSVariablesResolver, type MantineColorsTuple } from '@mantine/core'
 
-/** The single source of truth for product colors. See docs/ui-design-system.md. */
+/** The single source of truth for product colors. See docs/design-system.md. */
 export const palette = {
   background: '#14151c',
   surface: '#1e202b',
