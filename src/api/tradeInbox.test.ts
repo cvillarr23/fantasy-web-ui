@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vitest'
-import { getIncomingTrades, publishIncoming, triageIncoming } from './tradeInbox'
+import { getIncomingThread, getIncomingTrades, publishIncoming, triageIncoming } from './tradeInbox'
 import { config, offer, receipt } from '../components/inbox/inboxFixtures'
 afterEach(() => vi.unstubAllGlobals())
 it('preserves server rank across pages and filters only exact configured scope', async () => {
@@ -97,4 +97,29 @@ it('triage sends aware snooze timestamp without decision fields', async () => {
     by: 'Manager',
     snooze_until: '2026-10-09T12:00:00Z',
   })
+})
+const thread = {
+  thread_root_id: '100',
+  state: 'awaiting_us',
+  our_counters: 1,
+  counter_limit: 3,
+  turns: [
+    { side: 'theirs', espn_transaction_id: '100', status: 'countered' },
+    { side: 'ours', espn_transaction_id: 'ours-1', status: 'countered', counters: '100' },
+    { side: 'theirs', espn_transaction_id: '123', status: 'open' },
+  ],
+}
+it('reads an offer thread scoped to the configured league', async () => {
+  const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify(thread)))
+  vi.stubGlobal('fetch', fetcher)
+  expect(await getIncomingThread(config, '123')).toEqual(thread)
+  expect(fetcher.mock.calls[0][0]).toContain('/v1/trade/incoming/123/thread?league_id=123')
+})
+it.each([
+  [{ ...thread, turns: thread.turns.slice(0, 2) }],
+  [{ ...thread, our_counters: '1' }],
+  [{ ...thread, turns: null }],
+])('refuses a thread that does not include the offer or is malformed: %#', async (body) => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(body))))
+  await expect(getIncomingThread(config, '123')).rejects.toThrow(/could not be verified/)
 })
