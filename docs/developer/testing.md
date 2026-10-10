@@ -24,4 +24,4 @@ If Vitest workers crash, use Node 22 rather than an older default.
 - Put it next to the file, as `Thing.test.tsx`.
 - Mock `fetch` or the functions in `src/api/`; tests never reach a real API.
 - Render pages inside a `QueryClientProvider` and a `MantineProvider`. Seed the config through `localStorage` under `fantasy-web-ui.draft-config`.
-- Use fixtures with synthetic players and IDs only. See [Docs style guide](https://github.com/cvillarr23/fantasy-project/blob/main/docs/contributing/docs-style-guide.md) on personal data.
+- Use fixtures with synthetic players and IDs only. See [Docs style guide](/contributing/docs-style-guide) on personal data.
