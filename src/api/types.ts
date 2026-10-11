@@ -389,8 +389,9 @@ export interface TradeEvaluationResponse {
   missing_player_ids: string[]
 }
 
-// Mirrors fantasy-core-pipeline's src/schemas/chat.py (POST /v1/chat/query). Read-only Q&A -
-// stateless per-request, no conversation history on the backend, so there is no thread/session id.
+// Mirrors fantasy-core-pipeline's src/schemas/chat.py (POST /v1/chat/query). Read-only Q&A. Each
+// answer is saved to an activity session; passing that session_id back makes the question a
+// follow-up, and the backend includes the session's earlier questions and answers as context.
 export interface ChatTradeProposal {
   incoming_player_ids: string[]
   outgoing_player_ids: string[]
@@ -402,6 +403,7 @@ export interface ChatQueryRequest {
   week: number
   team_id: string
   trade_proposal?: ChatTradeProposal
+  session_id?: string
 }
 
 export interface ChatGrounding {
