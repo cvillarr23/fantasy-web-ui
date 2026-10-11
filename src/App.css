@@ -1191,3 +1191,27 @@
   opacity: 0.6;
   transition: opacity 150ms ease;
 }
+.chat-markdown {
+  overflow-wrap: anywhere;
+}
+.chat-markdown > :first-child {
+  margin-top: 0;
+}
+.chat-markdown > :last-child {
+  margin-bottom: 0;
+}
+.chat-markdown ul,
+.chat-markdown ol {
+  padding-left: 1.4em;
+}
+.chat-markdown .mantine-Table-scrollContainer {
+  margin: 0.75em 0;
+}
+.chat-markdown pre {
+  overflow-x: auto;
+}
+.chat-markdown pre > code {
+  display: block;
+  padding: 8px 12px;
+  white-space: pre;
+}
