@@ -29,7 +29,8 @@ is disabled once the thread reaches its limit.
 | [User guide](docs/user-guide/index.md) | What each page shows, its API endpoints and which actions need confirmation |
 | [Developer guide](docs/developer/index.md) | Stack, layout, API client, state, testing and running locally |
 | [Authentication](docs/auth.md) | oauth2-proxy sign-in and how write endpoints are protected |
-| [Design system](docs/design-system.md) | Palette and UI conventions |
+| [Design system](docs/design-system.md) | Palette, UI conventions and where shared components live |
+| [Component library](docs/developer/storybook.md) | Storybook stories for the shared components |
 
 These pages are also published on the project documentation site built from
 [`fantasy-project`](https://github.com/cvillarr23/fantasy-project).
@@ -54,6 +55,12 @@ To prefill the league and team on every reload, put them in a gitignored `.env.l
 ```bash
 VITE_DEV_LEAGUE_ID=123456
 VITE_DEV_TEAM_ID=1
+```
+
+To browse and work on the shared components in Storybook:
+
+```bash
+npm run storybook
 ```
 
 ## Deployment
