@@ -31,6 +31,7 @@ import {
 } from './inboxState'
 import type { InboxAttempt } from './inboxState'
 import { counterLimitReason, useIncomingThread } from './incomingThread'
+import { PlayerSides } from '../player/PlayerSides'
 export function IncomingTradeActions({
   row,
   config,
@@ -282,18 +283,7 @@ export function IncomingTradeActions({
             League {config.league_id} · Season {config.season} · Your team {config.team_id} ·
             Proposer Team {reviewed.proposing_team_id} · Offer {reviewed.espn_transaction_id}
           </Text>
-          {(['receive', 'send'] as const).map((side) => (
-            <div key={side}>
-              <Text fw={600}>You {side}</Text>
-              <ul>
-                {reviewed[`${side}_players`].map((p) => (
-                  <li key={p.espn_id}>
-                    {p.name || 'Unnamed player'} (ESPN {p.espn_id})
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          <PlayerSides receive={reviewed.receive_players} send={reviewed.send_players} />
           <Text fw={600}>Original proposer note</Text>
           <Text style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
             {reviewed.comment ?? 'No note provided.'}

@@ -9,14 +9,13 @@ import { queryClient } from '../api/queryClient'
 import { lineupRosterQuery } from '../api/weekReads'
 import { useToast } from '../hooks/useToast'
 import { RosterQuickActions } from './RosterQuickActions'
-import { InjuryBadge } from './player/InjuryBadge'
 import { irMoveIdempotencyKey, irMoveInstruction } from './irMoves'
 import { LineupSuggestionPanel, LineupSuggestionPanelSkeleton } from './LineupSuggestionPanel'
 import { PlayerCard } from './player/PlayerCard'
-import { RumorBadge } from './player/RumorBadge'
 import { PlayerRowSkeleton, SkeletonRegion } from './skeletons'
 import type { DraftConfig, LineupPlayerLine } from '../api/types'
 import { ToastLine } from './ui/ToastLine'
+import { PlayerStatusBadges } from './player/PlayerStatusBadges'
 
 interface Props {
   config: DraftConfig
@@ -109,19 +108,14 @@ function DraggablePlayerCard({ line, irAction }: { line: LineupPlayerLine; irAct
           headshotUrl: line.headshot_url,
         }}
         badges={
-          <>
-            <InjuryBadge status={line.injury_status} />
-            {line.ir_suggestion && (
+          <PlayerStatusBadges
+            player={line}
+            extra={line.ir_suggestion && (
               <Badge color="yellow" size="xs">
                 {line.ir_suggestion.action === 'move_to_ir' ? 'Move to IR' : 'Activate from IR'}
               </Badge>
             )}
-            <RumorBadge
-              sentiment={line.rumor_sentiment}
-              confidence={line.rumor_confidence}
-              suggestedAction={line.rumor_suggested_action}
-            />
-          </>
+          />
         }
         stats={line.net_vorp !== null ? `VORP ${line.net_vorp.toFixed(1)}` : null}
       />

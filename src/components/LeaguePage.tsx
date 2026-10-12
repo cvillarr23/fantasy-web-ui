@@ -20,6 +20,7 @@ import { getLeagueRows } from '../api/dashboard'
 import { WeekSelector } from './ui/WeekSelector'
 import { ScoreValue } from './ui/ScoreValue'
 import { SkeletonRegion, TableSkeleton } from './skeletons'
+import { Pager } from './ui/Pager'
 export function LeaguePage() {
   const { config } = useDraftConfig()
   const [week, setWeek] = useSelectedWeek()
@@ -183,18 +184,13 @@ export function LeaguePage() {
               </Table>
             </Table.ScrollContainer>
             {query.data.items.length === 0 && <Text>No players match this selection.</Text>}
-            <Group>
-              <Button disabled={!offset} onClick={() => setOffset(Math.max(0, offset - 50))}>
-                Previous
-              </Button>
-              <Text size="sm">{query.data.total} results</Text>
-              <Button
-                disabled={offset + 50 >= query.data.total}
-                onClick={() => setOffset(offset + 50)}
-              >
-                Next
-              </Button>
-            </Group>
+            <Pager
+              previousDisabled={!offset}
+              nextDisabled={offset + 50 >= query.data.total}
+              onPrevious={() => setOffset(Math.max(0, offset - 50))}
+              onNext={() => setOffset(offset + 50)}
+              summary={`${query.data.total} results`}
+            />
           </>
         )}
       </Stack>

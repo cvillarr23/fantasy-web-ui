@@ -25,6 +25,8 @@ import {
 import { request } from '../api/client'
 import { queryClient, invalidateRoster } from '../api/queryClient'
 import { actionDependency, dependencyEvent, isHeldAction } from './activityDependency'
+import { Pager } from './ui/Pager'
+import { PageHeader } from './ui/PageHeader'
 
 const label = (value: string) => value.replaceAll('_', ' ')
 const stamp = (value: string) => new Date(value).toLocaleString()
@@ -138,17 +140,15 @@ export function ActivityPage() {
   return (
     <div className="dashboard">
       <Stack>
-        <Group justify="space-between">
-          <div>
-            <h2>Activity</h2>
-            <Text c="dimmed" size="sm">
-              Follow background work from request to verified result.
-            </Text>
-          </div>
-          <Button variant="default" onClick={() => void query.refetch()}>
-            Refresh
-          </Button>
-        </Group>
+        <PageHeader
+          title="Activity"
+          subtitle="Follow background work from request to verified result."
+          actions={
+            <Button variant="default" onClick={() => void query.refetch()}>
+              Refresh
+            </Button>
+          }
+        />
         {bots.data && bots.data.items.length > 0 && (
           <details>
             <summary>Background bots · {bots.data.items.length} reporting</summary>
@@ -244,17 +244,12 @@ export function ActivityPage() {
                   </Text>
                 </Link>
               ))}
-        <Group>
-          <Button disabled={!offset} onClick={() => setOffset(Math.max(0, offset - 50))}>
-            Previous
-          </Button>
-          <Button
-            disabled={(query.data?.items.length ?? 0) < 50}
-            onClick={() => setOffset(offset + 50)}
-          >
-            Next
-          </Button>
-        </Group>
+        <Pager
+          previousDisabled={!offset}
+          nextDisabled={(query.data?.items.length ?? 0) < 50}
+          onPrevious={() => setOffset(Math.max(0, offset - 50))}
+          onNext={() => setOffset(offset + 50)}
+        />
       </Stack>
     </div>
   )

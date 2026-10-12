@@ -7,6 +7,7 @@ import { getVorpStats } from '../api/client'
 import { PlayerCard } from './player/PlayerCard'
 import { SkeletonRegion, TableRowsSkeleton } from './skeletons'
 import type { VorpStat } from '../api/types'
+import { formatNumber } from './ui/formatNumber'
 
 const POSITION_OPTIONS = ['All', 'QB', 'RB', 'WR', 'TE', 'K', 'D/ST']
 const SORT_OPTIONS = [
@@ -170,9 +171,9 @@ export function VorpBrowserPanel({ season }: Props) {
                 player={{ id: row.player_id, name: row.name, position: row.position }}
                 columns={[
                   row.team ?? '—',
-                  row.projected_points?.toFixed(1) ?? '—',
-                  row.actual_points?.toFixed(1) ?? '—',
-                  row.vorp_score?.toFixed(1) ?? '—',
+                  formatNumber(row.projected_points),
+                  formatNumber(row.actual_points),
+                  formatNumber(row.vorp_score),
                 ]}
               />
             ))}
