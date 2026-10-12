@@ -7,7 +7,7 @@ import { ApiError, isNoProviderError, queryChat } from '../api/client'
 import { getSession } from '../api/dashboard'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useDraftConfig } from '../hooks/useDraftConfig'
-import { WeekSelector } from './WeekSelector'
+import { WeekSelector } from './ui/WeekSelector'
 import { ChatMarkdown } from './chat/ChatMarkdown'
 import { threadFromSession, type ChatTurn } from './chat/chatThread'
 

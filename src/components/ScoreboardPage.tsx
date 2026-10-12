@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom'
 import { scoreboardQuery } from '../api/weekReads'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useDraftConfig } from '../hooks/useDraftConfig'
-import { WeekSelector } from './WeekSelector'
+import { WeekSelector } from './ui/WeekSelector'
 import { PageSkeleton, SkeletonRegion } from './skeletons'
 import type { ScoreboardMatchup, ScoreboardTeamInfo } from '../api/types'
 

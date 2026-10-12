@@ -4,9 +4,9 @@ import { SkeletonRegion, TextSkeleton } from './skeletons'
 import type { DraftPickSummary, TeamAggregate } from '../api/types'
 import { usePlayerDetailsCache } from '../hooks/usePlayerDetailsCache'
 import { useTeamNames } from '../hooks/useTeamNames'
-import { MatchupBadge, ScarcityBadge } from './DraftSignalBadges'
-import { PlayerCard } from './PlayerCard'
-import { PlayerSummaryPopover } from './PlayerSummaryPopover'
+import { MatchupBadge, ScarcityBadge } from './player/DraftSignalBadges'
+import { PlayerCard } from './player/PlayerCard'
+import { PlayerSummaryPopover } from './player/PlayerSummaryPopover'
 
 interface Props {
   teamIds: string[]

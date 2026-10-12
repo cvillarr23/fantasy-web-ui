@@ -1,4 +1,4 @@
-import { BadgeSlot } from './BadgeSlot'
+import { BadgeSlot } from '../ui/BadgeSlot'
 
 const TOOLTIP = 'Current pipeline value, not a snapshot from pick time'
 

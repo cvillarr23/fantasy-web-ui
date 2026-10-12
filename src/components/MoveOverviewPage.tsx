@@ -18,7 +18,7 @@ import { type MovePreview, previewMove } from '../api/dashboard'
 import { triggerWaiverClaim } from '../api/client'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
-import { WeekSelector } from './WeekSelector'
+import { WeekSelector } from './ui/WeekSelector'
 import { palette } from '../theme'
 import { ChartSkeleton, MoveSidesSkeleton, OperationProgress, SkeletonRegion } from './skeletons'
 export function MoveOverviewPage() {

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Button } from '@mantine/core'
 import { ListRowsSkeleton } from './skeletons'
 import { isPickTooLateError } from '../api/client'
-import { PlayerCard } from './PlayerCard'
+import { PlayerCard } from './player/PlayerCard'
 import { useToast } from '../hooks/useToast'
 import type { DraftRecommendation } from '../api/types'
 

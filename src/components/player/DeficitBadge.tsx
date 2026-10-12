@@ -1,4 +1,4 @@
-import { BadgeSlot } from './BadgeSlot'
+import { BadgeSlot } from '../ui/BadgeSlot'
 
 export function DeficitBadge({ isDeficit }: { isDeficit: boolean }) {
   if (!isDeficit) return null

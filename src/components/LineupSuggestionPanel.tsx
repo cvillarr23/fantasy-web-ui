@@ -1,7 +1,7 @@
 import { Badge, Button, Text } from '@mantine/core'
-import { HEALTHY_STATUSES, InjuryBadge } from './InjuryBadge'
-import { PlayerCard } from './PlayerCard'
-import { RumorBadge } from './RumorBadge'
+import { HEALTHY_STATUSES, InjuryBadge } from './player/InjuryBadge'
+import { PlayerCard } from './player/PlayerCard'
+import { RumorBadge } from './player/RumorBadge'
 import { PlayerListSkeleton } from './skeletons'
 import type { LineupPlayerLine, LineupRosterResponse } from '../api/types'
 

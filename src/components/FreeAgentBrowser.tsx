@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom'
 import { queryClient } from '../api/queryClient'
 import { getWaiverFreeAgents } from '../api/client'
 import type { DraftConfig, FreeAgentEntry, FreeAgentSort } from '../api/types'
-import { InjuryBadge } from './InjuryBadge'
+import { InjuryBadge } from './player/InjuryBadge'
 import { TableRowsSkeleton } from './skeletons'
 
 export const FREE_AGENT_PAGE_SIZE = 25

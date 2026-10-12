@@ -17,8 +17,8 @@ import { useDebouncedValue } from '@mantine/hooks'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { getLeagueRows } from '../api/dashboard'
-import { WeekSelector } from './WeekSelector'
-import { ScoreValue } from './ScoreValue'
+import { WeekSelector } from './ui/WeekSelector'
+import { ScoreValue } from './ui/ScoreValue'
 import { SkeletonRegion, TableSkeleton } from './skeletons'
 export function LeaguePage() {
   const { config } = useDraftConfig()

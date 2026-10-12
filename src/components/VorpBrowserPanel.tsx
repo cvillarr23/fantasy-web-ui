@@ -4,7 +4,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { queryClient } from '../api/queryClient'
 import { Alert, Group, Select, Table, Text } from '@mantine/core'
 import { getVorpStats } from '../api/client'
-import { PlayerCard } from './PlayerCard'
+import { PlayerCard } from './player/PlayerCard'
 import { SkeletonRegion, TableRowsSkeleton } from './skeletons'
 import type { VorpStat } from '../api/types'
 

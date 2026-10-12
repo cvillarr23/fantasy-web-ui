@@ -3,9 +3,9 @@ import { ListRowsSkeleton } from './skeletons'
 import type { DraftPickSummary, DraftStatusResponse } from '../api/types'
 import { usePlayerDetailsCache } from '../hooks/usePlayerDetailsCache'
 import { useTeamNames } from '../hooks/useTeamNames'
-import { AutodraftBadge } from './AutodraftBadge'
-import { PlayerCard } from './PlayerCard'
-import { PlayerSummaryPopover } from './PlayerSummaryPopover'
+import { AutodraftBadge } from './player/AutodraftBadge'
+import { PlayerCard } from './player/PlayerCard'
+import { PlayerSummaryPopover } from './player/PlayerSummaryPopover'
 
 interface Props {
   picks: DraftPickSummary[]

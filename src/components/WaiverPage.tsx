@@ -11,7 +11,7 @@ import { RosterDeficitsGrid } from './RosterDeficitsGrid'
 import { WaiverRecommendationPanel } from './WaiverRecommendationPanel'
 import { FreeAgentBrowser } from './FreeAgentBrowser'
 import { RosterQuickActions } from './RosterQuickActions'
-import { WeekSelector } from './WeekSelector'
+import { WeekSelector } from './ui/WeekSelector'
 import { PageSkeleton } from './skeletons'
 
 function errorMessage(err: unknown): string {

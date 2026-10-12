@@ -1,4 +1,4 @@
-import { BadgeSlot } from './BadgeSlot'
+import { BadgeSlot } from '../ui/BadgeSlot'
 
 export function AutodraftBadge({ isSuspected }: { isSuspected: boolean }) {
   if (!isSuspected) return null
