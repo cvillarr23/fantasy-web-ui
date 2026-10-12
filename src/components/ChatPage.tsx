@@ -10,6 +10,7 @@ import { useDraftConfig } from '../hooks/useDraftConfig'
 import { WeekSelector } from './ui/WeekSelector'
 import { ChatMarkdown } from './chat/ChatMarkdown'
 import { threadFromSession, type ChatTurn } from './chat/chatThread'
+import { LeagueNotConfigured } from './ui/LeagueNotConfigured'
 
 export function ChatPage() {
   const { config, loading: configLoading } = useDraftConfig()
@@ -40,16 +41,7 @@ export function ChatPage() {
 
   if (!isConfigured) {
     if (configLoading) return <PageSkeleton />
-    return (
-      <div className="dashboard">
-        <Stack gap="md" mt="xl" align="center">
-          <Text ta="center" maw={480}>
-            No league configured yet. Set your league and team in Settings first.
-          </Text>
-          <Button component={Link} to="/settings" variant="default">Go to Settings</Button>
-        </Stack>
-      </div>
-    )
+    return <LeagueNotConfigured />
   }
 
   const loadingHistory = Boolean(sessionId) && seededFor !== sessionId && !history.error

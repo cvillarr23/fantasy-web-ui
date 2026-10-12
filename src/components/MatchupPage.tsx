@@ -2,7 +2,7 @@ import { ScoreValue } from './ui/ScoreValue'
 import { useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { queryClient } from '../api/queryClient'
-import { Alert, Button, Group, Skeleton, Stack, Table, Text } from '@mantine/core'
+import { Alert, Button, Group, Skeleton, Table, Text } from '@mantine/core'
 import { Link } from 'react-router-dom'
 import { matchupQuery } from '../api/weekReads'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
@@ -12,6 +12,7 @@ import { PlayerCard } from './player/PlayerCard'
 import { WeekSelector } from './ui/WeekSelector'
 import { PageSkeleton, SkeletonRegion, TableRowsSkeleton } from './skeletons'
 import type { MatchupTeamSide, PlayerLine } from '../api/types'
+import { LeagueNotConfigured } from './ui/LeagueNotConfigured'
 
 function PlayerRow({ line }: { line: PlayerLine }) {
   return (
@@ -165,16 +166,7 @@ export function MatchupPage() {
 
   if (!isConfigured) {
     if (configLoading) return <PageSkeleton />
-    return (
-      <div className="dashboard">
-        <Stack gap="md" mt="xl" align="center">
-          <Text ta="center" maw={480}>
-            No league configured yet. Set your league and team in Settings first.
-          </Text>
-          <Button component={Link} to="/settings" variant="default">Go to Settings</Button>
-        </Stack>
-      </div>
-    )
+    return <LeagueNotConfigured />
   }
 
   return (

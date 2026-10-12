@@ -16,6 +16,7 @@ import { PlayerCard } from './player/PlayerCard'
 import { RumorBadge } from './player/RumorBadge'
 import { PlayerRowSkeleton, SkeletonRegion } from './skeletons'
 import type { DraftConfig, LineupPlayerLine } from '../api/types'
+import { ToastLine } from './ui/ToastLine'
 
 interface Props {
   config: DraftConfig
@@ -498,7 +499,7 @@ export function LineupEditor({ config, week = '' }: Props) {
           Track lineup changes
         </Button>
       )}
-      {toast && <p className={`status-message toast toast-${toast.tone}`}>{toast.message}</p>}
+      <ToastLine toast={toast} />
 
       <Modal
         opened={irTarget !== null}

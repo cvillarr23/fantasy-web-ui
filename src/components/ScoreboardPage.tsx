@@ -1,13 +1,13 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { queryClient } from '../api/queryClient'
-import { Alert, Button, Group, Skeleton, Stack, Text } from '@mantine/core'
-import { Link } from 'react-router-dom'
+import { Alert, Group, Skeleton } from '@mantine/core'
 import { scoreboardQuery } from '../api/weekReads'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { WeekSelector } from './ui/WeekSelector'
 import { PageSkeleton, SkeletonRegion } from './skeletons'
 import type { ScoreboardMatchup, ScoreboardTeamInfo } from '../api/types'
+import { LeagueNotConfigured } from './ui/LeagueNotConfigured'
 
 function ScoreboardSide({ side, isMyTeam }: { side: ScoreboardTeamInfo | null; isMyTeam: boolean }) {
   if (!side) {
@@ -75,16 +75,7 @@ export function ScoreboardPage() {
 
   if (!isConfigured) {
     if (configLoading) return <PageSkeleton />
-    return (
-      <div className="dashboard">
-        <Stack gap="md" mt="xl" align="center">
-          <Text ta="center" maw={480}>
-            No league configured yet. Set your league and team in Settings first.
-          </Text>
-          <Button component={Link} to="/settings" variant="default">Go to Settings</Button>
-        </Stack>
-      </div>
-    )
+    return <LeagueNotConfigured />
   }
 
   return (

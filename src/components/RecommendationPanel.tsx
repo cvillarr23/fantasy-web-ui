@@ -5,6 +5,7 @@ import { isPickTooLateError } from '../api/client'
 import { PlayerCard } from './player/PlayerCard'
 import { useToast } from '../hooks/useToast'
 import type { DraftRecommendation } from '../api/types'
+import { ToastLine } from './ui/ToastLine'
 
 interface Props {
   recommendation: DraftRecommendation
@@ -131,7 +132,7 @@ export function RecommendationPanel({ recommendation, pickNumber, isMyTurn, onDr
           </ol>
         )}
       </div>
-      {toast && <p className={`status-message toast toast-${toast.tone}`}>{toast.message}</p>}
+      <ToastLine toast={toast} />
     </section>
   )
 }

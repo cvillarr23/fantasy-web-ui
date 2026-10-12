@@ -14,6 +14,7 @@ import { OperationProgress } from './skeletons'
 import type { DraftConfig, PlayerSearchResult, TradeEvaluationResponse } from '../api/types'
 import type { TradeContextControls } from '../hooks/useTradeContextControls'
 import { TradeScorePanel } from './tradeScore/TradeScorePanel'
+import { ToastLine } from './ui/ToastLine'
 
 interface Props {
   config: DraftConfig
@@ -156,7 +157,7 @@ export function TradeBuilder({ config, controls }: Props) {
 
       {controls && <TradeScorePanel config={config} week={week} incoming={incoming} outgoing={outgoing} controls={controls} />}
 
-      {toast && <p className={`status-message toast toast-${toast.tone}`}>{toast.message}</p>}
+      <ToastLine toast={toast} />
     </section>
   )
 }
