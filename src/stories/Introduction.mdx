@@ -1,0 +1,27 @@
+import { Meta } from '@storybook/addon-docs/blocks'
+
+<Meta title="Introduction" />
+
+# fantasy-web-ui components
+
+The shared components the web UI is built from, rendered with the app's real theme and synthetic data.
+Pages aren't here; see the screenshots in the user guide for those.
+
+## Where components live
+
+| Folder | Holds |
+| --- | --- |
+| `src/components/ui/` | Generic, domain-free pieces: page headers, empty and error states, paging, number formatting |
+| `src/components/player/` | Player display: cards, avatars, injury and rumor badges, trade sides |
+| `src/components/tradeScore/`, `inbox/`, `chat/`, `skeletons/` | Domain-specific pieces for one area |
+| `src/components/` | Pages and the panels that own data |
+
+Shared components take typed props and don't fetch data. The page or a hook fetches, and the component renders.
+
+## Colors and labels
+
+Palette tokens and labeling rules are in the <a href="/ui/design-system" target="_top">Design system</a> page on the docs site. Unknown values show "—", not zero.
+
+## Why dark only?
+
+The app forces dark mode and its palette only defines dark values, so the library shows the theme users see.
