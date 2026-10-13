@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Anchor, Badge, Button, Group, Stack, Text } from '@mantine/core'
+import { Anchor, Badge, Button, Group, Stack, Table, Text } from '@mantine/core'
 import { Link, useParams } from 'react-router-dom'
 import {
   getRun,
@@ -14,7 +14,15 @@ import { ErrorAlert } from './ui/ErrorAlert'
 import { EmptyState } from './ui/EmptyState'
 import { TextSkeleton, SkeletonRegion } from './skeletons'
 import { StatusBadge, TriggerBadge } from './RunsPanel'
-import { duration, runLabel, runStamp } from './runFormat'
+import {
+  duration,
+  logIssues,
+  plural,
+  RESERVED_SUMMARY_KEYS,
+  runLabel,
+  runOutcome,
+  runStamp,
+} from './runFormat'
 
 const RUNNING_POLL_MS = 5000
 const PERCENT = 100
@@ -149,7 +157,13 @@ export function RunDetailPage() {
     refetchInterval: (q) => (q.state.data?.status === 'running' ? RUNNING_POLL_MS : false),
   })
   const run = query.data
-  const summary = run && Object.entries(run.summary)
+  const counters = run
+    ? Object.entries(run.summary).filter(([key]) => !RESERVED_SUMMARY_KEYS.has(key))
+    : []
+  const logTail = Array.isArray(run?.summary.log_tail) ? (run.summary.log_tail as string[]) : []
+  const issues = logIssues(run?.summary)
+  const outcome = run ? runOutcome({ ...run, error: null }) : ''
+  const hasLinks = Boolean(run?.links.input || run?.links.output)
   return (
     <div className="dashboard">
       <Stack>
@@ -182,10 +196,62 @@ export function RunDetailPage() {
                 </Anchor>
               </Text>
             )}
-            {summary && summary.length > 0 && (
+            <section>
+              <h3>Outcome</h3>
+              {outcome ? (
+                <Text>{outcome}</Text>
+              ) : (
+                <EmptyState>This run recorded no outcome.</EmptyState>
+              )}
+              {issues.any && (
+                <Group gap="xs" mt="xs">
+                  {issues.errors > 0 && <Badge color="red">{plural(issues.errors, 'error')} logged</Badge>}
+                  {issues.warnings > 0 && (
+                    <Badge color="yellow">{plural(issues.warnings, 'warning')} logged</Badge>
+                  )}
+                </Group>
+              )}
+            </section>
+            {counters.length > 0 && (
+              <Table className="run-counters" withRowBorders={false}>
+                <Table.Tbody>
+                  {counters.map(([key, value]) => (
+                    <Table.Tr key={key}>
+                      <Table.Th w={180}>{runLabel(key)}</Table.Th>
+                      <Table.Td>
+                        {value !== null && typeof value === 'object' ? (
+                          <pre className="payload">{JSON.stringify(value, null, 2)}</pre>
+                        ) : (
+                          text(value)
+                        )}
+                      </Table.Td>
+                    </Table.Tr>
+                  ))}
+                </Table.Tbody>
+              </Table>
+            )}
+            {run.summary.result != null && (
               <details>
-                <summary>Run summary</summary>
-                <pre className="payload">{JSON.stringify(run.summary, null, 2)}</pre>
+                <summary>Bot result</summary>
+                <pre className="payload">{JSON.stringify(run.summary.result, null, 2)}</pre>
+              </details>
+            )}
+            {logTail.length > 0 && (
+              <details open={!hasLinks || issues.any}>
+                <summary>Log · last {logTail.length} lines</summary>
+                <pre className="payload run-log">
+                  {logTail.map((line, i) => (
+                    <span
+                      key={i}
+                      className={
+                        line.startsWith('ERROR') ? 'log-error' : line.startsWith('WARNING') ? 'log-warn' : undefined
+                      }
+                    >
+                      {line}
+                      {'\n'}
+                    </span>
+                  ))}
+                </pre>
               </details>
             )}
             {(['input', 'output'] as const).map((role) => {
@@ -207,8 +273,8 @@ export function RunDetailPage() {
                 </section>
               )
             })}
-            {!run.links.input && !run.links.output && (
-              <EmptyState>This run recorded no linked articles, evaluations or moves.</EmptyState>
+            {!hasLinks && (
+              <EmptyState>This run read and produced no articles, evaluations or moves.</EmptyState>
             )}
             {run.children.length > 0 && (
               <section>

@@ -6,12 +6,13 @@ import {
   getJobs,
   getRuns,
   RUNS_PAGE_SIZE,
+  type Run,
   type RunFilters,
   type RunStatus,
   type TriggerType,
 } from '../api/runs'
 import { EmptyState } from './ui/EmptyState'
-import { duration, runLabel, runStamp } from './runFormat'
+import { duration, logIssues, plural, runLabel, runOutcome, runStamp } from './runFormat'
 import { ErrorAlert } from './ui/ErrorAlert'
 import { Pager } from './ui/Pager'
 import { CardListSkeleton } from './skeletons'
@@ -89,6 +90,28 @@ function JobHealthStrip({ onPickJob }: { onPickJob: (job: string) => void }) {
   )
 }
 
+function RunOutcomeCell({ run }: { run: Run }) {
+  const outcome = runOutcome(run)
+  const issues = logIssues(run.summary)
+  const linked = run.input_count + run.output_count + run.llm_count > 0
+  return (
+    <>
+      {outcome && <Text size="sm" lineClamp={2}>{outcome}</Text>}
+      <Group gap={6}>
+        {linked && (
+          <Text size="xs" c="dimmed">
+            {run.input_count} read → {run.output_count} produced
+            {run.llm_count > 0 && ` · ${run.llm_count} LLM`}
+          </Text>
+        )}
+        {issues.errors > 0 && <Badge size="xs" color="red">{plural(issues.errors, 'error')}</Badge>}
+        {issues.warnings > 0 && <Badge size="xs" color="yellow">{plural(issues.warnings, 'warning')}</Badge>}
+      </Group>
+      {!outcome && !linked && <Text size="xs" c="dimmed">No details recorded</Text>}
+    </>
+  )
+}
+
 export function RunsPanel() {
   const navigate = useNavigate()
   const [offset, setOffset] = useState(0)
@@ -144,7 +167,7 @@ export function RunsPanel() {
       {runs.error && <ErrorAlert onRetry={() => void runs.refetch()}>Could not load runs: {runs.error.message}</ErrorAlert>}
       {runs.data?.items.length === 0 && <EmptyState>No runs match these filters.</EmptyState>}
       {runs.data && runs.data.items.length > 0 && (
-        <Table.ScrollContainer minWidth={820}>
+        <Table.ScrollContainer minWidth={900}>
           <Table highlightOnHover>
             <Table.Thead>
               <Table.Tr>
@@ -153,7 +176,7 @@ export function RunsPanel() {
                 <Table.Th>Status</Table.Th>
                 <Table.Th>Started</Table.Th>
                 <Table.Th>Duration</Table.Th>
-                <Table.Th>In → out</Table.Th>
+                <Table.Th>Outcome</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -166,17 +189,16 @@ export function RunsPanel() {
                   <Table.Td>
                     <Link to={`/activity/runs/${run.id}`}>{runLabel(run.job_name)}</Link>
                   </Table.Td>
-                  <Table.Td>
+                  <Table.Td className="run-badge-cell">
                     <TriggerBadge type={run.trigger_type} />
                   </Table.Td>
-                  <Table.Td>
+                  <Table.Td className="run-badge-cell">
                     <StatusBadge status={run.status} />
                   </Table.Td>
-                  <Table.Td>{runStamp(run.started_at)}</Table.Td>
+                  <Table.Td className="run-badge-cell">{runStamp(run.started_at)}</Table.Td>
                   <Table.Td>{duration(run)}</Table.Td>
-                  <Table.Td>
-                    {run.input_count} → {run.output_count}
-                    {run.llm_count > 0 && ` · ${run.llm_count} LLM`}
+                  <Table.Td className="run-outcome">
+                    <RunOutcomeCell run={run} />
                   </Table.Td>
                 </Table.Tr>
               ))}
