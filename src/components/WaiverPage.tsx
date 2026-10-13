@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { queryClient } from '../api/queryClient'
-import { Alert, Button, Group, Stack, Text } from '@mantine/core'
-import { Link } from 'react-router-dom'
+import { Alert, Group } from '@mantine/core'
 import { getWaiverRecommendations } from '../api/client'
 import { rosterDeficitsQuery } from '../api/weekReads'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
@@ -11,8 +10,9 @@ import { RosterDeficitsGrid } from './RosterDeficitsGrid'
 import { WaiverRecommendationPanel } from './WaiverRecommendationPanel'
 import { FreeAgentBrowser } from './FreeAgentBrowser'
 import { RosterQuickActions } from './RosterQuickActions'
-import { WeekSelector } from './WeekSelector'
+import { WeekSelector } from './ui/WeekSelector'
 import { PageSkeleton } from './skeletons'
+import { LeagueNotConfigured } from './ui/LeagueNotConfigured'
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
@@ -51,16 +51,7 @@ export function WaiverPage() {
 
   if (!isConfigured) {
     if (configLoading) return <PageSkeleton />
-    return (
-      <div className="dashboard">
-        <Stack gap="md" mt="xl" align="center">
-          <Text ta="center" maw={480}>
-            No league configured yet. Set your league and team in Settings first.
-          </Text>
-          <Button component={Link} to="/settings" variant="default">Go to Settings</Button>
-        </Stack>
-      </div>
-    )
+    return <LeagueNotConfigured />
   }
 
   return (

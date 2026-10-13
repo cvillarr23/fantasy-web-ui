@@ -1,7 +1,7 @@
 import { Badge, Button, Group, Skeleton, Stack, Text } from '@mantine/core'
 import { MoveSidesSkeleton, SkeletonRegion } from './skeletons'
 import { Link } from 'react-router-dom'
-import { InjuryBadge } from './InjuryBadge'
+import { InjuryBadge } from './player/InjuryBadge'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import type { DraftConfig, WaiverIrMove, WaiverRecommendation } from '../api/types'
 interface Props {

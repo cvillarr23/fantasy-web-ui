@@ -5,6 +5,11 @@ on:
     branches: [master]
     paths:
       - 'docs/**'
+      # The site also publishes the Storybook component library built from these.
+      - 'src/**'
+      - '.storybook/**'
+      - 'package.json'
+      - 'package-lock.json'
   workflow_dispatch:
 
 permissions: {}

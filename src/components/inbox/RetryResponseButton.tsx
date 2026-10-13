@@ -7,6 +7,7 @@ import { retryableResponse, retryIncomingDecision } from '../../api/tradeRespons
 import type { InboxResponse, RetryReceipt } from '../../api/tradeResponseRetry'
 import { readAttempt, recordAttempt, saveAttempt, useAttempt, reviewConflict } from './inboxState'
 import type { InboxAttempt } from './inboxState'
+import { PlayerSides } from '../player/PlayerSides'
 
 export interface RetryableOffer {
   review_token: string
@@ -205,18 +206,7 @@ export function RetryResponseButton({
             Proposer Team {offer.proposing_team_id} · Offer {offer.espn_transaction_id} · Worker
             response {response.id}
           </Text>
-          {(['receive', 'send'] as const).map((side) => (
-            <div key={side}>
-              <Text fw={600}>You {side}</Text>
-              <ul>
-                {offer[`${side}_players`].map((p) => (
-                  <li key={p.espn_id}>
-                    {p.name || 'Unnamed player'} (ESPN {p.espn_id})
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          <PlayerSides receive={offer.receive_players} send={offer.send_players} />
           <Text fw={600}>Original proposer note</Text>
           <Text style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
             {offer.comment ?? 'No note provided.'}

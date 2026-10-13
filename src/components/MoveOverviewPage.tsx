@@ -18,9 +18,11 @@ import { type MovePreview, previewMove } from '../api/dashboard'
 import { triggerWaiverClaim } from '../api/client'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
-import { WeekSelector } from './WeekSelector'
+import { WeekSelector } from './ui/WeekSelector'
 import { palette } from '../theme'
 import { ChartSkeleton, MoveSidesSkeleton, OperationProgress, SkeletonRegion } from './skeletons'
+import { ErrorAlert } from './ui/ErrorAlert'
+import { formatNumber } from './ui/formatNumber'
 export function MoveOverviewPage() {
   const { config } = useDraftConfig()
   const [params, setParams] = useSearchParams()
@@ -165,12 +167,7 @@ export function MoveOverviewPage() {
         )}
         {query.isPlaceholderData && <OperationProgress label="Comparing eligible lineups" />}
         {query.error && (
-          <Alert color="red">
-            {query.error.message}
-            <Button variant="subtle" onClick={() => void query.refetch()}>
-              Retry
-            </Button>
-          </Alert>
+          <ErrorAlert onRetry={() => void query.refetch()}>{query.error.message}</ErrorAlert>
         )}
         {data && (
           <Stack aria-busy={query.isPlaceholderData || undefined}>
@@ -253,8 +250,8 @@ export function MoveOverviewPage() {
                   {data.weeks.map((w) => (
                     <Table.Tr key={w.week}>
                       <Table.Td>{w.week}</Table.Td>
-                      <Table.Td>{w.before?.toFixed(1) ?? '—'}</Table.Td>
-                      <Table.Td>{w.after?.toFixed(1) ?? '—'}</Table.Td>
+                      <Table.Td>{formatNumber(w.before)}</Table.Td>
+                      <Table.Td>{formatNumber(w.after)}</Table.Td>
                       <Table.Td>
                         {w.delta == null ? '—' : `${w.delta >= 0 ? '+' : ''}${w.delta.toFixed(1)}`}
                       </Table.Td>

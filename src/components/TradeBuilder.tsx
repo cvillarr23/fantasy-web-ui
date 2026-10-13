@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { WeekSelector } from './WeekSelector'
+import { WeekSelector } from './ui/WeekSelector'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
@@ -7,13 +7,14 @@ import { queryClient } from '../api/queryClient'
 import { Alert, Button, Group, Text } from '@mantine/core'
 import { RosterQuickActions } from './RosterQuickActions'
 import { evaluateTrade } from '../api/client'
-import { PlayerCard } from './PlayerCard'
+import { PlayerCard } from './player/PlayerCard'
 import { PlayerPicker } from './PlayerPicker'
 import { useToast } from '../hooks/useToast'
 import { OperationProgress } from './skeletons'
 import type { DraftConfig, PlayerSearchResult, TradeEvaluationResponse } from '../api/types'
 import type { TradeContextControls } from '../hooks/useTradeContextControls'
 import { TradeScorePanel } from './tradeScore/TradeScorePanel'
+import { ToastLine } from './ui/ToastLine'
 
 interface Props {
   config: DraftConfig
@@ -156,7 +157,7 @@ export function TradeBuilder({ config, controls }: Props) {
 
       {controls && <TradeScorePanel config={config} week={week} incoming={incoming} outgoing={outgoing} controls={controls} />}
 
-      {toast && <p className={`status-message toast toast-${toast.tone}`}>{toast.message}</p>}
+      <ToastLine toast={toast} />
     </section>
   )
 }

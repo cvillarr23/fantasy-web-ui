@@ -1,9 +1,9 @@
 import { Badge, Button, Text } from '@mantine/core'
-import { HEALTHY_STATUSES, InjuryBadge } from './InjuryBadge'
-import { PlayerCard } from './PlayerCard'
-import { RumorBadge } from './RumorBadge'
+import { HEALTHY_STATUSES } from './player/InjuryBadge'
+import { PlayerCard } from './player/PlayerCard'
 import { PlayerListSkeleton } from './skeletons'
 import type { LineupPlayerLine, LineupRosterResponse } from '../api/types'
+import { PlayerStatusBadges } from './player/PlayerStatusBadges'
 
 interface Suggestion {
   starter: LineupPlayerLine
@@ -63,14 +63,7 @@ export function LineupSuggestionPanel({ roster, onApply }: Props) {
                   player={{ id: starter.player_id, name: starter.name }}
                   meta={`(${starter.slot})`}
                   badges={
-                    <>
-                      <InjuryBadge status={starter.injury_status} />
-                      <RumorBadge
-                        sentiment={starter.rumor_sentiment}
-                        confidence={starter.rumor_confidence}
-                        suggestedAction={starter.rumor_suggested_action}
-                      />
-                    </>
+                    <PlayerStatusBadges player={starter} />
                   }
                 />
                 <span aria-hidden="true"> → </span>
@@ -78,14 +71,7 @@ export function LineupSuggestionPanel({ roster, onApply }: Props) {
                   variant="row"
                   player={{ id: benchPlayer.player_id, name: benchPlayer.name }}
                   badges={
-                    <>
-                      <InjuryBadge status={benchPlayer.injury_status} />
-                      <RumorBadge
-                        sentiment={benchPlayer.rumor_sentiment}
-                        confidence={benchPlayer.rumor_confidence}
-                        suggestedAction={benchPlayer.rumor_suggested_action}
-                      />
-                    </>
+                    <PlayerStatusBadges player={benchPlayer} />
                   }
                 />
               </span>

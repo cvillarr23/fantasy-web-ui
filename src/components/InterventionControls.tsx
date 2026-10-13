@@ -4,6 +4,7 @@ import { isPickTooLateError, pauseDraft, resumeDraft, setAutoPublishEnabled, tri
 import { PlayerPicker } from './PlayerPicker'
 import { useToast } from '../hooks/useToast'
 import type { DraftConfig, PlayerSearchResult } from '../api/types'
+import { ToastLine } from './ui/ToastLine'
 
 interface Props {
   // team_id/league_id/mode all come from the same stored config for this draft - taking the
@@ -243,7 +244,7 @@ export function InterventionControls({
         )}
       </form>
 
-      {toast && <p className={`status-message toast toast-${toast.tone}`}>{toast.message}</p>}
+      <ToastLine toast={toast} />
     </section>
   )
 }

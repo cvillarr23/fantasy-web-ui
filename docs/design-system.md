@@ -1,8 +1,10 @@
 ---
 title: Design system
-description: Palette tokens, labeling rules and layout conventions for the web UI.
+description: Palette tokens, labeling rules, layout conventions and where shared components live in the web UI.
 sidebar_position: 4
 ---
+
+Browse the shared components in the [component library](pathname:///ui/components/), a Storybook build of the stories in this repository.
 
 Edit `src/theme.ts` to change the application palette. It exports the semantic `palette`, Mantine `theme`, and `cssVariablesResolver`; `src/main.tsx` installs all three through MantineProvider. Do not add page-specific hex colors.
 
@@ -45,3 +47,23 @@ Weekly screens use `useSelectedWeek`:
 - “Current week” removes the override.
 
 Don't initialize a page to week 1 or a build-time week.
+
+## Where do shared components go?
+
+| Folder | Holds | Examples |
+| --- | --- | --- |
+| `src/components/ui/` | Generic pieces with no fantasy-specific logic | `PageHeader`, `ErrorAlert`, `EmptyState`, `Pager`, `ScoreValue`, `formatNumber` |
+| `src/components/player/` | How a player is shown | `PlayerCard`, `PlayerAvatar`, `InjuryBadge`, `PlayerSides` |
+| `src/components/tradeScore/`, `inbox/`, `chat/`, `skeletons/` | Pieces for one feature | `TradeScoreBreakdown`, `RetryResponseButton` |
+| `src/components/` | Pages and the panels that own data | `LineupPage`, `TradeBuilder` |
+
+Rules for a shared component:
+
+- It takes typed props and does no data fetching. The page or a hook fetches, and the component renders.
+- It has a `*.stories.tsx` file next to it covering its main states: loaded, empty, unknown values shown as "—", loading and error where they apply.
+- Stories use synthetic data only, such as `tradeScore/fixtures.ts`, `inbox/inboxFixtures.ts` and `src/stories/fixtures.ts`. The library is published.
+- Before writing markup a second time, check the library for a component that already does it.
+
+## Why is the component library dark only?
+
+The app forces dark mode, and `palette` only defines dark values. The library renders the same theme, so it shows what users see.

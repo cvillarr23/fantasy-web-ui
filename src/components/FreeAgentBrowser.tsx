@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { Alert, Button, Group, SegmentedControl, Select, Stack, Table, Text, TextInput } from '@mantine/core'
+import { Button, Group, SegmentedControl, Select, Stack, Table, Text, TextInput } from '@mantine/core'
 import { useDebouncedValue } from '@mantine/hooks'
 import { Link } from 'react-router-dom'
 import { queryClient } from '../api/queryClient'
 import { getWaiverFreeAgents } from '../api/client'
 import type { DraftConfig, FreeAgentEntry, FreeAgentSort } from '../api/types'
-import { InjuryBadge } from './InjuryBadge'
+import { InjuryBadge } from './player/InjuryBadge'
 import { TableRowsSkeleton } from './skeletons'
+import { Pager } from './ui/Pager'
+import { ErrorAlert } from './ui/ErrorAlert'
+import { formatNumber } from './ui/formatNumber'
 
 export const FREE_AGENT_PAGE_SIZE = 25
 const POSITIONS = ['', 'QB', 'RB', 'WR', 'TE', 'K', 'D/ST']
@@ -20,7 +23,7 @@ interface Props {
 }
 
 function signed(value: number): string {
-  return `${value >= 0 ? '+' : ''}${value.toFixed(1)}`
+  return formatNumber(value, { signed: true, signZero: true })
 }
 
 function reviewLink(week: number, player: FreeAgentEntry, dropEspnId?: string): string {
@@ -94,10 +97,7 @@ export function FreeAgentBrowser({ config, week, openRosterSlots }: Props) {
       )}
       {query.error ? (
         // Not the empty state: a failed load must not read as "nobody is available".
-        <Alert color="red">
-          {query.error.message}
-          <Button variant="subtle" onClick={() => void query.refetch()}>Retry</Button>
-        </Alert>
+        <ErrorAlert onRetry={() => void query.refetch()}>{query.error.message}</ErrorAlert>
       ) : (
         <>
           <Table.ScrollContainer minWidth={720}>
@@ -120,8 +120,8 @@ export function FreeAgentBrowser({ config, week, openRosterSlots }: Props) {
                           <InjuryBadge status={player.injury_status} />
                         </Group>
                       </Table.Td>
-                      <Table.Td>{player.projected_points?.toFixed(1) ?? '—'}</Table.Td>
-                      <Table.Td>{player.vorp_score?.toFixed(1) ?? '—'}</Table.Td>
+                      <Table.Td>{formatNumber(player.projected_points)}</Table.Td>
+                      <Table.Td>{formatNumber(player.vorp_score)}</Table.Td>
                       <Table.Td>
                         {player.bench_player ? (
                           <>
@@ -162,25 +162,14 @@ export function FreeAgentBrowser({ config, week, openRosterSlots }: Props) {
             <Text size="sm" c="dimmed">No free agents match.</Text>
           )}
           {data && data.total > 0 && (
-            <Group>
-              <Button
-                variant="default"
-                disabled={!offset}
-                onClick={() => setOffset(Math.max(0, offset - FREE_AGENT_PAGE_SIZE))}
-              >
-                Previous
-              </Button>
-              <Text size="sm">
-                {offset + 1}–{Math.min(offset + data.free_agents.length, data.total)} of {data.total}
-              </Text>
-              <Button
-                variant="default"
-                disabled={offset + FREE_AGENT_PAGE_SIZE >= data.total}
-                onClick={() => setOffset(offset + FREE_AGENT_PAGE_SIZE)}
-              >
-                Next
-              </Button>
-            </Group>
+            <Pager
+              buttonVariant="default"
+              previousDisabled={!offset}
+              nextDisabled={offset + FREE_AGENT_PAGE_SIZE >= data.total}
+              onPrevious={() => setOffset(Math.max(0, offset - FREE_AGENT_PAGE_SIZE))}
+              onNext={() => setOffset(offset + FREE_AGENT_PAGE_SIZE)}
+              summary={<>{offset + 1}–{Math.min(offset + data.free_agents.length, data.total)} of {data.total}</>}
+            />
           )}
         </>
       )}

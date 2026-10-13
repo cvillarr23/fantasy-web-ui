@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { queryClient } from '../api/queryClient'
+import { queryClient } from '../../api/queryClient'
 import { Modal, Skeleton } from '@mantine/core'
-import { getPlayerSummary } from '../api/client'
-import { SkeletonRegion, TextSkeleton } from './skeletons'
+import { getPlayerSummary } from '../../api/client'
+import { SkeletonRegion, TextSkeleton } from '../skeletons'
 
 interface Props {
   playerId: string

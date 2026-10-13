@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Button, TextInput } from '@mantine/core'
 import { searchPlayers } from '../api/client'
-import { PlayerCard } from './PlayerCard'
+import { PlayerCard } from './player/PlayerCard'
 import type { PlayerSearchResult } from '../api/types'
 
 interface Props {

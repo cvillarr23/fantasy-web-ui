@@ -1,4 +1,4 @@
-import { BadgeSlot } from './BadgeSlot'
+import { BadgeSlot } from '../ui/BadgeSlot'
 
 // sentiment is a schema-free string on the backend (see fantasy-core-pipeline's README:
 // rumor_signals) - fall back to the raw string for anything unrecognized, same approach

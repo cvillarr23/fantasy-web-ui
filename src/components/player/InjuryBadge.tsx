@@ -1,4 +1,4 @@
-import { BadgeSlot } from './BadgeSlot'
+import { BadgeSlot } from '../ui/BadgeSlot'
 
 // ESPN's injuryStatus is a free-form string, not a closed enum in espn_api - map the
 // common values to a short badge label/color, and fall back to showing the raw string
