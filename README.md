@@ -68,3 +68,12 @@ npm run storybook
 CI publishes `ghcr.io/<owner>/fantasy-web-ui` images on `master` (`latest` + commit
 SHA tags). Image reference updates in `fantasy-infra` are owned by Argo CD Image
 Updater, which writes back digest-pinned references directly to infra git.
+
+## License
+
+Code, configuration and documentation are licensed under the [MIT License](LICENSE).
+Third-party dependencies retain their own licenses.
+
+`npm run build` generates `dist/LICENSE.txt` and `dist/THIRD_PARTY_LICENSES.txt`,
+which are served with the static assets and included in the nginx image.
+Run `npm run licenses:generate` to regenerate them after dependency changes.

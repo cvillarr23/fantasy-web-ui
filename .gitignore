@@ -26,3 +26,7 @@ dist-ssr
 # Storybook
 storybook-static
 *storybook.log
+
+# License artifacts generated for static distributions
+/public/LICENSE.txt
+/public/THIRD_PARTY_LICENSES.txt
