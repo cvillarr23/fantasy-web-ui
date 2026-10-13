@@ -27,6 +27,7 @@ import { queryClient, invalidateRoster } from '../api/queryClient'
 import { actionDependency, dependencyEvent, isHeldAction } from './activityDependency'
 import { Pager } from './ui/Pager'
 import { PageHeader } from './ui/PageHeader'
+import { RunsPanel } from './RunsPanel'
 
 const label = (value: string) => value.replaceAll('_', ' ')
 const stamp = (value: string) => new Date(value).toLocaleString()
@@ -119,7 +120,7 @@ export function ActivityPage() {
   const actions = useQuery({
     queryKey: ['activity', tab, offset],
     queryFn: () => getActions(offset, tab === 'attention'),
-    enabled: tab !== 'sessions',
+    enabled: tab === 'submissions' || tab === 'attention',
     // Paging keeps the current page up while the next loads; switching tab starts clean.
     placeholderData: (previous, previousQuery) =>
       previousQuery?.queryKey[1] === tab ? previous : undefined,
@@ -179,8 +180,13 @@ export function ActivityPage() {
             { value: 'submissions', label: 'Submissions' },
             { value: 'sessions', label: 'LLM sessions' },
             { value: 'attention', label: 'Needs attention' },
+            { value: 'runs', label: 'Runs' },
           ]}
         />
+        {tab === 'runs' ? (
+          <RunsPanel />
+        ) : (
+          <>
         <TextInput
           label="Search this page"
           placeholder="Player, bot or task"
@@ -250,6 +256,8 @@ export function ActivityPage() {
           onPrevious={() => setOffset(Math.max(0, offset - 50))}
           onNext={() => setOffset(offset + 50)}
         />
+          </>
+        )}
       </Stack>
     </div>
   )
@@ -371,6 +379,9 @@ export function ActionDetailPage() {
               <summary>Latest verification evidence</summary>
               <Payload value={action.evidence} />
             </details>
+            <Button component={Link} to={`/activity/trace/activity_action/${encodeURIComponent(action.id)}`} variant="subtle">
+              Trace what triggered this
+            </Button>
             {action.sessions?.map((s) => (
               <Button key={s.id} component={Link} to={`/activity/sessions/${s.id}`} variant="light">
                 LLM session: {s.title}

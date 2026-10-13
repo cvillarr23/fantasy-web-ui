@@ -1120,6 +1120,19 @@ a.lineup-open-spot:focus-visible {
 .activity-item:hover {
   border-color: var(--accent);
 }
+.job-health {
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-width: 200px;
+}
+.run-row {
+  cursor: pointer;
+}
+.trace-stage {
+  padding-left: 16px;
+  border-left: 2px solid var(--accent-border);
+}
 .timeline-event {
   padding: 12px 16px;
   border-left: 2px solid var(--accent-border);

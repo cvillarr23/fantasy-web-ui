@@ -3,6 +3,7 @@ const MoveOverviewPage = lazy(() =>
   import('./components/MoveOverviewPage').then((m) => ({ default: m.MoveOverviewPage })),
 )
 import { ActivityPage, ActionDetailPage, SessionDetailPage } from './components/ActivityPage'
+import { RunDetailPage, TracePage } from './components/RunDetailPage'
 const LeaguePage = lazy(() =>
   import('./components/LeaguePage').then((m) => ({ default: m.LeaguePage })),
 )
@@ -55,6 +56,8 @@ function App() {
               <Route path="activity" element={<ActivityPage />} />
               <Route path="activity/actions/:id" element={<ActionDetailPage />} />
               <Route path="activity/sessions/:id" element={<SessionDetailPage />} />
+              <Route path="activity/runs/:id" element={<RunDetailPage />} />
+              <Route path="activity/trace/:type/:id" element={<TracePage />} />
               <Route path="moves/review" element={<MoveOverviewPage />} />
               <Route path="league" element={<LeaguePage />} />
               <Route path="settings" element={<SettingsPage />} />
