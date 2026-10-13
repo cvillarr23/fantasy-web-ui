@@ -51,10 +51,10 @@ beforeEach(() => {
 
 afterEach(() => { cleanup(); vi.clearAllMocks(); window.localStorage.clear() })
 
-function renderPage() {
+function renderPage(url = '/waivers?week=5') {
   render(
     <MantineProvider>
-      <MemoryRouter initialEntries={['/waivers?week=5']}>
+      <MemoryRouter initialEntries={[url]}>
         <WaiverPage />
       </MemoryRouter>
     </MantineProvider>,
@@ -136,4 +136,19 @@ it('fetches the free-agent pool only once Browse free agents is opened', async (
   expect(await screen.findByText('Pool Receiver')).toBeTruthy()
   expect(getWaiverFreeAgents).toHaveBeenCalledWith(expect.objectContaining({ season: 2026, week: 5 }))
   expect(screen.getByRole('link', { name: 'Add to open slot' })).toBeTruthy()
+})
+
+it('opens the free-agent browser when linked to #free-agents', async () => {
+  vi.mocked(getRosterDeficits).mockResolvedValue(deficits)
+  vi.mocked(getWaiverRecommendations).mockResolvedValue({ ...recommendations, open_roster_slots: 1 })
+  vi.mocked(getWaiverFreeAgents).mockResolvedValue({
+    season: 2026, week: 5, total: 1, limit: 25, offset: 0, free_agents: [{
+      player_id: 'p2', espn_id: '5050', name: 'Pool Receiver', position: 'WR', pro_team: 'BUF',
+      injury_status: null, projected_points: 8, vorp_score: 3,
+    }],
+  })
+  renderPage('/waivers?week=5#free-agents')
+
+  expect(await screen.findByText('Pool Receiver')).toBeTruthy()
+  expect(screen.getByText('Browse free agents').closest('details')!.open).toBe(true)
 })
