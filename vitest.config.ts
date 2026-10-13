@@ -16,8 +16,8 @@ export default defineConfig({
         optimizeDeps: {
           include: [
             '@mantine/core', '@mantine/hooks', '@mantine/charts', '@mantine/nprogress',
-            '@tanstack/react-query', 'react-router-dom', 'react-markdown', 'remark-gfm',
-            'storybook/test', 'storybook/theming', 'react', 'react-dom', 'react/jsx-dev-runtime',
+            '@dnd-kit/core', '@tanstack/react-query', 'react-router-dom', 'react-markdown', 'remark-gfm',
+            'storybook/test', 'storybook/theming', 'react', 'react-dom', 'react/jsx-dev-runtime', 'react/jsx-runtime', 'react-dom/client',
           ],
         },
         test: {
