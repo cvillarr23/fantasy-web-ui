@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useMediaQuery } from '@mantine/hooks'
 import {
   Alert,
   Badge,
@@ -27,8 +28,11 @@ import { queryClient, invalidateRoster } from '../api/queryClient'
 import { actionDependency, dependencyEvent, isHeldAction } from './activityDependency'
 import { Pager } from './ui/Pager'
 import { PageHeader } from './ui/PageHeader'
+import { RunsPanel } from './RunsPanel'
 
 const label = (value: string) => value.replaceAll('_', ' ')
+// Below this width the four tabs no longer fit side by side, so they stack.
+const STACKED_TABS_QUERY = '(max-width: 600px)'
 const stamp = (value: string) => new Date(value).toLocaleString()
 function DependencyBadge({ action }: { action: ActivityAction }) {
   const dependency = actionDependency(action)
@@ -116,10 +120,11 @@ export function ActivityPage() {
   })
   const [search, setSearch] = useState('')
   const [offset, setOffset] = useState(0)
+  const stackedTabs = useMediaQuery(STACKED_TABS_QUERY)
   const actions = useQuery({
     queryKey: ['activity', tab, offset],
     queryFn: () => getActions(offset, tab === 'attention'),
-    enabled: tab !== 'sessions',
+    enabled: tab === 'submissions' || tab === 'attention',
     // Paging keeps the current page up while the next loads; switching tab starts clean.
     placeholderData: (previous, previousQuery) =>
       previousQuery?.queryKey[1] === tab ? previous : undefined,
@@ -170,6 +175,8 @@ export function ActivityPage() {
           </details>
         )}
         <SegmentedControl
+          orientation={stackedTabs ? 'vertical' : 'horizontal'}
+          fullWidth
           value={tab}
           onChange={(v) => {
             setOffset(0)
@@ -179,8 +186,13 @@ export function ActivityPage() {
             { value: 'submissions', label: 'Submissions' },
             { value: 'sessions', label: 'LLM sessions' },
             { value: 'attention', label: 'Needs attention' },
+            { value: 'runs', label: 'Runs' },
           ]}
         />
+        {tab === 'runs' ? (
+          <RunsPanel />
+        ) : (
+          <>
         <TextInput
           label="Search this page"
           placeholder="Player, bot or task"
@@ -250,6 +262,8 @@ export function ActivityPage() {
           onPrevious={() => setOffset(Math.max(0, offset - 50))}
           onNext={() => setOffset(offset + 50)}
         />
+          </>
+        )}
       </Stack>
     </div>
   )
@@ -371,6 +385,9 @@ export function ActionDetailPage() {
               <summary>Latest verification evidence</summary>
               <Payload value={action.evidence} />
             </details>
+            <Button component={Link} to={`/activity/trace/activity_action/${encodeURIComponent(action.id)}`} variant="subtle">
+              Trace what triggered this
+            </Button>
             {action.sessions?.map((s) => (
               <Button key={s.id} component={Link} to={`/activity/sessions/${s.id}`} variant="light">
                 LLM session: {s.title}
