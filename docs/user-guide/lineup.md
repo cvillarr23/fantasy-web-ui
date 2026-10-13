@@ -13,6 +13,9 @@ Route: `/lineup` (the default page). It shows your roster by slot, the league's 
 - A week selector and, when you have an opponent, a **View matchup** link.
 - A position-depth grid comparing your team with the league.
 - Your starters and bench, with injury badges and suggested bench swaps.
+- Bench and IR as separate sections. Each shows how many of the league's slots are filled (for example "Bench 6/7", "IR 1/1"), with a placeholder for every open spot. An open bench spot links to **Browse free agents** on [Waivers](./waivers.md). Counts appear only once the league's settings have synced.
+
+Only a bench player can be dragged onto a starting slot. IR players have to be activated first.
 
 ## Which endpoints does it call?
 

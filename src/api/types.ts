@@ -305,7 +305,11 @@ export interface LineupPlayerLine {
 export interface LineupRosterResponse {
   ir_blocking_transactions?: boolean
   starters: LineupPlayerLine[]
+  // Includes IR players, told apart by slot "IR".
   bench: LineupPlayerLine[]
+  // The league's lineup shape keyed by slot label ("BE", "IR", ...); null or absent when the
+  // league's settings aren't synced.
+  lineup_slot_counts?: Record<string, number> | null
 }
 
 // Mirrors fantasy-core-pipeline's GET /v1/waiver/recommendations response models.

@@ -10,6 +10,7 @@ import { lineupRosterQuery } from '../api/weekReads'
 import { useToast } from '../hooks/useToast'
 import { RosterQuickActions } from './RosterQuickActions'
 import { irMoveIdempotencyKey, irMoveInstruction } from './irMoves'
+import { lineupSections } from './lineupSections'
 import { LineupSuggestionPanel, LineupSuggestionPanelSkeleton } from './LineupSuggestionPanel'
 import { PlayerCard } from './player/PlayerCard'
 import { PlayerRowSkeleton, SkeletonRegion } from './skeletons'
@@ -163,6 +164,23 @@ function StarterSlot({
   )
 }
 
+function sectionTitle(label: string, filled: number, capacity: number | null): string {
+  return capacity === null ? label : `${label} ${filled}/${capacity}`
+}
+
+function OpenBenchSpot({ week }: { week: number | string }) {
+  const query = week ? `?week=${week}` : ''
+  return (
+    <Link className="lineup-open-spot" to={`/waivers${query}#free-agents`}>
+      Open bench spot — find a free agent
+    </Link>
+  )
+}
+
+function OpenIrSpot() {
+  return <div className="lineup-open-spot">Open IR spot</div>
+}
+
 function LineupIntro() {
   return (
     <p className="muted">
@@ -194,9 +212,15 @@ function LineupEditorSkeleton({ week }: { week: number | string }) {
               </div>
             ))}
           </div>
-          <div className="lineup-editor-bench">
-            <h3>Bench</h3>
-            {Array.from({ length: 6 }, (_, i) => <PlayerRowSkeleton key={i} />)}
+          <div className="lineup-editor-reserves">
+            <div className="lineup-editor-bench">
+              <h3>Bench</h3>
+              {Array.from({ length: 6 }, (_, i) => <PlayerRowSkeleton key={i} />)}
+            </div>
+            <div className="lineup-editor-ir">
+              <h3>IR</h3>
+              <PlayerRowSkeleton />
+            </div>
           </div>
         </div>
       </SkeletonRegion>
@@ -264,7 +288,8 @@ export function LineupEditor({ config, week = '' }: Props) {
       for (const item of saved) {
         if (!item || typeof item.id !== 'string') continue
         const dropPlayer = fresh.starters.find((p) => p.player_id === item.dropId && p.slot === item.slot)
-        const addPlayer = fresh.bench.find((p) => p.player_id === item.addId)
+        // IR players can't be started, so a saved swap naming one no longer applies.
+        const addPlayer = fresh.bench.find((p) => p.player_id === item.addId && p.slot !== 'IR')
         if (dropPlayer?.espn_id && addPlayer?.espn_id) {
           restored.push({ id: item.id, slot: item.slot, dropPlayer, addPlayer })
         }
@@ -294,7 +319,7 @@ export function LineupEditor({ config, week = '' }: Props) {
     if (draggedLine.player_id === targetLine.player_id) return
     // Only a bench player dropped onto a starter slot is a supported swap - dragging a
     // starter anywhere (including onto another starter) is a no-op in v1.
-    const isDraggedBench = roster.bench.some((p) => p.player_id === draggedLine.player_id)
+    const isDraggedBench = lineupSections(roster).bench.some((p) => p.player_id === draggedLine.player_id)
     const isTargetStarter = roster.starters.some((p) => p.player_id === targetLine.player_id)
     if (!isDraggedBench || !isTargetStarter) return
     stageSwap(targetLine, draggedLine, targetLine.slot)
@@ -404,6 +429,11 @@ export function LineupEditor({ config, week = '' }: Props) {
   }
 
   const irMoving = irTarget?.ir_suggestion?.action === 'move_to_ir'
+  const sections = lineupSections(roster)
+  const benchTitle = sectionTitle('Bench', sections.bench.length, sections.benchCapacity)
+  const irTitle = sectionTitle('IR', sections.ir.length, sections.irCapacity)
+  // A league with no IR slots has nothing to show unless ESPN still has someone there.
+  const showIr = sections.ir.length > 0 || (sections.irCapacity ?? 0) > 0
 
   return (
     <section className="lineup-editor" aria-busy={loading || undefined}>
@@ -458,17 +488,31 @@ export function LineupEditor({ config, week = '' }: Props) {
               <StarterSlot
                 key={line.player_id}
                 line={line}
-                bench={roster.bench}
+                bench={sections.bench}
                 irAction={cardIrActionFor(line)}
                 onApplyHint={(starter, benchPlayer) => stageSwap(starter, benchPlayer, starter.slot)}
               />
             ))}
           </div>
-          <div className="lineup-editor-bench">
-            <h3>Bench</h3>
-            {roster.bench.map((line) => (
-              <DraggablePlayerCard key={line.player_id} line={line} irAction={cardIrActionFor(line)} />
-            ))}
+          <div className="lineup-editor-reserves">
+            <section className="lineup-editor-bench" aria-labelledby="lineup-bench-heading">
+              <h3 id="lineup-bench-heading">{benchTitle}</h3>
+              {sections.bench.map((line) => (
+                <DraggablePlayerCard key={line.player_id} line={line} irAction={cardIrActionFor(line)} />
+              ))}
+              {Array.from({ length: sections.openBench }, (_, i) => <OpenBenchSpot key={i} week={week} />)}
+            </section>
+            {showIr && (
+              // IR cards are draggable like bench cards, but handleDragEnd only stages swaps
+              // from the bench, so an IR player can't be dropped into a starting slot.
+              <section className="lineup-editor-ir" aria-labelledby="lineup-ir-heading">
+                <h3 id="lineup-ir-heading">{irTitle}</h3>
+                {sections.ir.map((line) => (
+                  <DraggablePlayerCard key={line.player_id} line={line} irAction={cardIrActionFor(line)} />
+                ))}
+                {Array.from({ length: sections.openIr }, (_, i) => <OpenIrSpot key={i} />)}
+              </section>
+            )}
           </div>
         </div>
       </DndContext>

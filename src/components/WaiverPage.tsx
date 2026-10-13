@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { queryClient } from '../api/queryClient'
 import { Alert, Group } from '@mantine/core'
@@ -23,8 +24,14 @@ export function WaiverPage() {
   const isConfigured = Boolean(config.league_id && config.team_id)
 
   const [week, setWeek] = useSelectedWeek()
-  // The free-agent pool is only fetched once the manager opens the browser.
-  const [browseOpen, setBrowseOpen] = useState(false)
+  // The free-agent pool is only fetched once the manager opens the browser, or arrives from
+  // a link to it (the lineup page's open bench spots).
+  const linkedToBrowser = useLocation().hash === '#free-agents'
+  const [browseOpen, setBrowseOpen] = useState(linkedToBrowser)
+  const browseRef = useRef<HTMLDetailsElement>(null)
+  useEffect(() => {
+    if (linkedToBrowser) browseRef.current?.scrollIntoView?.({ block: 'start' })
+  }, [linkedToBrowser, isConfigured])
   const weekValue = Number(week)
   const enabled = isConfigured && Number.isInteger(weekValue) && weekValue > 0
   const deficitsQuery = useQuery(
@@ -82,7 +89,13 @@ export function WaiverPage() {
           updating={recommendationsQuery.isPlaceholderData}
         />
       )}
-      <details className="secondary-panel" onToggle={(e) => setBrowseOpen(e.currentTarget.open)}>
+      <details
+        id="free-agents"
+        ref={browseRef}
+        className="secondary-panel"
+        open={browseOpen}
+        onToggle={(e) => setBrowseOpen(e.currentTarget.open)}
+      >
         <summary>Browse free agents</summary>
         {browseOpen && (
           <FreeAgentBrowser

@@ -30,7 +30,7 @@ function buildSuggestions(roster: LineupRosterResponse): Suggestion[] {
   const suggestions: Suggestion[] = []
   for (const starter of roster.starters) {
     if (!starter.suggested_swap) continue
-    const benchPlayer = roster.bench.find((p) => p.player_id === starter.suggested_swap!.add_player_id)
+    const benchPlayer = roster.bench.find((p) => p.player_id === starter.suggested_swap!.add_player_id && p.slot !== 'IR')
     if (!benchPlayer) continue
     suggestions.push({
       starter,
