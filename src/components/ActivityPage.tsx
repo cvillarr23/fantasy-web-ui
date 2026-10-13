@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useMediaQuery } from '@mantine/hooks'
 import {
   Alert,
   Badge,
@@ -30,6 +31,8 @@ import { PageHeader } from './ui/PageHeader'
 import { RunsPanel } from './RunsPanel'
 
 const label = (value: string) => value.replaceAll('_', ' ')
+// Below this width the four tabs no longer fit side by side, so they stack.
+const STACKED_TABS_QUERY = '(max-width: 600px)'
 const stamp = (value: string) => new Date(value).toLocaleString()
 function DependencyBadge({ action }: { action: ActivityAction }) {
   const dependency = actionDependency(action)
@@ -117,6 +120,7 @@ export function ActivityPage() {
   })
   const [search, setSearch] = useState('')
   const [offset, setOffset] = useState(0)
+  const stackedTabs = useMediaQuery(STACKED_TABS_QUERY)
   const actions = useQuery({
     queryKey: ['activity', tab, offset],
     queryFn: () => getActions(offset, tab === 'attention'),
@@ -171,6 +175,8 @@ export function ActivityPage() {
           </details>
         )}
         <SegmentedControl
+          orientation={stackedTabs ? 'vertical' : 'horizontal'}
+          fullWidth
           value={tab}
           onChange={(v) => {
             setOffset(0)

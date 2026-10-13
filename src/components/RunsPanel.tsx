@@ -144,7 +144,7 @@ export function RunsPanel() {
       {runs.error && <ErrorAlert onRetry={() => void runs.refetch()}>Could not load runs: {runs.error.message}</ErrorAlert>}
       {runs.data?.items.length === 0 && <EmptyState>No runs match these filters.</EmptyState>}
       {runs.data && runs.data.items.length > 0 && (
-        <Table.ScrollContainer minWidth={640}>
+        <Table.ScrollContainer minWidth={820}>
           <Table highlightOnHover>
             <Table.Thead>
               <Table.Tr>
