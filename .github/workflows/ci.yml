@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build-check:
-    runs-on: ubuntu-latest
+    runs-on: fantasy-runners
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
@@ -34,7 +34,7 @@ jobs:
   publish-image:
     needs: build-check
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
+    runs-on: fantasy-runners
     permissions:
       contents: read
       packages: write
