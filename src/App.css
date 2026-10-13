@@ -1129,6 +1129,23 @@ a.lineup-open-spot:focus-visible {
 .run-row {
   cursor: pointer;
 }
+.run-badge-cell {
+  white-space: nowrap;
+}
+/* Mantine clips badge labels, which lets a squeezed table shrink them to an ellipsis. */
+.run-badge-cell .mantine-Badge-label {
+  overflow: visible;
+  text-overflow: clip;
+}
+.run-outcome {
+  min-width: 260px;
+}
+.run-log .log-warn {
+  color: var(--warn);
+}
+.run-log .log-error {
+  color: var(--error);
+}
 .trace-stage {
   padding-left: 16px;
   border-left: 2px solid var(--accent-border);

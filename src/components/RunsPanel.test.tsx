@@ -24,7 +24,7 @@ const run: Run = {
   status: 'success',
   started_at: '2026-10-12T16:00:00Z',
   finished_at: '2026-10-12T16:01:30Z',
-  summary: { parse_retries: 1 },
+  summary: { parse_retries: 1, headline: '3 articles → 2 evaluations' },
   input_count: 3,
   output_count: 2,
   llm_count: 1,
@@ -69,7 +69,7 @@ it('lists runs with trigger, status, duration and input/output counts', async ()
   const table = within(screen.getByRole('table'))
   expect(table.getByText('Scheduled')).toBeTruthy()
   expect(table.getByText('1m 30s')).toBeTruthy()
-  expect(table.getByText('3 → 2 · 1 LLM')).toBeTruthy()
+  expect(table.getByText('3 read → 2 produced · 1 LLM')).toBeTruthy()
 })
 
 it('shows job health and only the dead-letter queues holding messages', async () => {
@@ -131,7 +131,7 @@ it('shows a failed run error', async () => {
   })
   renderAt('/activity/runs/run-1')
   expect(await screen.findByText('LLM response was not valid JSON')).toBeTruthy()
-  expect(screen.getByText(/no linked articles/)).toBeTruthy()
+  expect(screen.getByText(/read and produced no articles/)).toBeTruthy()
 })
 
 it('walks a trace stage by stage', async () => {
@@ -150,4 +150,49 @@ it('walks a trace stage by stage', async () => {
   expect(getTrace).toHaveBeenCalledWith('raw_signal', '6381')
   expect(screen.getByRole('link', { name: /sync rumors/ }).getAttribute('href')).toBe('/activity/runs/run-1')
   expect(screen.getAllByText('Nothing recorded at this stage.')).toHaveLength(3)
+})
+
+it('explains a run that linked nothing with its headline, log and warnings', async () => {
+  const quiet: Run = {
+    ...run,
+    job_name: 'sync_rumors',
+    input_count: 0,
+    output_count: 0,
+    llm_count: 0,
+    summary: {
+      headline: '5 fetched, 0 new (reddit_fantasyfootball returned nothing)',
+      fetched: 5,
+      new: 0,
+      warnings: 3,
+      errors: 1,
+      log_tail: [
+        'WARNING Reddit fetch attempt 3 failed: REDDIT_CLIENT_ID is not set.',
+        'INFO Persisted 0 new raw signal row(s) of 5 fetched (dupes skipped).',
+      ],
+    },
+  }
+  vi.mocked(getRuns).mockResolvedValue({ items: [quiet] })
+  renderAt('/activity')
+  const table = within(await screen.findByRole('table'))
+  expect(table.getByText(/5 fetched, 0 new/)).toBeTruthy()
+  expect(table.getByText('3 warnings')).toBeTruthy()
+  expect(table.getByText('1 error')).toBeTruthy()
+  expect(table.queryByText(/read →/)).toBeNull()
+
+  cleanup()
+  vi.mocked(getRun).mockResolvedValue({ ...quiet, parent: null, children: [], links: {} })
+  renderAt('/activity/runs/run-1')
+  expect(await screen.findByText(/5 fetched, 0 new/)).toBeTruthy()
+  expect(screen.getByText('1 error logged')).toBeTruthy()
+  expect(screen.getByText('fetched')).toBeTruthy()
+  expect(screen.getByText(/REDDIT_CLIENT_ID is not set/)).toBeTruthy()
+  expect(screen.queryByText('log tail')).toBeNull()
+})
+
+it('says when an older run recorded no details', async () => {
+  vi.mocked(getRuns).mockResolvedValue({
+    items: [{ ...run, summary: {}, input_count: 0, output_count: 0, llm_count: 0 }],
+  })
+  renderAt('/activity')
+  expect(await screen.findByText('No details recorded')).toBeTruthy()
 })
