@@ -10,6 +10,13 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    # These packages pin each other's exact versions as peers, so a bump of
+    # one on its own fails npm ci with ERESOLVE.
+    groups:
+      mantine:
+        patterns: ["@mantine/*"]
+      vitest:
+        patterns: ["vitest", "@vitest/*"]
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
