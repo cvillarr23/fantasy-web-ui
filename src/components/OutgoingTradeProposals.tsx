@@ -6,6 +6,7 @@ import type { DraftConfig, TradeOffer } from '../api/types'
 import { SkeletonRegion, TextSkeleton } from './skeletons'
 import { TradeOfferApproval, TradeApprovalStatus } from './TradeOfferApproval'
 import { ProposalScoreSummary } from './tradeScore/ProposalScoreSummary'
+import { linkedOfferStyle, useLinkedOffer } from './linkedOffer'
 
 function ProposalPlayers({ label, players }: {
   label: string
@@ -23,7 +24,11 @@ function ProposalPlayers({ label, players }: {
   )
 }
 
-export function OutgoingTradeProposals({ config }: { config: DraftConfig }) {
+export function OutgoingTradeProposals({ config, linkedOfferKey }: {
+  config: DraftConfig
+  linkedOfferKey?: string | null
+}) {
+  const linked = useLinkedOffer(linkedOfferKey)
   const query = useQuery({
     queryKey: ['outgoing-trade-proposals', config.league_id, config.team_id, config.season],
     queryFn: () => getOutgoingTradeOffers(config),
@@ -63,7 +68,10 @@ export function OutgoingTradeProposals({ config }: { config: DraftConfig }) {
       )}
       <Stack gap="md">
         {query.data?.map((offer) => (
-          <Card key={offer.id} withBorder radius="md" component="article">
+          <Card key={offer.id} withBorder radius="md" component="article"
+            ref={linked.refFor(offer.offer_key)}
+            aria-current={linked.isLinked(offer.offer_key) || undefined}
+            style={linked.isLinked(offer.offer_key) ? linkedOfferStyle : undefined}>
             <Group justify="space-between" mb="sm">
               <Text fw={600}>{(offer.to_team_id && names.data?.[offer.to_team_id]) || `Team ${offer.to_team_id}`}</Text>
               <Badge color="yellow">Awaiting approval</Badge>

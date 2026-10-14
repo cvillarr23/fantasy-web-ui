@@ -84,6 +84,26 @@ it('shows honest score gaps, exact note, refresh evidence and production configu
   expect(screen.getByTestId('incoming-note').textContent).toBe(offer.comment)
   expect(publishIncoming).not.toHaveBeenCalled()
 })
+it('scrolls to and outlines the offer a notification linked to', async () => {
+  const scrollIntoView = vi.fn()
+  Element.prototype.scrollIntoView = scrollIntoView
+  render(
+    <MantineProvider>
+      <MemoryRouter initialEntries={[`/inbox?offer=${offer.espn_transaction_id}`]}>
+        <TradeInboxPage />
+      </MemoryRouter>
+    </MantineProvider>,
+  )
+  await screen.findByText('Received Back')
+  const card = screen.getByText(new RegExp(`Offer ${offer.espn_transaction_id}`)).closest('article')
+  expect(card?.getAttribute('aria-current')).toBe('true')
+  expect(scrollIntoView).toHaveBeenCalledTimes(1)
+})
+it('leaves cards unmarked without a linked offer', async () => {
+  start()
+  await screen.findByText('Received Back')
+  expect(document.querySelector('article[aria-current]')).toBeNull()
+})
 it('toggles hidden offers separately from history', async () => {
   start()
   await screen.findByText('Received Back')
