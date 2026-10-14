@@ -1,7 +1,8 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Alert, Badge, Button, Card, Checkbox, Group, SimpleGrid, Stack, Text } from '@mantine/core'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import { linkedOfferStyle, useLinkedOffer } from '../linkedOffer'
 import { getCurrentWeek, getTeamNames } from '../../api/client'
 import { getIncomingTrades } from '../../api/tradeInbox'
 import { queryClient } from '../../api/queryClient'
@@ -32,6 +33,8 @@ function expiryCopy(date: string | null, now: number) {
 }
 export function TradeInboxPage() {
   const { config, loading } = useDraftConfig()
+  const [params] = useSearchParams()
+  const linked = useLinkedOffer(params.get('offer'))
   const [changedReview, setChangedReview] = useState<IncomingTrade | null>(null)
   const [hidden, setHidden] = useState(false)
   const [history, setHistory] = useState(false)
@@ -208,7 +211,10 @@ export function TradeInboxPage() {
           )
         })}
         {rows.map((row) => (
-          <Card key={row.id} withBorder radius="md" component="article">
+          <Card key={row.id} withBorder radius="md" component="article"
+            ref={linked.refFor(row.espn_transaction_id)}
+            aria-current={linked.isLinked(row.espn_transaction_id) || undefined}
+            style={linked.isLinked(row.espn_transaction_id) ? linkedOfferStyle : undefined}>
             <Stack gap="sm">
               <Group justify="space-between">
                 <Text fw={600}>

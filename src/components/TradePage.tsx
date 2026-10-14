@@ -1,4 +1,5 @@
 import { Stack } from '@mantine/core'
+import { useSearchParams } from 'react-router-dom'
 import { useTradeContextControls } from '../hooks/useTradeContextControls'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { TradeBuilder } from './TradeBuilder'
@@ -10,6 +11,7 @@ import { LeagueNotConfigured } from './ui/LeagueNotConfigured'
 export function TradePage() {
   const { config, loading: configLoading } = useDraftConfig()
   const tradeContextControls = useTradeContextControls(config)
+  const [params] = useSearchParams()
   const isConfigured = Boolean(config.league_id && config.team_id)
 
   if (!isConfigured) {
@@ -20,7 +22,7 @@ export function TradePage() {
   return (
     <div className="dashboard">
       <Stack gap="lg">
-        <OutgoingTradeProposals config={config} />
+        <OutgoingTradeProposals config={config} linkedOfferKey={params.get('offer')} />
         <TradeContextPanel config={config} controls={tradeContextControls} />
         <TradeBuilder config={config} controls={tradeContextControls} />
       </Stack>

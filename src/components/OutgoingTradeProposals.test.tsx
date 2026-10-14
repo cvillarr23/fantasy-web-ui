@@ -49,6 +49,18 @@ it('shows the counterparty, sides, pitch and pending status with ESPN-id fallbac
   expect(screen.queryByRole('button', { name: /approve|send/i })).toBeNull()
 })
 
+it('scrolls to and outlines the proposal a notification linked to', async () => {
+  const scrollIntoView = vi.fn()
+  Element.prototype.scrollIntoView = scrollIntoView
+  const other = { ...offer, id: 2, offer_key: 'other-key', to_team_id: '9' }
+  vi.mocked(getOutgoingTradeOffers).mockResolvedValue([{ ...offer, offer_key: 'linked-key' }, other])
+  render(<MantineProvider><OutgoingTradeProposals config={config} linkedOfferKey="linked-key" /></MantineProvider>)
+  const card = (await screen.findByText('Rival Team')).closest('article')
+  expect(card?.getAttribute('aria-current')).toBe('true')
+  expect(document.querySelectorAll('article[aria-current]')).toHaveLength(1)
+  expect(scrollIntoView).toHaveBeenCalledTimes(1)
+})
+
 it('shows a useful empty state without promising a proposal every scan', async () => {
   vi.mocked(getOutgoingTradeOffers).mockResolvedValue([])
   render(view())
