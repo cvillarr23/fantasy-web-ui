@@ -49,6 +49,8 @@ export interface MovePlayer {
   position: string
   pro_team: string
   injury_status: string | null
+  // NFL bye week; null when core couldn't read the NFL schedule.
+  bye_week?: number | null
   net_vorp?: number
   slot?: string
   // ESPN team currently rostering the player; null for free agents.

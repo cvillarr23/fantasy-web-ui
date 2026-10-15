@@ -8,6 +8,41 @@ export interface TradeContextPlayer {
   eligible_slots: string[]
   injury_status: string | null
   metrics: Record<string, { vorp_score: number | null; projected_points: number | null }>
+  // NFL bye week; null when core couldn't read the NFL schedule.
+  nfl_bye_week?: number | null
+}
+
+/** One week of a team's NFL bye outlook (core's bye_outlook / GET /v1/roster/bye-outlook). */
+export interface ByeOutlookWeek {
+  week: number
+  // Best starting lineup VORP the roster can field; null when nobody has metrics that week.
+  value: number | null
+  shortfall: number | null
+  unfilled_slots: string[]
+  held_slots: string[]
+  // ESPN ids of players on an NFL bye that week.
+  on_bye: string[]
+  unknown: string[]
+  replacement_level_starters: number | null
+  // Byes leave a starter seat empty or force a below-replacement starter.
+  crunch: boolean
+}
+
+export interface ByeOutlook {
+  median_lineup_value: number | null
+  crunch_weeks: number[]
+  weeks: ByeOutlookWeek[]
+}
+
+export interface TeamByeOutlook extends ByeOutlook {
+  team_id: string
+  team_name: string | null
+  season: number
+  start_week: number
+  end_week: number
+  // False when the NFL schedule couldn't be read: byes are unknown, not absent.
+  schedule_known: boolean
+  players: { espn_id: string; name: string | null; position: string | null; nfl_team: string | null; nfl_bye_week: number | null }[]
 }
 
 export interface FantasyScheduleWeek {
@@ -38,6 +73,7 @@ export interface TradeContextTeam {
     strength_known_weeks: number
   }
   schedule_strength_z: number | null
+  bye_outlook?: ByeOutlook | null
 }
 
 export interface LeagueTradeContext {

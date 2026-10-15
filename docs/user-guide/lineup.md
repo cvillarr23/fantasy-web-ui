@@ -12,7 +12,8 @@ Route: `/lineup` (the default page). It shows your roster by slot, the league's 
 
 - A week selector and, when you have an opponent, a **View matchup** link.
 - A position-depth grid comparing your team with the league.
-- Your starters and bench, with injury badges and suggested bench swaps.
+- A **Bye-week crunch ahead** banner when, in the next few weeks, NFL byes leave a starting slot empty or force you to start a below-replacement player. It names the week and who is on bye, and links to waiver fill-ins and trades. It is hidden when byes are covered or the outlook can't load.
+- Your starters and bench, with bye, injury and rumor badges and suggested bench swaps. **BYE** marks a player on bye in the selected week; **Bye Wk N** shows an upcoming bye.
 - Bench and IR as separate sections. Each shows how many of the league's slots are filled (for example "Bench 6/7", "IR 1/1"), with a placeholder for every open spot. An open bench spot links to **Browse free agents** on [Waivers](./waivers.md). Counts appear only once the league's settings have synced.
 
 Only a bench player can be dragged onto a starting slot. IR players have to be activated first.
@@ -24,6 +25,7 @@ Only a bench player can be dragged onto a starting slot. IR players have to be a
 | `GET /v1/matchup/roster` | Roster for the selected week (works on a bye) |
 | `GET /v1/roster/deficits` | Position depth grid |
 | `GET /v1/matchup` | Opponent banner; a `404` is treated as "no opponent" |
+| `GET /v1/roster/bye-outlook` | Bye-week crunch banner (best-effort) |
 | `GET /v1/league/current-week` | Default week |
 | `POST /v1/trigger/lineup` | Submit swaps or IR moves |
 

@@ -84,6 +84,8 @@ export function WaiverPage() {
           openIrSlots={recommendationsQuery.data?.open_ir_slots}
           openRosterSlots={recommendationsQuery.data?.open_roster_slots}
           irMoves={recommendationsQuery.data?.ir_moves}
+          horizonWeeks={recommendationsQuery.data?.horizon_weeks}
+          byeCrunchWeeks={recommendationsQuery.data?.bye_crunch_weeks}
           config={config}
           loading={recommendationsQuery.isLoading}
           updating={recommendationsQuery.isPlaceholderData}

@@ -1,6 +1,6 @@
 import { useCurrentWeek } from '../hooks/useCurrentWeek'
 import { Link } from 'react-router-dom'
-import { useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { DndContext, useDraggable, useDroppable, type DragEndEvent } from '@dnd-kit/core'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Alert, Badge, Button, Group, Modal, Stack, Text, Tooltip } from '@mantine/core'
@@ -81,7 +81,11 @@ function IrMoveAction({ action }: { action: IrAction }) {
     : button
 }
 
+// The week being viewed, so a player's bye in that week shows as BYE on his card.
+const ViewedWeekContext = createContext<number | null>(null)
+
 function DraggablePlayerCard({ line, irAction }: { line: LineupPlayerLine; irAction?: IrAction | null }) {
+  const viewedWeek = useContext(ViewedWeekContext)
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: line.player_id,
     data: { line },
@@ -111,6 +115,7 @@ function DraggablePlayerCard({ line, irAction }: { line: LineupPlayerLine; irAct
         badges={
           <PlayerStatusBadges
             player={line}
+            week={viewedWeek}
             extra={line.ir_suggestion && (
               <Badge color="yellow" size="xs">
                 {line.ir_suggestion.action === 'move_to_ir' ? 'Move to IR' : 'Activate from IR'}
@@ -436,6 +441,7 @@ export function LineupEditor({ config, week = '' }: Props) {
   const showIr = sections.ir.length > 0 || (sections.irCapacity ?? 0) > 0
 
   return (
+    <ViewedWeekContext.Provider value={Number(week) || currentWeek || null}>
     <section className="lineup-editor" aria-busy={loading || undefined}>
       <Group justify="space-between" mb="md">
         <h2>Set your lineup</h2>
@@ -582,5 +588,6 @@ export function LineupEditor({ config, week = '' }: Props) {
         )}
       </Modal>
     </section>
+    </ViewedWeekContext.Provider>
   )
 }

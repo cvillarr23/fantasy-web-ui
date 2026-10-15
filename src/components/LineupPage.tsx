@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import { matchupQuery as matchupOptions, rosterDeficitsQuery } from '../api/weekReads'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useDraftConfig } from '../hooks/useDraftConfig'
+import { ByeCrunchBanner } from './ByeCrunchBanner'
 import { LineupEditor } from './LineupEditor'
 import { RosterDeficitsGrid } from './RosterDeficitsGrid'
 import { WeekSelector } from './ui/WeekSelector'
@@ -49,6 +50,7 @@ export function LineupPage() {
         )}
       </Group>
       {error && <Alert color="red" mb="md">{error}</Alert>}
+      {enabled && <ByeCrunchBanner config={config} week={weekValue} />}
       {(loading || deficits) && (
         <RosterDeficitsGrid
           deficits={deficits}
