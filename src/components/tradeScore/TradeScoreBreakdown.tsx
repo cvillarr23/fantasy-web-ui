@@ -1,5 +1,5 @@
 import { Badge, Group, List, Stack, Table, Text } from '@mantine/core'
-import type { TradeScore, TradeScoreLineupWeek, TradeScoreScheduleWeek } from '../../api/types'
+import type { TradeScore, TradeScoreByeCoverage, TradeScoreLineupWeek, TradeScoreScheduleWeek } from '../../api/types'
 import { formatFantasyStrength } from '../tradeContextFormat'
 import { TradeContextProvenance } from '../TradeContextProvenance'
 import { reasonLabel } from './tradeScoreReasons'
@@ -121,9 +121,41 @@ export function TradeScoreBreakdown({ score, teamNames }: {
         A week's weight is 1 + strength weight × the fantasy opponent's clamped z-score.
       </Text>
 
+      {score.bye_coverage && <ByeCoverage coverage={score.bye_coverage} ours={ours} theirs={theirs} />}
       <WeekTable score={score} teamName={teamName} />
       <WhyDetails score={score} ours={ours} theirs={theirs} playerName={playerName} />
       <Coverage score={score} ours={ours} theirs={theirs} playerName={playerName} />
+    </Stack>
+  )
+}
+
+function weekList(weeks: number[]) {
+  return weeks.map((week) => `week ${week}`).join(', ')
+}
+
+function ByeCoverageLine({ team, coverage }: { team: string; coverage: TradeScoreByeCoverage }) {
+  const parts = []
+  if (coverage.fixed.length) parts.push(`covers the bye crunch in ${weekList(coverage.fixed)}`)
+  if (coverage.created.length) parts.push(`opens a bye crunch in ${weekList(coverage.created)}`)
+  if (!parts.length)
+    parts.push(coverage.crunch_weeks_after.length ? `still short in ${weekList(coverage.crunch_weeks_after)}` : 'no bye crunch either way')
+  return <List.Item>{team}: {parts.join('; ')}.</List.Item>
+}
+
+/** Weeks where NFL byes leave a lineup short (an empty or below-replacement seat), before and
+ * after the trade. Evidence only: the lineup terms above already count every bye week. */
+function ByeCoverage({ coverage, ours, theirs }: { coverage: NonNullable<TradeScore['bye_coverage']>; ours: string; theirs: string }) {
+  return (
+    <Stack gap={4} component="section" aria-label="Bye coverage">
+      <Group gap="xs">
+        <Text fw={600} size="sm">Bye weeks</Text>
+        {coverage.us.fixed.length > 0 && <Badge color="teal" variant="light">Covers our bye crunch</Badge>}
+        {coverage.us.created.length > 0 && <Badge color="orange" variant="light">Opens a bye crunch for us</Badge>}
+      </Group>
+      <List size="sm">
+        <ByeCoverageLine team={ours} coverage={coverage.us} />
+        <ByeCoverageLine team={theirs} coverage={coverage.counterparty} />
+      </List>
     </Stack>
   )
 }

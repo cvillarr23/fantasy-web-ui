@@ -164,3 +164,21 @@ it('keeps an exact empty side and does not flag the net for gaps outside the tra
   expect(within(term(/Raw VORP received/)).getByText('7.8')).toBeTruthy()
   expect(within(term(/Raw VORP net/)).getByText('+7.8')).toBeTruthy()
 })
+
+it('says which bye crunch weeks the trade fixes or opens for each side', () => {
+  const score = completeScore()
+  score.bye_coverage = {
+    us: { crunch_weeks_before: [8], crunch_weeks_after: [], fixed: [8], created: [] },
+    counterparty: { crunch_weeks_before: [], crunch_weeks_after: [9], fixed: [], created: [9] },
+  }
+  view(score)
+  const section = screen.getByRole('region', { name: 'Bye coverage' })
+  expect(within(section).getByText('Covers our bye crunch')).toBeTruthy()
+  expect(within(section).getByText('Our Team: covers the bye crunch in week 8.')).toBeTruthy()
+  expect(within(section).getByText('Rival Team: opens a bye crunch in week 9.')).toBeTruthy()
+})
+
+it('omits bye coverage when core did not report it', () => {
+  view(completeScore())
+  expect(screen.queryByRole('region', { name: 'Bye coverage' })).toBeNull()
+})

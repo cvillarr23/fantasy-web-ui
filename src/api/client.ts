@@ -532,6 +532,14 @@ export function getTradeContext(
   return request(`/v1/trade/context?${params}`, { signal })
 }
 
+/** Which upcoming weeks NFL byes leave our lineup short. Core defaults to our league and team. */
+export function getByeOutlook(
+  season: number, week: number, horizon = 4,
+): Promise<import('./tradeContextTypes').TeamByeOutlook> {
+  const params = new URLSearchParams({ season: String(season), week: String(week), horizon: String(horizon) })
+  return request(`/v1/roster/bye-outlook?${params}`)
+}
+
 /** Read-only deterministic trade score; the UI displays its evidence and never rescores. */
 export function scoreTrade(
   body: import('./types').TradeScoreRequest,

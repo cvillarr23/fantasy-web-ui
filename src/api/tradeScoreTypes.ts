@@ -68,6 +68,13 @@ export interface TradeScoreScheduleWeek {
   counterparty_weight: number | null
 }
 
+export interface TradeScoreByeCoverage {
+  crunch_weeks_before: number[]
+  crunch_weeks_after: number[]
+  fixed: number[]
+  created: number[]
+}
+
 export interface TradeScore {
   scoring_version: 'trade-score-v1'
   league_id: string
@@ -94,6 +101,9 @@ export interface TradeScore {
   }
   weights: { strength_weight: number; z_clamp: number; indirect_factor: number }
   roster_impact: { us: TradeScoreTeamImpact; counterparty: TradeScoreTeamImpact }
+  // Bye-crunch weeks each side has before and after the trade. Evidence only: the lineup
+  // terms already count every bye week.
+  bye_coverage?: { us: TradeScoreByeCoverage; counterparty: TradeScoreByeCoverage }
   schedule: { weeks: TradeScoreScheduleWeek[] }
   score: {
     our_lineup_gain: number | null

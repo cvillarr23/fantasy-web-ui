@@ -212,6 +212,8 @@ export interface PlayerLine {
   slot: string
   points: number
   projected_points: number
+  // NFL bye week; null when core couldn't read the NFL schedule.
+  bye_week?: number | null
   headshot_url: string
   deficit_flag: boolean
   suggested_swap: { bench_for: string } | null
@@ -292,6 +294,8 @@ export interface LineupPlayerLine {
   slot: string
   pro_team: string
   injury_status: string | null
+  // NFL bye week; null when core couldn't read the NFL schedule.
+  bye_week?: number | null
   headshot_url: string
   deficit_flag: boolean
   suggested_swap: { bench_for: string; add_player_id: string; explanation?: string | null } | null
@@ -318,7 +322,16 @@ export interface WaiverPlayerSummary {
   name: string
   pro_team: string
   injury_status: string | null
+  // Per-week VORP averaged over the response's horizon_weeks (a bye week counts as replacement level).
   net_vorp: number
+  // NFL bye week; null when core couldn't read the NFL schedule.
+  bye_week?: number | null
+}
+
+export interface WaiverLineupGain {
+  week: number
+  // Change to our best starting lineup's VORP that week; null when it can't be scored.
+  delta: number | null
 }
 
 export interface WaiverRecommendation {
@@ -330,6 +343,10 @@ export interface WaiverRecommendation {
   vorp_delta: number
   free_agent: WaiverPlayerSummary
   bench_player?: WaiverPlayerSummary | null
+  weekly_lineup_gains?: WaiverLineupGain[] | null
+  horizon_lineup_gain?: number | null
+  // Set on a recommend-only fill-in for a week where byes leave our lineup short.
+  bye_fill?: { week: number; lineup_gain: number } | null
   rumor_sentiment: string | null
   rumor_confidence: number | null
   rumor_suggested_action: string | null
@@ -348,6 +365,10 @@ export interface WaiverRecommendationsResponse {
   season: number
   week: number
   recommendations: WaiverRecommendation[]
+  // Weeks every VORP value averages over; [week] when only one week is valued.
+  horizon_weeks?: number[] | null
+  // Weeks where NFL byes leave our best lineup short.
+  bye_crunch_weeks?: number[]
 }
 
 // Mirrors fantasy-core-pipeline's GET /v1/waiver/free-agents response models.
@@ -360,6 +381,8 @@ export interface FreeAgentPlayer {
   injury_status: string | null
   projected_points: number | null
   vorp_score: number | null
+  // NFL bye week; null when core couldn't read the NFL schedule.
+  bye_week?: number | null
 }
 
 export interface FreeAgentEntry extends FreeAgentPlayer {
@@ -502,5 +525,5 @@ export interface TradeOfferList {
   offset: number
 }
 
-export type { LeagueTradeContext, TradeContextTeam, TradeContextPlayer, FantasyScheduleWeek } from './tradeContextTypes'
-export type { TradeScore, TradeScoreRequest, TradeScoreLineupWeek, TradeScoreScheduleWeek, TradeScoreStarter, TradeScoreTeamImpact, ProposalEvaluation } from './tradeScoreTypes'
+export type { LeagueTradeContext, TradeContextTeam, TradeContextPlayer, FantasyScheduleWeek, ByeOutlook, ByeOutlookWeek, TeamByeOutlook } from './tradeContextTypes'
+export type { TradeScore, TradeScoreRequest, TradeScoreLineupWeek, TradeScoreScheduleWeek, TradeScoreStarter, TradeScoreTeamImpact, ProposalEvaluation, TradeScoreByeCoverage } from './tradeScoreTypes'

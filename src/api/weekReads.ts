@@ -1,5 +1,5 @@
 import { keepPreviousData, queryOptions } from '@tanstack/react-query'
-import { ApiError, getLineupRoster, getMatchup, getRosterDeficits, getScoreboard } from './client'
+import { ApiError, getByeOutlook, getLineupRoster, getMatchup, getRosterDeficits, getScoreboard } from './client'
 import type { DraftConfig } from './types'
 
 // Week-scoped reads shared by several pages. Keys hold primitives only, so every page that
@@ -51,5 +51,15 @@ export function lineupRosterQuery(config: DraftConfig, week: number | string) {
     refetchOnMount: 'always',
     // Keep the previous week's roster on screen while another week loads.
     placeholderData: keepPreviousData,
+  })
+}
+
+export function byeOutlookQuery(config: DraftConfig, week: number) {
+  return queryOptions({
+    queryKey: ['bye-outlook', config.league_id, config.team_id, config.season, week],
+    queryFn: () => getByeOutlook(config.season, week),
+    enabled: Boolean(config.league_id && config.team_id) && validWeek(week),
+    // Byes don't move; the lineup values behind a crunch only change with the daily refresh.
+    staleTime: 10 * 60 * 1000,
   })
 }
