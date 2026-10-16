@@ -12,7 +12,7 @@ Route: `/trades`. Three stacked panels.
 
 | Panel | Shows |
 |---|---|
-| Outgoing trade proposals | Proposals awaiting your approval: counterparty, players sent and received, pitch, score evidence |
+| Outgoing trade proposals | Proposals awaiting your approval: counterparty, players sent and received, pitch, score evidence. Each trade scan (Wednesday and Friday) can stage up to three alternatives, one per team, best first. |
 | League trade context | Team needs, schedule, each player's NFL bye and the counterparty's bye-crunch weeks, and provenance, for a chosen horizon and counterparty |
 | Evaluate a trade | Manual VORP comparison for players you pick |
 
