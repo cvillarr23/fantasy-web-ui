@@ -32,4 +32,36 @@ export const Unscored: Story = { args: { score: unscoredScore() } }
 /** Without team names the breakdown falls back to team IDs. */
 export const NoTeamNames: Story = { args: { teamNames: undefined } }
 
-export const Phone: Story = { globals: { viewport: { value: 'mobile1', isRotated: false } } }
+export const Phone: Story = {
+  globals: { viewport: { value: 'mobile1', isRotated: false } },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(canvasElement.ownerDocument.defaultView!.innerWidth).toBeLessThanOrEqual(480)
+    const trigger = canvas.getByRole('button', { name: 'What is our weight?' })
+    const page = within(canvasElement.ownerDocument.body)
+    await userEvent.pointer({ keys: '[TouchA]', target: trigger })
+    await waitFor(() => expect(page.getByRole('tooltip')).toBeVisible())
+    await expect(page.getByRole('tooltip')).toHaveTextContent('1 + 0.25 × clamp(z, −2, 2)')
+    await userEvent.pointer({ keys: '[TouchA]', target: trigger })
+    await waitFor(() => expect(page.queryByRole('tooltip')).not.toBeInTheDocument())
+    const table = canvas.getByRole('table', { name: 'Weekly score evidence' })
+    await expect(within(table.querySelector('tbody')!).queryByRole('button')).not.toBeInTheDocument()
+  },
+}
+
+const customWeightsScore = completeScore()
+customWeightsScore.weights = { strength_weight: 0.4, z_clamp: 1.5, indirect_factor: 0.1 }
+export const CustomWeights: Story = {
+  args: { score: customWeightsScore },
+  play: async ({ canvas, canvasElement }) => {
+    const page = within(canvasElement.ownerDocument.body)
+    const ourWeight = canvas.getByRole('button', { name: 'What is our weight?' })
+    await userEvent.pointer({ keys: '[TouchA]', target: ourWeight })
+    await waitFor(() => expect(page.getByRole('tooltip')).toBeVisible())
+    await expect(page.getByRole('tooltip')).toHaveTextContent('1 + 0.4 × clamp(z, −1.5, 1.5), ranging from 0.4 to 1.6')
+    await userEvent.pointer({ keys: '[TouchA]', target: ourWeight })
+    await waitFor(() => expect(page.queryByRole('tooltip')).not.toBeInTheDocument())
+    await userEvent.pointer({ keys: '[TouchA]', target: canvas.getByRole('button', { name: 'What is their weight?' }) })
+    await waitFor(() => expect(page.getByRole('tooltip')).toBeVisible())
+    await expect(page.getByRole('tooltip')).toHaveTextContent('0.1 times their opponent multiplier')
+  },
+}

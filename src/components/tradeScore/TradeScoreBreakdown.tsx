@@ -1,6 +1,6 @@
 import { InfoTip } from '../ui/InfoTip'
 import { StrengthChip } from '../ui/StrengthChip'
-import { tradeGlossary } from './tradeGlossary'
+import { tradeGlossary, tradeGlossaryForWeights } from './tradeGlossary'
 import { Badge, Group, List, Stack, Table, Text } from '@mantine/core'
 import type { TradeScore, TradeScoreByeCoverage, TradeScoreLineupWeek, TradeScoreScheduleWeek } from '../../api/types'
 import { TradeContextProvenance } from '../TradeContextProvenance'
@@ -56,6 +56,7 @@ export function TradeScoreBreakdown({ score, teamNames }: {
   score: TradeScore
   teamNames?: Record<string, string>
 }) {
+  const glossary = tradeGlossaryForWeights(score.weights)
   const { horizon, score: terms, raw_vorp: raw, roster_impact: impact } = score
   const ours = teamNames?.[score.our_team.team_id] || score.our_team.name
   const theirs = teamNames?.[score.counterparty_team.team_id] || score.counterparty_team.name
@@ -77,7 +78,7 @@ export function TradeScoreBreakdown({ score, teamNames }: {
     <Stack gap="md" aria-label="Trade score breakdown" component="section">
       <Group justify="space-between" align="flex-start">
         <div>
-          <Text size="sm" c="dimmed">Final score <InfoTip label="the final score">{tradeGlossary.finalScore}<br />{tradeGlossary.counterpartyWeightedBenefit}</InfoTip></Text>
+          <Text size="sm" c="dimmed">Final score <InfoTip label="the final score">{glossary.finalScore}</InfoTip></Text>
           <Text size="xl" fw={700}>{terms.final_score == null ? 'Score unavailable' : signedScore(terms.final_score)}</Text>
           {terms.final_score == null && <ReasonList codes={terms.final_score_unavailable_reasons} />}
         </div>
@@ -108,13 +109,13 @@ export function TradeScoreBreakdown({ score, teamNames }: {
             <TermRow label="Our weighted gain (G*)" value={signedScore(terms.our_weighted_gain)}
               detail={tradeGlossary.ourWeightedGain} />
             <TermRow label="Our schedule adjustment" value={signedScore(terms.our_schedule_adjustment)}
-              detail={tradeGlossary.scheduleBoost} />
+              detail={glossary.scheduleBoost} />
             <TermRow label="Counterparty lineup change (I)" value={signedScore(terms.counterparty_lineup_change)}
               detail={tradeGlossary.theirChange} />
             <TermRow label="Counterparty weighted benefit (C*)" value={signedScore(terms.counterparty_weighted_benefit)}
-              detail={tradeGlossary.counterpartyWeightedBenefit} />
+              detail={glossary.costOfHelpingThem} />
             <TermRow label="Final score" value={signedScore(terms.final_score)}
-              detail={tradeGlossary.counterpartyWeightedBenefit} />
+              detail={glossary.finalScore} />
           </Table.Tbody>
         </Table>
       </Table.ScrollContainer>
@@ -165,6 +166,7 @@ function opponentCell(status: string, opponentId: string | null, z: number | nul
 }
 
 function WeekTable({ score, teamName }: { score: TradeScore; teamName: (id: string | null) => string }) {
+  const glossary = tradeGlossaryForWeights(score.weights)
   const unscored = new Map(score.horizon.unscored_weeks.map((w) => [w.week, w.reasons]))
   const deltas = (weeks: TradeScoreLineupWeek[]) => new Map(weeks.map((w) => [w.week, w.delta]))
   const ourDelta = deltas(score.roster_impact.us.weeks)
@@ -179,11 +181,11 @@ function WeekTable({ score, teamName }: { score: TradeScore; teamName: (id: stri
           <Table.Tr>
             <Table.Th>Week</Table.Th>
             <Table.Th>Our lineup change</Table.Th>
-            <Table.Th>Our fantasy opponent</Table.Th>
-            <Table.Th>Our weight <InfoTip label="our weight">{tradeGlossary.opponentMultiplier} Strength weight {score.weights.strength_weight} · z clamp ±{score.weights.z_clamp}.</InfoTip></Table.Th>
+            <Table.Th>Our fantasy opponent <InfoTip label="our opponent strength">{glossary.strength}</InfoTip></Table.Th>
+            <Table.Th>Our weight <InfoTip label="our weight">{glossary.opponentMultiplier}</InfoTip></Table.Th>
             <Table.Th>Their lineup change</Table.Th>
-            <Table.Th>Their fantasy opponent</Table.Th>
-            <Table.Th>Their weight <InfoTip label="their weight">{tradeGlossary.headToHead} Indirect factor {score.weights.indirect_factor}.</InfoTip></Table.Th>
+            <Table.Th>Their fantasy opponent <InfoTip label="their opponent strength">{glossary.strength}</InfoTip></Table.Th>
+            <Table.Th>Their weight <InfoTip label="their weight">{glossary.headToHead}</InfoTip></Table.Th>
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>

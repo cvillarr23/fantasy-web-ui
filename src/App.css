@@ -996,9 +996,9 @@ a.lineup-open-spot:focus-visible {
   font-size: 12px;
   white-space: nowrap;
 }
-.strength-chip-strong { color: var(--outgoing); }
-.strength-chip-weak { color: var(--projected); }
-.strength-chip-average, .strength-chip-unknown { color: var(--text); }
+.strength-chip-positive { color: var(--outgoing); }
+.strength-chip-negative { color: var(--projected); }
+.strength-chip-neutral { color: var(--text); }
 .strength-chip-unknown { border-style: dashed; }
 .stat-tile { background: var(--bg); border-radius: 10px; padding: 12px; min-width: 0; }
 .stat-tile-label, .stat-tile-caption { color: var(--text); font-size: 12px; }

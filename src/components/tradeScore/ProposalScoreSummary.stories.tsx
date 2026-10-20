@@ -35,14 +35,26 @@ export const Scored: Story = {
     const tiles = within(canvas.getByLabelText('Score terms summary'))
     await expect(tiles.getByText('+12.6')).toBeVisible()
     await expect(tiles.getByText('Schedule boost')).toBeVisible()
-    await expect(tiles.getByText('Their benefit')).toBeVisible()
-    await userEvent.hover(tiles.getByRole('button', { name: 'What is their benefit?' }))
+    await expect(tiles.getByText('Cost of helping them')).toBeVisible()
+    await userEvent.hover(tiles.getByRole('button', { name: 'What is cost of helping them?' }))
     await waitFor(() => expect(within(canvasElement.ownerDocument.body).getByRole('tooltip')).toBeVisible())
-    await expect(within(canvasElement.ownerDocument.body).getByRole('tooltip')).toHaveTextContent('Their gains reduce our score')
-    await userEvent.unhover(tiles.getByRole('button', { name: 'What is their benefit?' }))
+    await expect(within(canvasElement.ownerDocument.body).getByRole('tooltip')).toHaveTextContent("Their lineup gain turned into a penalty on our score. It's weighted heavily in weeks we face them and lightly (×0.25) otherwise. Usually a small negative number.")
+    await userEvent.unhover(tiles.getByRole('button', { name: 'What is cost of helping them?' }))
   },
 }
-export const Phone: Story = { ...Scored, globals: { viewport: { value: 'mobile1', isRotated: false } } }
+export const Phone: Story = {
+  globals: { viewport: { value: 'mobile1', isRotated: false } },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(canvasElement.ownerDocument.defaultView!.innerWidth).toBeLessThanOrEqual(480)
+    const trigger = within(canvas.getByLabelText('Score terms summary')).getByRole('button', { name: 'What is cost of helping them?' })
+    const page = within(canvasElement.ownerDocument.body)
+    await userEvent.pointer({ keys: '[TouchA]', target: trigger })
+    await waitFor(() => expect(page.getByRole('tooltip')).toBeVisible())
+    await expect(page.getByRole('tooltip')).toHaveTextContent('penalty on our score')
+    await userEvent.pointer({ keys: '[TouchA]', target: trigger })
+    await waitFor(() => expect(page.queryByRole('tooltip')).not.toBeInTheDocument())
+  },
+}
 export const Unscored: Story = { args: { offer: offer({ evaluation: proposalEvaluation(unscoredScore()) }) } }
 
 /** `null` means no evidence was stored. */

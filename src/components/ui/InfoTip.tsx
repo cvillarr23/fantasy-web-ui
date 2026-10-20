@@ -19,6 +19,18 @@ export function InfoTip({ label, children }: InfoTipProps) {
   }
   const [opened, setOpened] = useState(false)
   const [pinned, setPinned] = useState(false)
+  useEffect(() => {
+    if (!opened) return
+    const dismiss = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        clearTimeout(closeTimer.current)
+        setOpened(false)
+        setPinned(false)
+      }
+    }
+    document.addEventListener('keydown', dismiss)
+    return () => document.removeEventListener('keydown', dismiss)
+  }, [opened])
   return (
     <Popover opened={opened} onChange={(next) => { setOpened(next); if (!next) setPinned(false) }} withRoles={false} width={280} position="bottom-start" withinPortal
       shadow="md" closeOnEscape closeOnClickOutside>
@@ -27,7 +39,6 @@ export function InfoTip({ label, children }: InfoTipProps) {
           aria-expanded={opened} aria-describedby={opened ? id : undefined}
           onMouseEnter={() => { cancelClose(); setOpened(true) }}
           onMouseLeave={(event) => { if (!pinned && event.currentTarget !== document.activeElement) closeSoon() }}
-          onKeyDown={(event) => { if (event.key === 'Escape') { cancelClose(); setOpened(false); setPinned(false) } }}
           onFocus={() => { cancelClose(); setOpened(true) }}
           onBlur={() => { setOpened(false); setPinned(false) }}
           onClick={() => { cancelClose(); setPinned(!pinned); setOpened(!pinned) }}>?</button>

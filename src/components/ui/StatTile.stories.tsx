@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
+import { palette } from '../../theme'
 import { StatTile } from './StatTile'
 import { tradeGlossary } from '../tradeScore/tradeGlossary'
 
@@ -31,7 +32,34 @@ export const Phone: Story = {
   globals: { viewport: { value: 'mobile1', isRotated: false } },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvasElement.ownerDocument.defaultView!.innerWidth).toBeLessThanOrEqual(480)
-    await userEvent.click(canvas.getByRole('button'))
+    await userEvent.pointer({ keys: '[TouchA]', target: canvas.getByRole('button') })
     await waitFor(() => expect(within(canvasElement.ownerDocument.body).getByRole('tooltip')).toBeVisible())
+    await userEvent.pointer({ keys: '[TouchA]', target: canvas.getByRole('button') })
+    await waitFor(() => expect(within(canvasElement.ownerDocument.body).queryByRole('tooltip')).not.toBeInTheDocument())
+  },
+}
+
+export const DeadBand: Story = {
+  args: { value: 0.05, precision: 2 },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('+0.05')).toHaveStyle({ color: palette.secondary })
+  },
+}
+export const NegativeDeadBand: Story = {
+  args: { value: -0.05, precision: 2 },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('-0.05')).toHaveStyle({ color: palette.secondary })
+  },
+}
+export const AboveDeadBand: Story = {
+  args: { value: 0.051, precision: 3 },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('+0.051')).toHaveStyle({ color: palette.incoming })
+  },
+}
+export const BelowDeadBand: Story = {
+  args: { value: -0.051, precision: 3 },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('-0.051')).toHaveStyle({ color: palette.error })
   },
 }

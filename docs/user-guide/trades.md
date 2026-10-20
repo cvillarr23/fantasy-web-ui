@@ -18,11 +18,11 @@ Route: `/trades`. Three stacked panels.
 
 ## Reading the score and strength
 
-Proposals show **Our lineup gain**, **Schedule boost** and **Their benefit** as separate signed values. Teal values are positive, pink values negative, and unavailable data stays unavailable. Open **Score breakdown** for the returned score terms and weekly evidence.
+Proposals show **Our lineup gain**, **Schedule boost** and **Cost of helping them** as separate signed values. Their lineup gain contributes a penalty to our score, weighted fully in head-to-head weeks and lightly otherwise. Teal values are above +0.05, pink values below −0.05, and values inside that dead band use secondary text. Unavailable data stays unavailable. Open **Score breakdown** for the returned score terms and weekly evidence.
 
 The round **?** buttons explain the numbers on hover, keyboard focus or tap. Press Escape or tap again to dismiss an explanation.
 
-Strength compares completed fantasy points per week with the league average. Orange **strong** chips mean at least +0.5 standard deviations; blue **weak** chips mean at most −0.5. Other observed values are **average**, and missing strength uses a dashed **unknown** chip. Strength is neither win probability nor NFL defense difficulty.
+Strength compares completed fantasy points per week with the league average and displays two decimals. The displayed value determines the label: at least +0.50 is **strong**, at most −0.50 is **weak**, and other observed values are **average**. Orange means above +0.05, blue means below −0.05, and values inside that dead band use secondary text. Missing strength uses a dashed **unknown** chip. Strength is neither win probability nor NFL defense difficulty.
 
 ## Which endpoints does it call?
 

@@ -1,5 +1,5 @@
 import { StatTile } from '../ui/StatTile'
-import { tradeGlossary } from './tradeGlossary'
+import { tradeGlossaryForWeights } from './tradeGlossary'
 import { Alert, Badge, Group, List, SimpleGrid, Stack, Text } from '@mantine/core'
 import type { ProposalEvaluation, TradeOffer } from '../../api/types'
 import { reasonLabel } from './tradeScoreReasons'
@@ -59,6 +59,7 @@ export function ProposalScoreSummary({ offer, teamNames }: {
     )
   } else {
     const { score, request, ranking } = evaluation
+    const glossary = tradeGlossaryForWeights(score.weights)
     const final = score.score.final_score
     const scored = score.horizon.scored_weeks.length
     const total = score.horizon.end_week - score.horizon.start_week + 1
@@ -78,10 +79,10 @@ export function ProposalScoreSummary({ offer, teamNames }: {
             final score, and our value must stay distinct from what the trade does to them.
             G + adjustment + C* is the final score, so the tiles reconcile with the headline. */}
         <SimpleGrid cols={{ base: 1, xs: 3 }} spacing="xs" aria-label="Score terms summary">
-          <StatTile label="Our lineup gain" value={score.score.our_lineup_gain} info={tradeGlossary.ourLineupGain} />
-          <StatTile label="Schedule boost" value={score.score.our_schedule_adjustment} info={tradeGlossary.scheduleBoost} />
-          <StatTile label="Their benefit" value={score.score.counterparty_weighted_benefit}
-            info={<>{tradeGlossary.theirBenefit}<br />{tradeGlossary.counterpartyWeightedBenefit}</>} />
+          <StatTile label="Our lineup gain" value={score.score.our_lineup_gain} info={glossary.ourLineupGain} />
+          <StatTile label="Schedule boost" value={score.score.our_schedule_adjustment} info={glossary.scheduleBoost} />
+          <StatTile label="Cost of helping them" value={score.score.counterparty_weighted_benefit}
+            info={glossary.costOfHelpingThem} />
         </SimpleGrid>
         <Text size="xs" c="dimmed" aria-label="Counterparty lineup change">
           {`Their lineup changes by ${signedScore(score.score.counterparty_lineup_change)} (negative means the trade weakens them).`}

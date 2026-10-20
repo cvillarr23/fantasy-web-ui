@@ -35,9 +35,21 @@ export const Phone: Story = {
   play: async ({ canvas, canvasElement }) => {
     await expect(canvasElement.ownerDocument.defaultView!.innerWidth).toBeLessThanOrEqual(480)
     const page = within(canvasElement.ownerDocument.body)
-    await userEvent.click(canvas.getByRole('button'))
+    await userEvent.pointer({ keys: '[TouchA]', target: canvas.getByRole('button') })
     await waitFor(() => expect(page.getByRole('tooltip')).toBeVisible())
-    await userEvent.click(canvas.getByRole('button'))
+    await userEvent.pointer({ keys: '[TouchA]', target: canvas.getByRole('button') })
+    await waitFor(() => expect(page.queryByRole('tooltip')).not.toBeInTheDocument())
+  },
+}
+
+export const HoverEscape: Story = {
+  play: async ({ canvas, canvasElement }) => {
+    const page = within(canvasElement.ownerDocument.body)
+    const trigger = canvas.getByRole('button')
+    await userEvent.hover(trigger)
+    await waitFor(() => expect(page.getByRole('tooltip')).toBeVisible())
+    await expect(trigger).not.toHaveFocus()
+    await userEvent.keyboard('{Escape}')
     await waitFor(() => expect(page.queryByRole('tooltip')).not.toBeInTheDocument())
   },
 }

@@ -45,7 +45,7 @@ export function TradeContextPanel({ config, controls }: { config: DraftConfig; c
           <div><dt>League</dt><dd>{data.league_id}</dd></div>
           <div><dt>Season</dt><dd>{data.season}</dd></div>
           <div><dt>As of week</dt><dd>{data.as_of_week}</dd></div>
-          <div><dt>Horizon <InfoTip label="the horizon">{tradeGlossary.horizon}</InfoTip></dt><dd>{data.end_week >= data.start_week ? `Weeks ${data.start_week}–${data.end_week}` : 'No regular-season weeks remaining'} ({horizon} requested)</dd></div>
+          <div><dt>Horizon</dt><dd>{data.end_week >= data.start_week ? `Weeks ${data.start_week}–${data.end_week}` : 'No regular-season weeks remaining'} ({horizon} requested)</dd></div>
           <div><dt>Regular season ends</dt><dd>Week {data.regular_season_end_week}</dd></div>
           <div><dt>Unmapped players</dt><dd>{data.coverage.unmapped_espn_ids.length}</dd></div>
           <div><dt>Missing player-week metrics</dt><dd>{data.coverage.missing_metric_count}</dd></div>

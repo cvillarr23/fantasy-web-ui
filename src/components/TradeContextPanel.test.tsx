@@ -78,7 +78,7 @@ it('distinguishes unknown strength, real zero, bye and unavailable pairing', asy
   render(view())
   await selectRival()
   expect(screen.getAllByText('Strength unknown').length).toBeGreaterThan(0)
-  expect(screen.getAllByText('Strength 0.0 average').length).toBeGreaterThan(0)
+  expect(screen.getAllByText('Strength 0.00 average').length).toBeGreaterThan(0)
   expect(screen.getByText('Bye')).toBeTruthy()
   expect(screen.getByText('Pairing unavailable')).toBeTruthy()
   expect(screen.getAllByText(/Head-to-head/).length).toBe(2)
@@ -170,4 +170,10 @@ it('clears a counterparty selection when it becomes the configured team', async 
   rerender(view({ ...config, team_id: '2' }))
   expect(screen.queryByText('Mapped Player')).toBeNull()
   expect((screen.getByRole('combobox', { name: 'Counterparty' }) as HTMLSelectElement).value).toBe('')
+})
+
+it('offers one horizon explanation when context is loaded', async () => {
+  render(view())
+  await selectRival()
+  expect(screen.getAllByRole('button', { name: 'What is the horizon?' })).toHaveLength(1)
 })

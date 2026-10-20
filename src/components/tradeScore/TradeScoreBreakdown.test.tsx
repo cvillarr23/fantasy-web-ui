@@ -28,7 +28,7 @@ it('shows every term exactly as core returned it, without recomputing the final 
   expect(within(term(/Counterparty weighted benefit/)).getByText('+2.1')).toBeTruthy()
   expect(within(term(/Final score/)).getByText('+99.9')).toBeTruthy()
   fireEvent.focus(screen.getByRole('button', { name: 'What is our weight?' }))
-  expect((await screen.findByRole('tooltip')).textContent).toMatch(/Strength weight 0.25 · z clamp ±2/)
+  expect((await screen.findByRole('tooltip')).textContent).toMatch(/1 \+ 0.25 × clamp\(z, −2, 2\)/)
 })
 
 it('explains score terms on demand and labels raw VORP as single-week', async () => {
@@ -37,7 +37,7 @@ it('explains score terms on demand and labels raw VORP as single-week', async ()
   expect((await screen.findByRole('tooltip')).textContent).toMatch(/best possible starting lineup/)
   fireEvent.blur(within(term(/Our lineup gain/)).getByRole('button'))
   fireEvent.focus(within(term(/Counterparty lineup change/)).getByRole('button'))
-  expect((await screen.findByText(/Change in the other team's best starting lineup/)).textContent).toMatch(/other team's best starting lineup/)
+  expect((await screen.findByText(/Change in their best starting lineup/)).textContent).toMatch(/their best starting lineup/)
 })
 
 it('explains a complete horizon', () => {
@@ -84,7 +84,7 @@ it('never shows zero when no week could be scored', () => {
 it('shows fantasy opponents, byes, unavailable pairings and head-to-head weeks distinctly', () => {
   view(partialScore())
   expect(within(week(5)).getByText(/Strong Opponent/)).toBeTruthy()
-  expect(within(week(5)).getByText(/Strength ▲ \+1\.4 strong/)).toBeTruthy()
+  expect(within(week(5)).getByText(/Strength ▲ \+1\.37 strong/)).toBeTruthy()
   expect(within(week(5)).getByText('×1.34')).toBeTruthy()
   expect(within(week(6)).getByText('Head-to-head')).toBeTruthy()
   expect(within(week(5)).getByText(/Pairing unavailable/)).toBeTruthy()
@@ -184,4 +184,44 @@ it('says which bye crunch weeks the trade fixes or opens for each side', () => {
 it('omits bye coverage when core did not report it', () => {
   view(completeScore())
   expect(screen.queryByRole('region', { name: 'Bye coverage' })).toBeNull()
+})
+
+it('explains the final score with only the corrected final-score entry', async () => {
+  view(completeScore())
+  fireEvent.focus(within(term(/Final score/)).getByRole('button'))
+  expect((await screen.findByRole('tooltip')).textContent).toBe("One number to rank trades: our schedule-weighted lineup gain, minus a penalty for how much the trade also helps them. The penalty counts fully in weeks we play them head-to-head and a quarter as much otherwise. Higher is better for us.")
+})
+
+it.each([
+  ['What is our weight?', '1 + 0.4 × clamp(z, −1.5, 1.5)', 'ranging from 0.4 to 1.6'],
+  ['What is their weight?', '0.1 times their opponent multiplier', 'full opponent multiplier'],
+  ['What is our schedule adjustment?', '1 + 0.4 × clamp(z, −1.5, 1.5)', '0.4–1.6'],
+  ['What is counterparty weighted benefit (c*)?', '×0.1', 'penalty on our score'],
+])('uses returned weights in %s', async (label, formula, detail) => {
+  const score = completeScore()
+  score.weights = { strength_weight: 0.4, z_clamp: 1.5, indirect_factor: 0.1 }
+  view(score)
+  fireEvent.focus(screen.getByRole('button', { name: label }))
+  const tip = await screen.findByRole('tooltip')
+  expect(tip.textContent).toContain(formula)
+  expect(tip.textContent).toContain(detail)
+})
+
+it('puts strength help on headers instead of every weekly opponent value', () => {
+  view(completeScore())
+  const table = screen.getByRole('table', { name: 'Weekly score evidence' })
+  const body = table.querySelector('tbody')!
+  expect(within(body).queryByRole('button')).toBeNull()
+  expect(within(table).getByRole('button', { name: 'What is our opponent strength?' })).toBeTruthy()
+  expect(within(table).getByRole('button', { name: 'What is their opponent strength?' })).toBeTruthy()
+})
+
+it('uses the returned indirect factor in the final-score explanation', async () => {
+  const score = completeScore()
+  score.weights.indirect_factor = 0.1
+  view(score)
+  fireEvent.focus(screen.getByRole('button', { name: 'What is the final score?' }))
+  const tip = await screen.findByRole('tooltip')
+  expect(tip.textContent).toContain('0.1 times as much otherwise')
+  expect(tip.textContent).not.toContain('a quarter')
 })
