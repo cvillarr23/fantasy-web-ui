@@ -1,3 +1,4 @@
+import { palette } from '../theme'
 import type { PlayerSearchResult, PlayerSummary } from '../api/types'
 import type { PlayerCardData } from '../components/player/PlayerCard'
 
@@ -8,7 +9,7 @@ import type { PlayerCardData } from '../components/player/PlayerCard'
 export const headshot =
   'data:image/svg+xml,' +
   encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect width="32" height="32" rx="16" fill="#424657"/><circle cx="16" cy="12" r="6" fill="#b2b8cb"/><rect x="6" y="20" width="20" height="10" rx="5" fill="#b2b8cb"/></svg>',
+    `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect width="32" height="32" rx="16" fill="${palette.border}"/><circle cx="16" cy="12" r="6" fill="${palette.secondary}"/><rect x="6" y="20" width="20" height="10" rx="5" fill="${palette.secondary}"/></svg>`,
   )
 
 export const brokenHeadshot = '/story-missing-headshot.png'

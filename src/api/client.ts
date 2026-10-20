@@ -73,7 +73,7 @@ function showSessionExpiredBanner(): void {
   banner.textContent = 'Session expired — redirecting to sign-in…'
   banner.style.cssText =
     'position:fixed;top:0;left:0;right:0;z-index:2147483647;padding:12px 16px;' +
-    'background:#fa5252;color:#fff;font:14px/1.4 system-ui,sans-serif;text-align:center;'
+    'background:var(--error);color:var(--on-accent);font:14px/1.4 system-ui,sans-serif;text-align:center;'
   document.body.appendChild(banner)
 }
 
