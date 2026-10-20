@@ -9,6 +9,7 @@ export const palette = {
   text: '#f7f0e6',
   secondary: '#c7bba9',
   accent: '#c47f56',
+  accentInk: '#cd926f',
   overlay: '#382f26',
   overlayBorder: '#6b5c4c',
   disabled: '#3d342b',
@@ -34,6 +35,17 @@ function shades(hex: string): MantineColorsTuple {
         .join(''),
   ) as unknown as MantineColorsTuple
 }
+// Overlay text uses lighter clay ink; the primary fill stays the original clay.
+const overlayStyles = {
+  backgroundColor: palette.overlay,
+  borderColor: palette.overlayBorder,
+  color: palette.text,
+  '--accent': palette.accentInk,
+  '--mantine-color-anchor': palette.accentInk,
+  '--mantine-color-clay-text': palette.accentInk,
+  '--mantine-color-clay-outline': palette.accentInk,
+}
+
 // Keep this module free of runtime framework imports so Storybook can share the palette.
 export const theme = {
   primaryColor: 'clay',
@@ -52,26 +64,29 @@ export const theme = {
     red: shades(palette.error),
     yellow: shades(palette.warning),
     orange: shades(palette.outgoing),
-    grape: shades(palette.accent),
     clay: shades(palette.accent),
     // Mantine uses this ramp for inputs, tables, menus and other neutral controls.
     dark: [
-      palette.text, palette.secondary, palette.secondary, palette.disabledText,
-      palette.border, palette.raised, palette.surface, palette.background,
-      palette.background, palette.background,
+      palette.text, palette.secondary, palette.disabledText, palette.overlayBorder,
+      palette.border, palette.disabled, palette.overlay, palette.raised,
+      palette.surface, palette.background,
     ],
   },
   components: {
     Button: { defaultProps: { size: 'sm' } },
     Tooltip: {
       styles: {
-        tooltip: { backgroundColor: palette.overlay, color: palette.text, border: `1px solid ${palette.overlayBorder}` },
-        arrow: { borderColor: palette.overlayBorder },
+        tooltip: { ...overlayStyles, border: `1px solid ${palette.overlayBorder}` },
       },
     },
     Popover: {
-      styles: { dropdown: { backgroundColor: palette.overlay, borderColor: palette.overlayBorder, color: palette.text } },
+      styles: { dropdown: overlayStyles },
     },
+    Combobox: { styles: { dropdown: overlayStyles } },
+    Select: { styles: { dropdown: overlayStyles } },
+    MultiSelect: { styles: { dropdown: overlayStyles } },
+    Autocomplete: { styles: { dropdown: overlayStyles } },
+    Menu: { styles: { dropdown: overlayStyles } },
     Table: { defaultProps: { striped: true, highlightOnHover: true, verticalSpacing: 'sm' } },
   },
 } satisfies MantineThemeOverride

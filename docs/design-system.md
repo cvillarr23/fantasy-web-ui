@@ -19,6 +19,7 @@ The app uses a warm earth ground with clay primary actions. Storybook's manager,
 | text | `#f7f0e6` | Primary text |
 | secondary | `#c7bba9` | Supporting text |
 | accent | `#c47f56` | Navigation, links, primary actions |
+| accentInk | `#cd926f` | Accessible clay text on overlays |
 | onAccent | `#14151c` | Dark text on filled actions and badges |
 | overlay / overlayBorder | `#382f26` / `#6b5c4c` | Tooltip and popover surfaces and outlines |
 | disabled / disabledText | `#3d342b` / `#9a8e80` | Disabled controls |
@@ -42,6 +43,10 @@ Use WCAG AA's 4.5:1 minimum for normal text. The palette provides these ratios:
 | Clay links on page ground / raised surface | 5.73:1 / 4.61:1 |
 | Dark text on clay fill / hover | 5.65:1 / 4.65:1 |
 | Primary text on tooltip/popover | 11.58:1 |
+| Lighter clay ink on overlay | 4.95:1 |
+| Muted supporting text on page ground | 9.78:1 |
+
+Dropdowns (Select, Combobox, MultiSelect, Autocomplete, and Menu), popovers, and tooltips share overlay surfaces and lighter clay ink for links and accent text. `.muted` uses solid secondary text rather than reducing opacity. Keyboard-highlighted options use dark `onAccent` text on the clay fill.
 
 Use light or outline badges on dark surfaces, or automatic contrast for filled badges. Avoid using primary text on clay fills. Disabled controls are exempt from the normal-text contrast requirement.
 

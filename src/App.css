@@ -667,7 +667,7 @@
   color: var(--accent);
 }
 .muted {
-  opacity: 0.6;
+  color: var(--text);
   font-size: 14px;
 }
 .error {
@@ -698,7 +698,7 @@
 }
 .app-nav a[aria-current='page'] {
   background: var(--accent);
-  color: var(--bg);
+  color: var(--on-accent);
   border-color: var(--accent);
 }
 
@@ -1264,4 +1264,13 @@ a.lineup-open-spot:focus-visible {
   display: block;
   padding: 8px 12px;
   white-space: pre;
+}
+
+/* Mantine highlights keyboard options with the primary fill; its default white ink
+   does not have enough contrast on clay. */
+.mantine-Combobox-option[data-combobox-selected],
+.mantine-Select-option[data-combobox-selected],
+.mantine-MultiSelect-option[data-combobox-selected],
+.mantine-Autocomplete-option[data-combobox-selected] {
+  color: var(--on-accent);
 }

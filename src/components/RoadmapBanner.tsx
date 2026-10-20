@@ -11,7 +11,7 @@ export function RoadmapBanner({ title, issueUrl }: Props) {
   if (dismissed) return null
 
   return (
-    <Alert variant="light" color="grape" mb="md" p="sm">
+    <Alert variant="light" color="clay" mb="md" p="sm">
       <Group justify="space-between" wrap="nowrap">
         <Text size="sm">
           {title} —{' '}
