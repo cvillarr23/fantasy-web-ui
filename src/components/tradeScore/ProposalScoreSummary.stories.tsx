@@ -62,3 +62,17 @@ export const NoEvidence: Story = { args: { offer: offer({ evaluation: null }) } 
 
 /** An absent field means the API didn't say whether evidence exists. */
 export const EvidenceUnknown: Story = { args: { offer: offer({ evaluation: undefined }) } }
+
+const partialWeightsEvaluation = proposalEvaluation()
+partialWeightsEvaluation.score.weights = {} as typeof partialWeightsEvaluation.score.weights
+export const PartialWeights: Story = {
+  args: { offer: offer({ evaluation: partialWeightsEvaluation }) },
+  play: async ({ canvas, canvasElement }) => {
+    const terms = within(canvas.getByLabelText('Score terms summary'))
+    await userEvent.pointer({ keys: '[TouchA]', target: terms.getByRole('button', { name: 'What is schedule boost?' }) })
+    const page = within(canvasElement.ownerDocument.body)
+    await waitFor(() => expect(page.getByRole('tooltip')).toBeVisible())
+    await expect(page.getByRole('tooltip')).not.toHaveTextContent(/undefined|NaN|Infinity|clamp|×/)
+    await expect(page.getByRole('tooltip')).toHaveTextContent('Extra credit for gains in weeks we face strong opponents')
+  },
+}

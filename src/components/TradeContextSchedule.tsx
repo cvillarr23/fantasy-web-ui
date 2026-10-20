@@ -10,14 +10,14 @@ export function TradeContextSchedule({ team, otherTeamId }: { team: TradeContext
   return (
     <Card withBorder component="section" aria-label={`${team.name} fantasy schedule`}>
       <h3>{team.name}: fantasy schedule</h3>
-      <div><StrengthChip info value={strength.z_score} /> <Text span size="sm">{contextNumber(strength.points_per_week)} completed points/week</Text></div>
+      <div><StrengthChip value={strength.z_score} /> <Text span size="sm">{contextNumber(strength.points_per_week)} completed points/week</Text></div>
       <Text size="sm">{strength.completed_matchups} completed matchups · {strength.completed_scoring_weeks} scoring weeks · {strength.unavailable_history_periods} unavailable history periods</Text>
-      <div><StrengthChip info label="Average opponent strength" value={team.schedule_strength_z} /></div>
+      <div><StrengthChip label="Average opponent strength" value={team.schedule_strength_z} /></div>
       <Text size="sm" c="dimmed">{coverage.strength_known_weeks}/{coverage.scheduled_weeks} scheduled weeks with known strength · {coverage.bye_weeks} byes · {coverage.unavailable_weeks} unavailable weeks</Text>
       {!team.schedule.length ? <Text>No remaining regular-season schedule in this horizon.</Text> : (
         <Table.ScrollContainer minWidth={320}>
           <Table>
-            <Table.Thead><Table.Tr><Table.Th>Week</Table.Th><Table.Th>Fantasy opponent</Table.Th><Table.Th>Strength <InfoTip label="opponent strength">{tradeGlossary.strength}</InfoTip></Table.Th></Table.Tr></Table.Thead>
+            <Table.Thead><Table.Tr><Table.Th>Week</Table.Th><Table.Th>Fantasy opponent</Table.Th><Table.Th>Strength <InfoTip label={`${team.name} opponent strength`}>{tradeGlossary.strength}</InfoTip></Table.Th></Table.Tr></Table.Thead>
             <Table.Tbody>{team.schedule.map((row) => (
               <Table.Tr key={row.week}>
                 <Table.Td>{row.week}<Text size="xs" c="dimmed">Period {row.matchup_period}</Text></Table.Td>

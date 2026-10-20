@@ -22,7 +22,7 @@ export function InfoTip({ label, children }: InfoTipProps) {
   useEffect(() => {
     if (!opened) return
     const dismiss = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && !event.defaultPrevented) {
         clearTimeout(closeTimer.current)
         setOpened(false)
         setPinned(false)

@@ -65,3 +65,17 @@ export const CustomWeights: Story = {
     await expect(page.getByRole('tooltip')).toHaveTextContent('0.1 times their opponent multiplier')
   },
 }
+
+const partialWeightsScore = completeScore()
+partialWeightsScore.weights = { strength_weight: 0.25 } as typeof partialWeightsScore.weights
+export const PartialWeights: Story = {
+  args: { score: partialWeightsScore },
+  play: async ({ canvas, canvasElement }) => {
+    const page = within(canvasElement.ownerDocument.body)
+    await userEvent.pointer({ keys: '[TouchA]', target: canvas.getByRole('button', { name: 'What is our weight?' }) })
+    await waitFor(() => expect(page.getByRole('tooltip')).toBeVisible())
+    await expect(page.getByRole('tooltip')).not.toHaveTextContent(/undefined|NaN|Infinity|clamp|×/)
+    await expect(page.getByRole('tooltip')).toHaveTextContent('Adjusts a lineup gain for fantasy opponent strength.')
+    await expect(canvas.getByRole('button', { name: 'What is cost of helping them (c*)?' })).toBeVisible()
+  },
+}

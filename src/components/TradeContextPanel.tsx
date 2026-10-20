@@ -50,7 +50,8 @@ export function TradeContextPanel({ config, controls }: { config: DraftConfig; c
           <div><dt>Unmapped players</dt><dd>{data.coverage.unmapped_espn_ids.length}</dd></div>
           <div><dt>Missing player-week metrics</dt><dd>{data.coverage.missing_metric_count}</dd></div>
           {metric && <>
-            <div><dt>Observed strength <InfoTip label="strength">{tradeGlossary.strength}<br />Source: {metric.source}. Unknown values remain unknown.</InfoTip></dt><dd>{metric.teams_with_strength}/{Object.keys(data.teams).length} teams</dd></div>
+            <div><dt>Observed strength <InfoTip label="strength">{tradeGlossary.strength}</InfoTip></dt><dd>{metric.teams_with_strength}/{Object.keys(data.teams).length} teams</dd></div>
+            <div><dt>Strength source</dt><dd>{metric.source}</dd></div>
             <div><dt>League mean</dt><dd>{contextNumber(metric.league_mean)}</dd></div>
             <div><dt>Standard deviation</dt><dd>{contextNumber(metric.league_stddev)}</dd></div>
           </>}

@@ -63,3 +63,20 @@ export const BelowDeadBand: Story = {
     await expect(canvas.getByText('-0.051')).toHaveStyle({ color: palette.error })
   },
 }
+
+export const RoundedNegativeBoundary: Story = {
+  render: () => <><StatTile label="First" value={-0.05} /><StatTile label="Second" value={-0.06} /></>,
+  play: async ({ canvas }) => {
+    const values = canvas.getAllByText('-0.1')
+    await expect(values).toHaveLength(2)
+    for (const value of values) await expect(value).toHaveStyle({ color: palette.error })
+  },
+}
+export const RoundedPositiveBoundary: Story = {
+  render: () => <><StatTile label="First" value={0.05} /><StatTile label="Second" value={0.06} /></>,
+  play: async ({ canvas }) => {
+    const values = canvas.getAllByText('+0.1')
+    await expect(values).toHaveLength(2)
+    for (const value of values) await expect(value).toHaveStyle({ color: palette.incoming })
+  },
+}

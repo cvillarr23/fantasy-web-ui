@@ -83,7 +83,8 @@ it('distinguishes unknown strength, real zero, bye and unavailable pairing', asy
   expect(screen.getByText('Pairing unavailable')).toBeTruthy()
   expect(screen.getAllByText(/Head-to-head/).length).toBe(2)
   fireEvent.focus(within(screen.getByText('Observed strength')).getByRole('button'))
-  expect((await screen.findByRole('tooltip')).textContent).toMatch(/Stored ESPN completed regular-season scoring weeks/)
+  expect((await screen.findByRole('tooltip')).textContent).toMatch(/^Strength compares/)
+  expect(screen.getByText('Stored ESPN completed regular-season scoring weeks')).toBeTruthy()
   expect(screen.getAllByText(/1 unavailable history/).length).toBe(2)
 })
 it('supports retry and warns when a refresh fails with cached data', async () => {
@@ -176,4 +177,18 @@ it('offers one horizon explanation when context is loaded', async () => {
   render(view())
   await selectRival()
   expect(screen.getAllByRole('button', { name: 'What is the horizon?' })).toHaveLength(1)
+})
+
+it('keeps strength help in the header of each team schedule', async () => {
+  render(view())
+  await selectRival()
+  for (const team of ['Ours', 'Rivals']) {
+    const schedule = screen.getByRole('region', { name: `${team} fantasy schedule` })
+    expect(within(schedule).getAllByRole('button')).toHaveLength(1)
+    expect(within(schedule).getByRole('button', { name: `What is ${team} opponent strength?` })).toBeTruthy()
+  }
+  fireEvent.focus(within(screen.getByText('Observed strength')).getByRole('button'))
+  const tip = await screen.findByRole('tooltip')
+  expect(tip.textContent).not.toContain('Source:')
+  expect(screen.getByText('Strength source').nextElementSibling?.textContent).toBe('Stored ESPN completed regular-season scoring weeks')
 })

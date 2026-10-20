@@ -53,3 +53,23 @@ export const HoverEscape: Story = {
     await waitFor(() => expect(page.queryByRole('tooltip')).not.toBeInTheDocument())
   },
 }
+
+export const HandledEscape: Story = {
+  play: async ({ canvas, canvasElement }) => {
+    const page = within(canvasElement.ownerDocument.body)
+    const trigger = canvas.getByRole('button')
+    await userEvent.pointer({ keys: '[TouchA]', target: trigger })
+    await waitFor(() => expect(page.getByRole('tooltip')).toBeVisible())
+    const consumeEscape = (event: KeyboardEvent) => event.preventDefault()
+    trigger.addEventListener('keydown', consumeEscape, { once: true })
+    try {
+      await userEvent.keyboard('{Escape}')
+      await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+      await expect(page.getByRole('tooltip')).toBeVisible()
+      await userEvent.keyboard('{Escape}')
+      await waitFor(() => expect(page.queryByRole('tooltip')).not.toBeInTheDocument())
+    } finally {
+      trigger.removeEventListener('keydown', consumeEscape)
+    }
+  },
+}

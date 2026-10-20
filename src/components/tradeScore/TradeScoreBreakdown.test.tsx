@@ -25,7 +25,7 @@ it('shows every term exactly as core returned it, without recomputing the final 
   expect(within(term(/Our weighted gain/)).getByText('+13.8')).toBeTruthy()
   expect(within(term(/Our schedule adjustment/)).getByText('+1.2')).toBeTruthy()
   expect(within(term(/Counterparty lineup change/)).getByText('-4.4')).toBeTruthy()
-  expect(within(term(/Counterparty weighted benefit/)).getByText('+2.1')).toBeTruthy()
+  expect(within(term(/Cost of helping them/)).getByText('+2.1')).toBeTruthy()
   expect(within(term(/Final score/)).getByText('+99.9')).toBeTruthy()
   fireEvent.focus(screen.getByRole('button', { name: 'What is our weight?' }))
   expect((await screen.findByRole('tooltip')).textContent).toMatch(/1 \+ 0.25 × clamp\(z, −2, 2\)/)
@@ -64,7 +64,7 @@ it('withholds the final score with mapped reasons while still showing returned t
   expect(screen.getAllByText(/Counterparty's fantasy opponent strength unknown/).length).toBeGreaterThan(0)
   expect(within(term(/Our lineup gain/)).getByText('+6.3')).toBeTruthy()
   expect(within(term(/Our weighted gain/)).getByText('+7.1')).toBeTruthy()
-  expect(within(term(/Counterparty weighted benefit/)).getByText('Not available')).toBeTruthy()
+  expect(within(term(/Cost of helping them/)).getByText('Not available')).toBeTruthy()
   expect(within(term(/Final score/)).getByText('Not available')).toBeTruthy()
 })
 
@@ -74,7 +74,7 @@ it('never shows zero when no week could be scored', () => {
   expect(screen.getAllByText(/No scored weeks/).length).toBeGreaterThan(0)
   expect(screen.getByText('No week in the horizon was scored.')).toBeTruthy()
   for (const name of [/Our lineup gain/, /Our weighted gain/, /Our schedule adjustment/,
-    /Counterparty lineup change/, /Counterparty weighted benefit/, /Final score/]) {
+    /Counterparty lineup change/, /Cost of helping them/, /Final score/]) {
     expect(within(term(name)).getByText('Not available')).toBeTruthy()
     expect(term(name).textContent).not.toMatch(/\d\.\d/)
   }
@@ -196,7 +196,7 @@ it.each([
   ['What is our weight?', '1 + 0.4 × clamp(z, −1.5, 1.5)', 'ranging from 0.4 to 1.6'],
   ['What is their weight?', '0.1 times their opponent multiplier', 'full opponent multiplier'],
   ['What is our schedule adjustment?', '1 + 0.4 × clamp(z, −1.5, 1.5)', '0.4–1.6'],
-  ['What is counterparty weighted benefit (c*)?', '×0.1', 'penalty on our score'],
+  ['What is cost of helping them (c*)?', '×0.1', 'penalty on our score'],
 ])('uses returned weights in %s', async (label, formula, detail) => {
   const score = completeScore()
   score.weights = { strength_weight: 0.4, z_clamp: 1.5, indirect_factor: 0.1 }

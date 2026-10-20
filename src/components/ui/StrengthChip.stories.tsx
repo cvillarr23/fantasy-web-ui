@@ -67,3 +67,14 @@ export const TableValue: Story = {
   args: { info: false },
   play: async ({ canvas }) => { await expect(canvas.queryByRole('button')).not.toBeInTheDocument() },
 }
+
+export const RoundedDeadBand: Story = {
+  render: () => <><StrengthChip value={0.05} /><StrengthChip value={0.054} /><StrengthChip value={-0.05} /><StrengthChip value={-0.054} /></>,
+  play: async ({ canvas }) => {
+    for (const label of ['Strength ▲ +0.05 average', 'Strength ▼ -0.05 average']) {
+      const values = canvas.getAllByText(label)
+      await expect(values).toHaveLength(2)
+      for (const value of values) await expect(value.parentElement).toHaveStyle({ color: palette.secondary })
+    }
+  },
+}

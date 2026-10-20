@@ -1,6 +1,6 @@
 import { InfoTip } from '../ui/InfoTip'
 import { StrengthChip } from '../ui/StrengthChip'
-import { tradeGlossary, tradeGlossaryForWeights } from './tradeGlossary'
+import { tradeGlossaryForWeights, type TradeGlossary } from './tradeGlossary'
 import { Badge, Group, List, Stack, Table, Text } from '@mantine/core'
 import type { TradeScore, TradeScoreByeCoverage, TradeScoreLineupWeek, TradeScoreScheduleWeek } from '../../api/types'
 import { TradeContextProvenance } from '../TradeContextProvenance'
@@ -83,7 +83,7 @@ export function TradeScoreBreakdown({ score, teamNames }: {
           {terms.final_score == null && <ReasonList codes={terms.final_score_unavailable_reasons} />}
         </div>
         <Group gap="xs">
-          <InfoTip label="scored weeks">{tradeGlossary.scoredWeeks}</InfoTip>
+          <InfoTip label="scored weeks">{glossary.scoredWeeks}</InfoTip>
           <Badge variant="light">{`Weeks ${horizon.start_week}–${horizon.end_week} · ${scoredCount} of ${totalWeeks} scored`}</Badge>
           {!horizon.complete_horizon && <Badge color="yellow">Partial horizon</Badge>}
           <Text size="xs" c="dimmed">{score.scoring_version}</Text>
@@ -101,18 +101,18 @@ export function TradeScoreBreakdown({ score, teamNames }: {
             <TermRow label={`Raw VORP received (week ${raw.week})`} value={rawCells.received}
               detail="Single-week VORP of the players you receive, from the same data as Compare VORP; players without data are flagged here instead of counted as 0." />
             <TermRow label={`Raw VORP sent (week ${raw.week})`} value={rawCells.sent}
-              detail={tradeGlossary.vorp} />
+              detail={glossary.vorp} />
             <TermRow label={`Raw VORP net (week ${raw.week})`} value={rawCells.net}
               detail={`Received minus sent, week ${raw.week} only; it ignores lineups and schedule.`} />
             <TermRow label="Our lineup gain (G)" value={signedScore(terms.our_lineup_gain)}
-              detail={tradeGlossary.ourLineupGain} />
+              detail={glossary.ourLineupGain} />
             <TermRow label="Our weighted gain (G*)" value={signedScore(terms.our_weighted_gain)}
-              detail={tradeGlossary.ourWeightedGain} />
+              detail={glossary.ourWeightedGain} />
             <TermRow label="Our schedule adjustment" value={signedScore(terms.our_schedule_adjustment)}
               detail={glossary.scheduleBoost} />
             <TermRow label="Counterparty lineup change (I)" value={signedScore(terms.counterparty_lineup_change)}
-              detail={tradeGlossary.theirChange} />
-            <TermRow label="Counterparty weighted benefit (C*)" value={signedScore(terms.counterparty_weighted_benefit)}
+              detail={glossary.theirChange} />
+            <TermRow label="Cost of helping them (C*)" value={signedScore(terms.counterparty_weighted_benefit)}
               detail={glossary.costOfHelpingThem} />
             <TermRow label="Final score" value={signedScore(terms.final_score)}
               detail={glossary.finalScore} />
@@ -120,8 +120,8 @@ export function TradeScoreBreakdown({ score, teamNames }: {
         </Table>
       </Table.ScrollContainer>
 
-      {score.bye_coverage && <ByeCoverage coverage={score.bye_coverage} ours={ours} theirs={theirs} />}
-      <WeekTable score={score} teamName={teamName} />
+      {score.bye_coverage && <ByeCoverage coverage={score.bye_coverage} ours={ours} theirs={theirs} glossary={glossary} />}
+      <WeekTable score={score} teamName={teamName} glossary={glossary} />
       <WhyDetails score={score} ours={ours} theirs={theirs} playerName={playerName} />
       <Coverage score={score} ours={ours} theirs={theirs} playerName={playerName} />
     </Stack>
@@ -143,11 +143,11 @@ function ByeCoverageLine({ team, coverage }: { team: string; coverage: TradeScor
 
 /** Weeks where NFL byes leave a lineup short (an empty or below-replacement seat), before and
  * after the trade. Evidence only: the lineup terms above already count every bye week. */
-function ByeCoverage({ coverage, ours, theirs }: { coverage: NonNullable<TradeScore['bye_coverage']>; ours: string; theirs: string }) {
+function ByeCoverage({ coverage, ours, theirs, glossary }: { glossary: TradeGlossary; coverage: NonNullable<TradeScore['bye_coverage']>; ours: string; theirs: string }) {
   return (
     <Stack gap={4} component="section" aria-label="Bye coverage">
       <Group gap="xs">
-        <Text fw={600} size="sm">Bye weeks <InfoTip label="a bye crunch">{tradeGlossary.byeCrunch}</InfoTip></Text>
+        <Text fw={600} size="sm">Bye weeks <InfoTip label="a bye crunch">{glossary.byeCrunch}</InfoTip></Text>
         {coverage.us.fixed.length > 0 && <Badge color="teal" variant="light">Covers our bye crunch</Badge>}
         {coverage.us.created.length > 0 && <Badge color="orange" variant="light">Opens a bye crunch for us</Badge>}
       </Group>
@@ -165,8 +165,7 @@ function opponentCell(status: string, opponentId: string | null, z: number | nul
   return <>{teamName(opponentId)} <StrengthChip value={z} /></>
 }
 
-function WeekTable({ score, teamName }: { score: TradeScore; teamName: (id: string | null) => string }) {
-  const glossary = tradeGlossaryForWeights(score.weights)
+function WeekTable({ score, teamName, glossary }: { score: TradeScore; teamName: (id: string | null) => string; glossary: TradeGlossary }) {
   const unscored = new Map(score.horizon.unscored_weeks.map((w) => [w.week, w.reasons]))
   const deltas = (weeks: TradeScoreLineupWeek[]) => new Map(weeks.map((w) => [w.week, w.delta]))
   const ourDelta = deltas(score.roster_impact.us.weeks)

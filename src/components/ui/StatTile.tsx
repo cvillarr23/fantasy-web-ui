@@ -12,11 +12,12 @@ export interface StatTileProps {
 
 export function StatTile({ label, value, info, caption, precision = 1 }: StatTileProps) {
   const known = value != null && Number.isFinite(value)
-  const tone = !known || Math.abs(value) <= 0.05 ? 'neutral' : value > 0 ? 'positive' : 'negative'
+  const displayed = known ? Number(value.toFixed(precision)) : null
+  const tone = displayed == null || Math.abs(displayed) <= 0.05 ? 'neutral' : displayed > 0 ? 'positive' : 'negative'
   return (
     <div className="stat-tile">
       <div className="stat-tile-label">{label} {info && <InfoTip label={label.toLowerCase()}>{info}</InfoTip>}</div>
-      <div className={`stat-tile-value stat-tile-${tone}`}>{signedScore(known ? value : null, precision)}</div>
+      <div className={`stat-tile-value stat-tile-${tone}`}>{signedScore(displayed, precision)}</div>
       {caption && <div className="stat-tile-caption">{caption}</div>}
     </div>
   )
