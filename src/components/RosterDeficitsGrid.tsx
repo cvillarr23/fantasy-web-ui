@@ -1,3 +1,4 @@
+import { InfoTip } from './ui/InfoTip'
 import { Alert, Table, Tooltip } from '@mantine/core'
 import { SkeletonRegion, TableRowsSkeleton } from './skeletons'
 import { useTeamNames } from '../hooks/useTeamNames'
@@ -14,14 +15,6 @@ interface Props {
   loading?: boolean
   /** Showing the previous week's data while the next one loads. */
   updating?: boolean
-}
-
-function HelpIcon({ label }: { label: string }) {
-  return (
-    <Tooltip label={label} multiline maw={280}>
-      <span className="help-icon" aria-label="What this means">?</span>
-    </Tooltip>
-  )
 }
 
 export function RosterDeficitsGrid({ deficits, myTeamId, loading = false, updating = false }: Props) {
@@ -77,7 +70,7 @@ export function RosterDeficitsGrid({ deficits, myTeamId, loading = false, updati
     >
       <h2>
         Roster deficits{deficits ? ` — season ${deficits.season}, week ${deficits.week}` : ''}{' '}
-        <HelpIcon label="Each cell shows players rostered / starters required at that position. A highlighted cell means you don't have enough players rostered to fill your required starting slots — a real deficit, not just thin bench depth." />
+        <InfoTip label="roster deficits">Each cell shows players rostered / starters required at that position. A highlighted cell means you don't have enough players rostered to fill your required starting slots — a real deficit, not just thin bench depth.</InfoTip>
       </h2>
       <Table>
         <Table.Thead>

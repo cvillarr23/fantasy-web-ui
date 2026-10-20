@@ -156,7 +156,11 @@ it('shows our gain, counterparty change and schedule adjustment without expandin
   vi.mocked(getOutgoingTradeOffers).mockResolvedValue([{ ...offer, evaluation: proposalEvaluation() }])
   render(view())
   const terms = await screen.findByLabelText('Score terms summary')
-  expect(terms.textContent).toBe('Our lineup gain +12.6 · Our schedule adjustment +1.2 · Counterparty weighted benefit +2.1')
+  expect(within(terms).getByText('+12.6')).toBeTruthy()
+  expect(within(terms).getByText('+1.2')).toBeTruthy()
+  expect(within(terms).getByText('+2.1')).toBeTruthy()
+  expect(within(terms).getByText('Schedule boost')).toBeTruthy()
+  expect(within(terms).getByText('Cost of helping them')).toBeTruthy()
   expect(screen.getByLabelText('Counterparty lineup change').textContent).toMatch(/-4\.4 \(negative means the trade weakens them\)/)
 })
 
@@ -166,7 +170,9 @@ it('shows our lineup gain on a proposal ranked by it when the final score is wit
   vi.mocked(getOutgoingTradeOffers).mockResolvedValue([{ ...offer, evaluation }])
   render(view())
   const terms = await screen.findByLabelText('Score terms summary')
-  expect(terms.textContent).toBe('Our lineup gain +6.3 · Our schedule adjustment +0.8 · Counterparty weighted benefit Not available')
+  expect(within(terms).getByText('+6.3')).toBeTruthy()
+  expect(within(terms).getByText('+0.8')).toBeTruthy()
+  expect(within(terms).getByText('Not available')).toBeTruthy()
 })
 
 it('shows an unavailable stored score with its reasons rather than zero', async () => {
@@ -219,4 +225,26 @@ it('shows cited players, starters and unscored weeks readably instead of as raw 
   expect(within(evidence).getByText(/starters_after\/0 = Sent Back \(RB, 4\.3 VORP\)/)).toBeTruthy()
   expect(within(evidence).getByText(/unscored_weeks\/0 = Week 7 not scored: No metrics for this week/)).toBeTruthy()
   expect(evidence.textContent).not.toMatch(/[{}]/)
+})
+
+it('labels signed C* as the cost of helping them with a single corrected explanation', async () => {
+  const evaluation = proposalEvaluation()
+  evaluation.score.score.counterparty_weighted_benefit = -0.2
+  vi.mocked(getOutgoingTradeOffers).mockResolvedValue([{ ...offer, evaluation }])
+  render(view())
+  const terms = await screen.findByLabelText('Score terms summary')
+  expect(within(terms).getByText('Cost of helping them')).toBeTruthy()
+  expect(within(terms).getByText('-0.2')).toBeTruthy()
+  fireEvent.focus(within(terms).getByRole('button', { name: 'What is cost of helping them?' }))
+  expect((await screen.findByRole('tooltip')).textContent).toBe("Their lineup gain turned into a penalty on our score. It's weighted heavily in weeks we face them and lightly (×0.25) otherwise. Usually a small negative number.")
+})
+
+it('explains a stored proposal using its own weights', async () => {
+  const evaluation = proposalEvaluation()
+  evaluation.score.weights = { strength_weight: 0.4, z_clamp: 1.5, indirect_factor: 0.1 }
+  vi.mocked(getOutgoingTradeOffers).mockResolvedValue([{ ...offer, evaluation }])
+  render(view())
+  const terms = await screen.findByLabelText('Score terms summary')
+  fireEvent.focus(within(terms).getByRole('button', { name: 'What is schedule boost?' }))
+  expect((await screen.findByRole('tooltip')).textContent).toContain('1 + 0.4 × clamp(z, −1.5, 1.5), ranging 0.4–1.6')
 })

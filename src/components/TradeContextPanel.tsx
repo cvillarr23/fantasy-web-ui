@@ -1,3 +1,5 @@
+import { InfoTip } from './ui/InfoTip'
+import { tradeGlossary } from './tradeScore/tradeGlossary'
 import { Alert, Button, Group, NativeSelect, SimpleGrid, Stack, Text } from '@mantine/core'
 import type { DraftConfig } from '../api/types'
 import { useSelectedWeek, validWeek } from '../hooks/useSelectedWeek'
@@ -26,9 +28,12 @@ export function TradeContextPanel({ config, controls }: { config: DraftConfig; c
           onClick={() => { void query.refetch() }}>Refresh context</Button>
       </Group>
       <Text size="sm" c="dimmed">Uses the trade builder's selected week: {validWeek(week) ?? 'select a week below'}.</Text>
-      <NativeSelect label="Horizon" value={String(horizon)} w={200}
-        data={Array.from({ length: 18 }, (_, i) => ({ value: String(i + 1), label: `${i + 1} scoring weeks` }))}
-        onChange={(event) => onHorizonChange(Number(event.currentTarget.value))} />
+      <Group align="end" gap="xs">
+        <NativeSelect label="Horizon" value={String(horizon)} w={200}
+          data={Array.from({ length: 18 }, (_, i) => ({ value: String(i + 1), label: `${i + 1} scoring weeks` }))}
+          onChange={(event) => onHorizonChange(Number(event.currentTarget.value))} />
+        <InfoTip label="the horizon">{tradeGlossary.horizon}</InfoTip>
+      </Group>
       {!query.isEnabled && <Text>Select a valid league, season and week to load context.</Text>}
       {query.isEnabled && query.isPending && <SkeletonRegion label="Loading trade context"><TextSkeleton lines={5} /></SkeletonRegion>}
       {query.isError && <Alert color="red" mt="sm">
@@ -36,10 +41,22 @@ export function TradeContextPanel({ config, controls }: { config: DraftConfig; c
         {data && ' Previously loaded context is shown below and may be out of date.'}
       </Alert>}
       {data && <Stack gap="md" mt="md">
-        <Text>League {data.league_id} · Season {data.season} · As of week {data.as_of_week} · {data.end_week >= data.start_week ? `Weeks ${data.start_week}–${data.end_week}` : 'No regular-season weeks remaining'} · Requested horizon: {horizon} weeks · Regular season ends week {data.regular_season_end_week}</Text>
+        <dl className="trade-context-metadata" aria-label="League context metadata">
+          <div><dt>League</dt><dd>{data.league_id}</dd></div>
+          <div><dt>Season</dt><dd>{data.season}</dd></div>
+          <div><dt>As of week</dt><dd>{data.as_of_week}</dd></div>
+          <div><dt>Horizon</dt><dd>{data.end_week >= data.start_week ? `Weeks ${data.start_week}–${data.end_week}` : 'No regular-season weeks remaining'} ({horizon} requested)</dd></div>
+          <div><dt>Regular season ends</dt><dd>Week {data.regular_season_end_week}</dd></div>
+          <div><dt>Unmapped players</dt><dd>{data.coverage.unmapped_espn_ids.length}</dd></div>
+          <div><dt>Missing player-week metrics</dt><dd>{data.coverage.missing_metric_count}</dd></div>
+          {metric && <>
+            <div><dt>Observed strength <InfoTip label="strength">{tradeGlossary.strength}</InfoTip></dt><dd>{metric.teams_with_strength}/{Object.keys(data.teams).length} teams</dd></div>
+            <div><dt>Strength source</dt><dd>{metric.source}</dd></div>
+            <div><dt>League mean</dt><dd>{contextNumber(metric.league_mean)}</dd></div>
+            <div><dt>Standard deviation</dt><dd>{contextNumber(metric.league_stddev)}</dd></div>
+          </>}
+        </dl>
         <TradeContextProvenance snapshot={data.roster_snapshot} />
-        <Text size="sm">League coverage: {data.coverage.unmapped_espn_ids.length} unmapped ESPN players · {data.coverage.missing_metric_count} player-week entries missing VORP or projections.</Text>
-        {metric && <Text size="sm">Fantasy strength source: {metric.source}. Completed fantasy points per scoring week, standardized as a z-score; positive means stronger. {metric.teams_with_strength}/{Object.keys(data.teams).length} teams with observed strength · League mean {contextNumber(metric.league_mean)} · Standard deviation {contextNumber(metric.league_stddev)}. Unknown values remain unknown. This describes past fantasy scoring, separate from NFL matchup difficulty; it is not a win probability.</Text>}
         {!ours && <Alert color="yellow">Configured team {config.team_id} is missing from this league context.</Alert>}
         <NativeSelect label="Counterparty" value={counterparty?.team_id ?? ''}
           data={[{ value: '', label: 'Select a counterparty' }, ...Object.values(data.teams).filter((team) => team.team_id !== config.team_id).map((team) => ({ value: team.team_id, label: team.name }))]}

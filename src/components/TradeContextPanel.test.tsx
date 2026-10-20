@@ -66,8 +66,8 @@ it('presents current ownership, identities, provenance and exact-week metrics', 
   expect(screen.getByText(/Internal mapping unavailable/)).toBeTruthy()
   expect(screen.getByText(/Current ownership.*historical/)).toBeTruthy()
   expect(screen.getByText(/ESPN mRoster/)).toBeTruthy()
-  expect(screen.getByText(/8 player-week/)).toBeTruthy()
-  expect(screen.getByText(/1 unmapped/)).toBeTruthy()
+  expect(screen.getByText('Missing player-week metrics').nextElementSibling?.textContent).toBe('8')
+  expect(screen.getByText('Unmapped players').nextElementSibling?.textContent).toBe('1')
   expect(screen.getByText(/Weeks 5–7/)).toBeTruthy()
   expect(document.querySelector('time')?.getAttribute('datetime')).toBe('2026-10-07T12:00:00Z')
   const row = screen.getByText('Mapped Player').closest('tr')!
@@ -77,13 +77,14 @@ it('presents current ownership, identities, provenance and exact-week metrics', 
 it('distinguishes unknown strength, real zero, bye and unavailable pairing', async () => {
   render(view())
   await selectRival()
-  expect(screen.getAllByText('Unknown').length).toBeGreaterThan(0)
-  expect(screen.getAllByText('0.00 z').length).toBeGreaterThan(0)
+  expect(screen.getAllByText('Strength unknown').length).toBeGreaterThan(0)
+  expect(screen.getAllByText('Strength 0.00 average').length).toBeGreaterThan(0)
   expect(screen.getByText('Bye')).toBeTruthy()
   expect(screen.getByText('Pairing unavailable')).toBeTruthy()
   expect(screen.getAllByText(/Head-to-head/).length).toBe(2)
-  expect(screen.getByText(/Stored ESPN completed regular-season scoring weeks/)).toBeTruthy()
-  expect(screen.getByText(/NFL matchup difficulty/)).toBeTruthy()
+  fireEvent.focus(within(screen.getByText('Observed strength')).getByRole('button'))
+  expect((await screen.findByRole('tooltip')).textContent).toMatch(/^Strength compares/)
+  expect(screen.getByText('Stored ESPN completed regular-season scoring weeks')).toBeTruthy()
   expect(screen.getAllByText(/1 unavailable history/).length).toBe(2)
 })
 it('supports retry and warns when a refresh fails with cached data', async () => {
@@ -170,4 +171,24 @@ it('clears a counterparty selection when it becomes the configured team', async 
   rerender(view({ ...config, team_id: '2' }))
   expect(screen.queryByText('Mapped Player')).toBeNull()
   expect((screen.getByRole('combobox', { name: 'Counterparty' }) as HTMLSelectElement).value).toBe('')
+})
+
+it('offers one horizon explanation when context is loaded', async () => {
+  render(view())
+  await selectRival()
+  expect(screen.getAllByRole('button', { name: 'What is the horizon?' })).toHaveLength(1)
+})
+
+it('keeps strength help in the header of each team schedule', async () => {
+  render(view())
+  await selectRival()
+  for (const team of ['Ours', 'Rivals']) {
+    const schedule = screen.getByRole('region', { name: `${team} fantasy schedule` })
+    expect(within(schedule).getAllByRole('button')).toHaveLength(1)
+    expect(within(schedule).getByRole('button', { name: `What is ${team} opponent strength?` })).toBeTruthy()
+  }
+  fireEvent.focus(within(screen.getByText('Observed strength')).getByRole('button'))
+  const tip = await screen.findByRole('tooltip')
+  expect(tip.textContent).not.toContain('Source:')
+  expect(screen.getByText('Strength source').nextElementSibling?.textContent).toBe('Stored ESPN completed regular-season scoring weeks')
 })
