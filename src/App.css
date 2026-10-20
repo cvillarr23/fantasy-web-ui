@@ -667,7 +667,7 @@
   color: var(--accent);
 }
 .muted {
-  opacity: 0.6;
+  color: var(--muted);
   font-size: 14px;
 }
 .error {
@@ -698,7 +698,7 @@
 }
 .app-nav a[aria-current='page'] {
   background: var(--accent);
-  color: var(--bg);
+  color: var(--on-accent);
   border-color: var(--accent);
 }
 

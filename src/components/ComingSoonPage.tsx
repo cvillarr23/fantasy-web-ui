@@ -11,7 +11,7 @@ export function ComingSoonPage({ title, issueUrl }: Props) {
     <div className="dashboard">
       {issueUrl && <RoadmapBanner title={`${title} is planned`} issueUrl={issueUrl} />}
       <Stack gap="md" mt="xl" align="center">
-        <Badge variant="light" color="grape" size="lg">Coming soon</Badge>
+        <Badge variant="light" color="clay" size="lg">Coming soon</Badge>
         <Title order={1}>{title}</Title>
         <Text c="dimmed" ta="center" maw={480}>
           This view isn't built yet — it's registered in the nav shell now so it's ready to

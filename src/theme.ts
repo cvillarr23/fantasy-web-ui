@@ -1,14 +1,21 @@
-import { createTheme, type CSSVariablesResolver, type MantineColorsTuple } from '@mantine/core'
+import type { ComboboxChevronProps, CSSVariablesResolver, InputProps, MantineColorsTuple, MantineThemeOverride } from '@mantine/core'
 
 /** The single source of truth for product colors. See docs/design-system.md. */
 export const palette = {
-  background: '#14151c',
-  surface: '#1e202b',
-  raised: '#272a38',
-  border: '#424657',
-  text: '#f3f4f8',
-  secondary: '#b2b8cb',
-  accent: '#c4a1ff',
+  background: '#17130f',
+  surface: '#221c16',
+  raised: '#2e261f',
+  border: '#4d4237',
+  text: '#f7f0e6',
+  secondary: '#c7bba9',
+  muted: '#9a8e80',
+  accent: '#c47f56',
+  accentInk: '#cd926f',
+  overlay: '#382f26',
+  overlayBorder: '#6b5c4c',
+  disabled: '#3d342b',
+  disabledText: '#9a8e80',
+  onAccent: '#14151c',
   projected: '#8cc8ff',
   incoming: '#6ee7c0',
   outgoing: '#ffbb82',
@@ -29,36 +36,76 @@ function shades(hex: string): MantineColorsTuple {
         .join(''),
   ) as unknown as MantineColorsTuple
 }
-export const theme = createTheme({
-  primaryColor: 'violet',
+// Overlay text uses lighter clay ink; the primary fill stays the original clay.
+const overlayStyles = {
+  backgroundColor: palette.overlay,
+  borderColor: palette.overlayBorder,
+  color: palette.text,
+  '--accent': palette.accentInk,
+  '--mantine-color-anchor': palette.accentInk,
+  '--mantine-color-clay-text': palette.accentInk,
+  '--mantine-color-clay-outline': palette.accentInk,
+}
+
+// Keep this module free of runtime framework imports so Storybook can share the palette.
+export const theme = {
+  primaryColor: 'clay',
+  primaryShade: 5,
+  autoContrast: true,
+  // Clay and its hover shade need dark text to meet normal-text contrast.
+  luminanceThreshold: 0.179,
+  black: palette.onAccent,
   defaultRadius: 'md',
   fontFamily: 'Inter, system-ui, sans-serif',
   colors: {
+    gray: shades(palette.secondary),
     blue: shades(palette.projected),
     teal: shades(palette.incoming),
     green: shades(palette.incoming),
     red: shades(palette.error),
     yellow: shades(palette.warning),
     orange: shades(palette.outgoing),
-    grape: shades(palette.accent),
-    violet: [
-      '#f5efff',
-      '#eaddff',
-      '#ddc7ff',
-      '#cfafff',
-      '#c4a1ff',
-      '#b88cff',
-      '#ae7aff',
-      '#9760eb',
-      '#804acb',
-      '#6837aa',
+    clay: shades(palette.accent),
+    // Mantine uses this ramp for inputs, tables, menus and other neutral controls.
+    dark: [
+      palette.text, palette.secondary, palette.disabledText, palette.overlayBorder,
+      palette.border, palette.disabled, palette.overlay, palette.raised,
+      palette.surface, palette.background,
     ],
   },
   components: {
     Button: { defaultProps: { size: 'sm' } },
+    Input: {
+      vars: (_theme: unknown, { variant }: InputProps) => ({
+        wrapper: variant === 'unstyled' ? {} : { '--input-bg': palette.surface },
+      }),
+    },
+    ComboboxChevron: {
+      vars: (_theme: unknown, { color, error }: ComboboxChevronProps) => ({
+        chevron: color ? {} : { '--combobox-chevron-color': error ? palette.error : palette.muted },
+      }),
+    },
+    ComboboxOption: {
+      // Mantine uses its white token for keyboard-highlighted option text.
+      // Scope the replacement to options so every Combobox consumer shares the ink.
+      defaultProps: { styles: { option: { '--mantine-color-white': palette.onAccent } } },
+    },
+    Tooltip: {
+      styles: {
+        tooltip: { ...overlayStyles, border: `1px solid ${palette.overlayBorder}` },
+      },
+    },
+    Popover: {
+      styles: { dropdown: overlayStyles },
+    },
+    Combobox: { styles: { dropdown: overlayStyles } },
+    Select: { styles: { dropdown: overlayStyles } },
+    MultiSelect: { styles: { dropdown: overlayStyles } },
+    Autocomplete: { styles: { dropdown: overlayStyles } },
+    Menu: { styles: { dropdown: { ...overlayStyles, '--menu-item-hover': palette.raised } } },
     Table: { defaultProps: { striped: true, highlightOnHover: true, verticalSpacing: 'sm' } },
   },
-})
+} satisfies MantineThemeOverride
 export const cssVariablesResolver: CSSVariablesResolver = () => ({
   variables: {
     '--bg': palette.background,
@@ -67,8 +114,10 @@ export const cssVariablesResolver: CSSVariablesResolver = () => ({
     '--raised': palette.raised,
     '--border': palette.border,
     '--text': palette.secondary,
+    '--muted': palette.muted,
     '--text-h': palette.text,
     '--accent': palette.accent,
+    '--on-accent': palette.onAccent,
     '--projected': palette.projected,
     '--incoming': palette.incoming,
     '--outgoing': palette.outgoing,
@@ -82,5 +131,14 @@ export const cssVariablesResolver: CSSVariablesResolver = () => ({
     '--mantine-color-body': palette.background,
     '--mantine-color-text': palette.text,
     '--mantine-color-dimmed': palette.secondary,
+    '--mantine-color-anchor': palette.accent,
+    '--mantine-color-placeholder': palette.muted,
+    '--mantine-color-default': palette.surface,
+    '--mantine-color-default-hover': palette.raised,
+    '--mantine-color-default-color': palette.text,
+    '--mantine-color-default-border': palette.border,
+    '--mantine-color-disabled': palette.disabled,
+    '--mantine-color-disabled-color': palette.disabledText,
+    '--mantine-color-disabled-border': palette.border,
   },
 })

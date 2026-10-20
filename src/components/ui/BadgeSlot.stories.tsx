@@ -9,7 +9,7 @@ const meta = {
   argTypes: {
     variant: { control: 'inline-radio', options: ['filled', 'light', 'outline'] },
     size: { control: 'inline-radio', options: ['xs', 'sm'] },
-    color: { control: 'select', options: ['gray', 'blue', 'green', 'yellow', 'orange', 'red', 'violet'] },
+    color: { control: 'select', options: ['gray', 'blue', 'green', 'yellow', 'orange', 'red', 'clay'] },
   },
 } satisfies Meta<typeof BadgeSlot>
 

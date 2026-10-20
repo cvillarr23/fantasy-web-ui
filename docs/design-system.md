@@ -8,18 +8,51 @@ Browse the shared components in the [component library](pathname:///ui/component
 
 Edit `src/theme.ts` to change the application palette. It exports the semantic `palette`, Mantine `theme`, and `cssVariablesResolver`; `src/main.tsx` installs all three through MantineProvider. Do not add page-specific hex colors.
 
-| Token | Meaning |
-| --- | --- |
-| background / surface / raised | Page, card, elevated controls |
-| border | Separators and control outlines |
-| text / secondary | Primary and supporting text |
-| accent | Navigation, links, primary actions |
-| projected | Estimated/projected fantasy points |
-| incoming | Players received or added; positive changes |
-| outgoing | Players sent or dropped |
-| warning / error | Uncertainty and problems |
+The app uses a warm earth ground with clay primary actions. Storybook's manager, docs, and previews share these tokens.
 
-CSS uses the variables defined by the resolver (`--bg`, `--surface`, `--raised`, `--border`, `--text-h`, `--text`, `--accent`, `--projected`, `--incoming`, `--outgoing`, `--warn`, `--error`). Mantine's semantic color names derive from these palette values; the violet primary ramp is also defined in this file.
+| Token | Value | Meaning |
+| --- | --- | --- |
+| background | `#17130f` | Page ground |
+| surface | `#221c16` | Cards and controls |
+| raised | `#2e261f` | Elevated controls and hover states |
+| border | `#4d4237` | Separators and control outlines |
+| text | `#f7f0e6` | Primary text |
+| secondary | `#c7bba9` | Supporting text |
+| muted | `#9a8e80` | Less prominent text, input placeholders, and dropdown chevrons |
+| accent | `#c47f56` | Navigation, links, primary actions |
+| accentInk | `#cd926f` | Accessible clay text on overlays |
+| onAccent | `#14151c` | Dark text on filled actions and badges |
+| overlay / overlayBorder | `#382f26` / `#6b5c4c` | Tooltip and popover surfaces and outlines |
+| disabled / disabledText | `#3d342b` / `#9a8e80` | Disabled controls |
+| projected | `#8cc8ff` | Estimated/projected fantasy points |
+| incoming | `#6ee7c0` | Players received or added; positive changes |
+| outgoing | `#ffbb82` | Players sent or dropped |
+| warning / error | `#fcd479` / `#ff9aa9` | Uncertainty and problems |
+
+CSS uses the variables defined by the resolver (`--bg`, `--surface`, `--raised`, `--border`, `--text-h`, `--text`, `--muted`, `--accent`, `--on-accent`, `--projected`, `--incoming`, `--outgoing`, `--warn`, `--error`). `--accent-bg` and `--accent-border` apply alpha to the clay token for selected surfaces and outlines.
+
+Mantine's semantic color names derive from these palette values. Its `clay` primary ramp uses shade 5 for the exact accent, with shade 6 on hover. Automatic contrast uses `onAccent` for dark text on light fills, including semantic badges. The `dark` ramp and default, placeholder, and disabled variables use earth neutrals.
+
+### Text contrast
+
+Use WCAG AA's 4.5:1 minimum for normal text. The palette provides these ratios:
+
+| Pair | Contrast |
+| --- | --- |
+| Body text on page ground | 16.33:1 |
+| Secondary text on page ground / raised surface | 9.78:1 / 7.86:1 |
+| Clay links on page ground / raised surface | 5.73:1 / 4.61:1 |
+| Dark text on clay fill / hover | 5.65:1 / 4.65:1 |
+| Primary text on tooltip/popover | 11.58:1 |
+| Lighter clay ink on overlay | 4.95:1 |
+| Muted supporting text on page ground | 5.77:1 |
+| Input placeholder on surface | 5.26:1 |
+| Select chevron on surface | 5.26:1 |
+| Overlay clay ink on Menu hover/focus surface | 5.62:1 |
+
+Dropdowns (Select, Combobox, MultiSelect, Autocomplete, and Menu), popovers, and tooltips share overlay surfaces and lighter clay ink for links and accent text. `.muted` uses a separate solid muted token rather than reducing opacity. Default and filled inputs explicitly use `surface`, with muted placeholders and chevrons; disabled fields keep their separate disabled fill. Menu hover and focus use `raised` to preserve overlay ink contrast. Keyboard-highlighted options use dark `onAccent` text on the clay fill.
+
+Use light or outline badges on dark surfaces, or automatic contrast for filled badges. Avoid using primary text on clay fills. Disabled controls are exempt from the normal-text contrast requirement.
 
 ## Labels and numbers
 
