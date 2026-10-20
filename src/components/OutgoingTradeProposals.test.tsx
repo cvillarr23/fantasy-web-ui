@@ -156,7 +156,11 @@ it('shows our gain, counterparty change and schedule adjustment without expandin
   vi.mocked(getOutgoingTradeOffers).mockResolvedValue([{ ...offer, evaluation: proposalEvaluation() }])
   render(view())
   const terms = await screen.findByLabelText('Score terms summary')
-  expect(terms.textContent).toBe('Our lineup gain +12.6 · Our schedule adjustment +1.2 · Counterparty weighted benefit +2.1')
+  expect(within(terms).getByText('+12.6')).toBeTruthy()
+  expect(within(terms).getByText('+1.2')).toBeTruthy()
+  expect(within(terms).getByText('+2.1')).toBeTruthy()
+  expect(within(terms).getByText('Schedule boost')).toBeTruthy()
+  expect(within(terms).getByText('Their benefit')).toBeTruthy()
   expect(screen.getByLabelText('Counterparty lineup change').textContent).toMatch(/-4\.4 \(negative means the trade weakens them\)/)
 })
 
@@ -166,7 +170,9 @@ it('shows our lineup gain on a proposal ranked by it when the final score is wit
   vi.mocked(getOutgoingTradeOffers).mockResolvedValue([{ ...offer, evaluation }])
   render(view())
   const terms = await screen.findByLabelText('Score terms summary')
-  expect(terms.textContent).toBe('Our lineup gain +6.3 · Our schedule adjustment +0.8 · Counterparty weighted benefit Not available')
+  expect(within(terms).getByText('+6.3')).toBeTruthy()
+  expect(within(terms).getByText('+0.8')).toBeTruthy()
+  expect(within(terms).getByText('Unavailable')).toBeTruthy()
 })
 
 it('shows an unavailable stored score with its reasons rather than zero', async () => {

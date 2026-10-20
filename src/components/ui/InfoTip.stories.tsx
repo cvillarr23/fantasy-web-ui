@@ -15,6 +15,7 @@ export const Hover: Story = {
     const page = within(canvasElement.ownerDocument.body)
     await userEvent.hover(canvas.getByRole('button', { name: 'What is strength?' }))
     await expect(await page.findByRole('tooltip')).toHaveTextContent(tradeGlossary.strength)
+    await expect(page.getByRole('tooltip')).toHaveAttribute('id', canvas.getByRole('button').getAttribute('aria-describedby'))
     await userEvent.unhover(canvas.getByRole('button'))
     await waitFor(() => expect(page.queryByRole('tooltip')).not.toBeInTheDocument())
   },
@@ -32,6 +33,7 @@ export const Keyboard: Story = {
 export const Phone: Story = {
   globals: { viewport: { value: 'mobile1', isRotated: false } },
   play: async ({ canvas, canvasElement }) => {
+    await expect(canvasElement.ownerDocument.defaultView!.innerWidth).toBeLessThanOrEqual(480)
     const page = within(canvasElement.ownerDocument.body)
     await userEvent.click(canvas.getByRole('button'))
     await waitFor(() => expect(page.getByRole('tooltip')).toBeVisible())

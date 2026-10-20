@@ -16,6 +16,14 @@ Route: `/trades`. Three stacked panels.
 | League trade context | Team needs, schedule, each player's NFL bye and the counterparty's bye-crunch weeks, and provenance, for a chosen horizon and counterparty |
 | Evaluate a trade | Manual VORP comparison for players you pick |
 
+## Reading the score and strength
+
+Proposals show **Our lineup gain**, **Schedule boost** and **Their benefit** as separate signed values. Teal values are positive, pink values negative, and unavailable data stays unavailable. Open **Score breakdown** for the returned score terms and weekly evidence.
+
+The round **?** buttons explain the numbers on hover, keyboard focus or tap. Press Escape or tap again to dismiss an explanation.
+
+Strength compares completed fantasy points per week with the league average. Orange **strong** chips mean at least +0.5 standard deviations; blue **weak** chips mean at most −0.5. Other observed values are **average**, and missing strength uses a dashed **unknown** chip. Strength is neither win probability nor NFL defense difficulty.
+
 ## Which endpoints does it call?
 
 | Endpoint | Purpose |

@@ -1,4 +1,6 @@
-import { Alert, Badge, Group, List, Stack, Text } from '@mantine/core'
+import { StatTile } from '../ui/StatTile'
+import { tradeGlossary } from './tradeGlossary'
+import { Alert, Badge, Group, List, SimpleGrid, Stack, Text } from '@mantine/core'
 import type { ProposalEvaluation, TradeOffer } from '../../api/types'
 import { reasonLabel } from './tradeScoreReasons'
 import { TradeScoreBreakdown } from './TradeScoreBreakdown'
@@ -74,10 +76,13 @@ export function ProposalScoreSummary({ offer, teamNames }: {
         )}
         {/* Kept outside the collapsed breakdown: a proposal ranked by our lineup gain has no
             final score, and our value must stay distinct from what the trade does to them.
-            G + adjustment + C* is the final score, so the line reconciles with the headline. */}
-        <Text size="sm" aria-label="Score terms summary">
-          {`Our lineup gain ${signedScore(score.score.our_lineup_gain)} · Our schedule adjustment ${signedScore(score.score.our_schedule_adjustment)} · Counterparty weighted benefit ${signedScore(score.score.counterparty_weighted_benefit)}`}
-        </Text>
+            G + adjustment + C* is the final score, so the tiles reconcile with the headline. */}
+        <SimpleGrid cols={{ base: 1, xs: 3 }} spacing="xs" aria-label="Score terms summary">
+          <StatTile label="Our lineup gain" value={score.score.our_lineup_gain} info={tradeGlossary.ourLineupGain} />
+          <StatTile label="Schedule boost" value={score.score.our_schedule_adjustment} info={tradeGlossary.scheduleBoost} />
+          <StatTile label="Their benefit" value={score.score.counterparty_weighted_benefit}
+            info={<>{tradeGlossary.theirBenefit}<br />{tradeGlossary.counterpartyWeightedBenefit}</>} />
+        </SimpleGrid>
         <Text size="xs" c="dimmed" aria-label="Counterparty lineup change">
           {`Their lineup changes by ${signedScore(score.score.counterparty_lineup_change)} (negative means the trade weakens them).`}
         </Text>

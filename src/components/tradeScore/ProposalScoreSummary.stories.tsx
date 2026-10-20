@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import type { TradeOffer } from '../../api/types'
 import { ProposalScoreSummary } from './ProposalScoreSummary'
 import { proposalEvaluation, unscoredScore } from './fixtures'
@@ -29,7 +30,19 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Scored: Story = {}
+export const Scored: Story = {
+  play: async ({ canvas, canvasElement }) => {
+    const tiles = within(canvas.getByLabelText('Score terms summary'))
+    await expect(tiles.getByText('+12.6')).toBeVisible()
+    await expect(tiles.getByText('Schedule boost')).toBeVisible()
+    await expect(tiles.getByText('Their benefit')).toBeVisible()
+    await userEvent.hover(tiles.getByRole('button', { name: 'What is their benefit?' }))
+    await waitFor(() => expect(within(canvasElement.ownerDocument.body).getByRole('tooltip')).toBeVisible())
+    await expect(within(canvasElement.ownerDocument.body).getByRole('tooltip')).toHaveTextContent('Their gains reduce our score')
+    await userEvent.unhover(tiles.getByRole('button', { name: 'What is their benefit?' }))
+  },
+}
+export const Phone: Story = { ...Scored, globals: { viewport: { value: 'mobile1', isRotated: false } } }
 export const Unscored: Story = { args: { offer: offer({ evaluation: proposalEvaluation(unscoredScore()) }) } }
 
 /** `null` means no evidence was stored. */

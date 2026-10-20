@@ -67,3 +67,11 @@ Rules for a shared component:
 ## Why is the component library dark only?
 
 The app forces dark mode, and `palette` only defines dark values. The library renders the same theme, so it shows what users see.
+
+## Inline explanations and trade values
+
+`InfoTip` takes a term `label` and explanation `children`. It opens on hover, keyboard focus or tap; Escape, another tap or clicking outside dismisses it. Popovers use a portal so scrolling tables do not clip them.
+
+`StrengthChip` takes a nullable numeric `value` and optional `label`. Values at least +0.5 are orange and strong; values at most −0.5 are blue and weak. Other known values are average. Unknown values use a dashed border. Strength colors describe the team rather than whether the trade helps us.
+
+`StatTile` takes a `label`, nullable numeric `value`, optional `info`, optional `caption` and optional decimal `precision` (default 1). Positive values are teal, negative values are pink, and zero or unavailable values use secondary text. Trade explanations live in `tradeScore/tradeGlossary.ts` so cards and evidence panels share the same copy.

@@ -1,15 +1,16 @@
+import { StrengthChip } from './ui/StrengthChip'
 import { Badge, Card, Table, Text } from '@mantine/core'
 import type { TradeContextTeam } from '../api/types'
-import { contextNumber, formatFantasyStrength } from './tradeContextFormat'
+import { contextNumber } from './tradeContextFormat'
 
 export function TradeContextSchedule({ team, otherTeamId }: { team: TradeContextTeam; otherTeamId?: string }) {
   const { strength, schedule_coverage: coverage } = team
   return (
     <Card withBorder component="section" aria-label={`${team.name} fantasy schedule`}>
       <h3>{team.name}: fantasy schedule</h3>
-      <Text>Team strength: {formatFantasyStrength(strength.z_score)} · {contextNumber(strength.points_per_week)} completed points/week</Text>
+      <div><StrengthChip value={strength.z_score} /> <Text span size="sm">{contextNumber(strength.points_per_week)} completed points/week</Text></div>
       <Text size="sm">{strength.completed_matchups} completed matchups · {strength.completed_scoring_weeks} scoring weeks · {strength.unavailable_history_periods} unavailable history periods</Text>
-      <Text>Average opponent strength: {formatFantasyStrength(team.schedule_strength_z)}</Text>
+      <div><StrengthChip label="Average opponent strength" value={team.schedule_strength_z} /></div>
       <Text size="sm" c="dimmed">{coverage.strength_known_weeks}/{coverage.scheduled_weeks} scheduled weeks with known strength · {coverage.bye_weeks} byes · {coverage.unavailable_weeks} unavailable weeks</Text>
       {!team.schedule.length ? <Text>No remaining regular-season schedule in this horizon.</Text> : (
         <Table.ScrollContainer minWidth={320}>
@@ -22,7 +23,7 @@ export function TradeContextSchedule({ team, otherTeamId }: { team: TradeContext
                   {row.status === 'bye' ? 'Bye' : row.status === 'unavailable' ? 'Pairing unavailable' : row.opponent_name || `Team ${row.opponent_team_id}`}
                   {row.status === 'scheduled' && row.opponent_team_id === otherTeamId && <Badge ml="xs">Head-to-head</Badge>}
                 </Table.Td>
-                <Table.Td>{row.status === 'scheduled' ? formatFantasyStrength(row.opponent_strength_z) : '—'}</Table.Td>
+                <Table.Td>{row.status === 'scheduled' ? <StrengthChip value={row.opponent_strength_z} /> : '—'}</Table.Td>
               </Table.Tr>
             ))}</Table.Tbody>
           </Table>

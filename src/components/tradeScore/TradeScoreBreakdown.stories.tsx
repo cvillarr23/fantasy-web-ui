@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect } from 'storybook/test'
+import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { TradeScoreBreakdown } from './TradeScoreBreakdown'
 import { completeScore, partialScore, unscoredScore } from './fixtures'
 
@@ -16,8 +16,11 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Complete: Story = {
-  play: async ({ canvas }) => {
+  play: async ({ canvas, canvasElement }) => {
     await expect(canvas.getByRole('table', { name: 'Score terms' })).toBeVisible()
+    await userEvent.click(canvas.getByRole('button', { name: 'What is our weight?' }))
+    await waitFor(() => expect(within(canvasElement.ownerDocument.body).getByRole('tooltip')).toBeVisible())
+    await expect(within(canvasElement.ownerDocument.body).getByRole('tooltip')).toHaveTextContent('1 + 0.25 × clamp(z, −2, 2)')
   },
 }
 
@@ -28,3 +31,5 @@ export const Unscored: Story = { args: { score: unscoredScore() } }
 
 /** Without team names the breakdown falls back to team IDs. */
 export const NoTeamNames: Story = { args: { teamNames: undefined } }
+
+export const Phone: Story = { globals: { viewport: { value: 'mobile1', isRotated: false } } }

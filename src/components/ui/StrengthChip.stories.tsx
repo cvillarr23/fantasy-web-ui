@@ -28,6 +28,7 @@ export const Keyboard: Story = {
 export const Phone: Story = {
   globals: { viewport: { value: 'mobile1', isRotated: false } },
   play: async ({ canvas, canvasElement }) => {
+    await expect(canvasElement.ownerDocument.defaultView!.innerWidth).toBeLessThanOrEqual(480)
     await userEvent.click(canvas.getByRole('button'))
     await waitFor(() => expect(within(canvasElement.ownerDocument.body).getByRole('tooltip')).toBeVisible())
   },

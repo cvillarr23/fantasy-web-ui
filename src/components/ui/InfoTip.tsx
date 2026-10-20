@@ -20,7 +20,7 @@ export function InfoTip({ label, children }: InfoTipProps) {
   const [opened, setOpened] = useState(false)
   const [pinned, setPinned] = useState(false)
   return (
-    <Popover opened={opened} onChange={setOpened} width={280} position="bottom-start" withinPortal
+    <Popover opened={opened} onChange={(next) => { setOpened(next); if (!next) setPinned(false) }} withRoles={false} width={280} position="bottom-start" withinPortal
       shadow="md" closeOnEscape closeOnClickOutside>
       <Popover.Target>
         <button type="button" className="info-tip" aria-label={`What is ${label}?`}
@@ -28,11 +28,11 @@ export function InfoTip({ label, children }: InfoTipProps) {
           onMouseEnter={() => { cancelClose(); setOpened(true) }}
           onMouseLeave={(event) => { if (!pinned && event.currentTarget !== document.activeElement) closeSoon() }}
           onKeyDown={(event) => { if (event.key === 'Escape') { cancelClose(); setOpened(false); setPinned(false) } }}
-          onFocus={() => setOpened(true)}
+          onFocus={() => { cancelClose(); setOpened(true) }}
           onBlur={() => { setOpened(false); setPinned(false) }}
-          onClick={() => { setPinned(!pinned); setOpened(!pinned) }}>?</button>
+          onClick={() => { cancelClose(); setPinned(!pinned); setOpened(!pinned) }}>?</button>
       </Popover.Target>
-      <Popover.Dropdown onMouseEnter={cancelClose} onMouseLeave={() => { if (!pinned) closeSoon() }} id={id} role="tooltip" className="info-tip-popover">{children}</Popover.Dropdown>
+      <Popover.Dropdown onMouseEnter={cancelClose} onMouseLeave={() => { if (!pinned && document.activeElement?.getAttribute('aria-describedby') !== id) closeSoon() }} id={id} role="tooltip" className="info-tip-popover">{children}</Popover.Dropdown>
     </Popover>
   )
 }
