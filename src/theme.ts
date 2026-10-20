@@ -1,4 +1,4 @@
-import type { CSSVariablesResolver, MantineColorsTuple, MantineThemeOverride } from '@mantine/core'
+import type { ComboboxChevronProps, CSSVariablesResolver, InputProps, MantineColorsTuple, MantineThemeOverride } from '@mantine/core'
 
 /** The single source of truth for product colors. See docs/design-system.md. */
 export const palette = {
@@ -8,6 +8,7 @@ export const palette = {
   border: '#4d4237',
   text: '#f7f0e6',
   secondary: '#c7bba9',
+  muted: '#9a8e80',
   accent: '#c47f56',
   accentInk: '#cd926f',
   overlay: '#382f26',
@@ -74,6 +75,21 @@ export const theme = {
   },
   components: {
     Button: { defaultProps: { size: 'sm' } },
+    Input: {
+      vars: (_theme: unknown, { variant }: InputProps) => ({
+        wrapper: variant === 'unstyled' ? {} : { '--input-bg': palette.surface },
+      }),
+    },
+    ComboboxChevron: {
+      vars: (_theme: unknown, { color, error }: ComboboxChevronProps) => ({
+        chevron: color ? {} : { '--combobox-chevron-color': error ? palette.error : palette.muted },
+      }),
+    },
+    ComboboxOption: {
+      // Mantine uses its white token for keyboard-highlighted option text.
+      // Scope the replacement to options so every Combobox consumer shares the ink.
+      defaultProps: { styles: { option: { '--mantine-color-white': palette.onAccent } } },
+    },
     Tooltip: {
       styles: {
         tooltip: { ...overlayStyles, border: `1px solid ${palette.overlayBorder}` },
@@ -86,7 +102,7 @@ export const theme = {
     Select: { styles: { dropdown: overlayStyles } },
     MultiSelect: { styles: { dropdown: overlayStyles } },
     Autocomplete: { styles: { dropdown: overlayStyles } },
-    Menu: { styles: { dropdown: overlayStyles } },
+    Menu: { styles: { dropdown: { ...overlayStyles, '--menu-item-hover': palette.raised } } },
     Table: { defaultProps: { striped: true, highlightOnHover: true, verticalSpacing: 'sm' } },
   },
 } satisfies MantineThemeOverride
@@ -98,6 +114,7 @@ export const cssVariablesResolver: CSSVariablesResolver = () => ({
     '--raised': palette.raised,
     '--border': palette.border,
     '--text': palette.secondary,
+    '--muted': palette.muted,
     '--text-h': palette.text,
     '--accent': palette.accent,
     '--on-accent': palette.onAccent,
@@ -115,7 +132,7 @@ export const cssVariablesResolver: CSSVariablesResolver = () => ({
     '--mantine-color-text': palette.text,
     '--mantine-color-dimmed': palette.secondary,
     '--mantine-color-anchor': palette.accent,
-    '--mantine-color-placeholder': palette.disabledText,
+    '--mantine-color-placeholder': palette.muted,
     '--mantine-color-default': palette.surface,
     '--mantine-color-default-hover': palette.raised,
     '--mantine-color-default-color': palette.text,

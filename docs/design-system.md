@@ -18,6 +18,7 @@ The app uses a warm earth ground with clay primary actions. Storybook's manager,
 | border | `#4d4237` | Separators and control outlines |
 | text | `#f7f0e6` | Primary text |
 | secondary | `#c7bba9` | Supporting text |
+| muted | `#9a8e80` | Less prominent text, input placeholders, and dropdown chevrons |
 | accent | `#c47f56` | Navigation, links, primary actions |
 | accentInk | `#cd926f` | Accessible clay text on overlays |
 | onAccent | `#14151c` | Dark text on filled actions and badges |
@@ -28,7 +29,7 @@ The app uses a warm earth ground with clay primary actions. Storybook's manager,
 | outgoing | `#ffbb82` | Players sent or dropped |
 | warning / error | `#fcd479` / `#ff9aa9` | Uncertainty and problems |
 
-CSS uses the variables defined by the resolver (`--bg`, `--surface`, `--raised`, `--border`, `--text-h`, `--text`, `--accent`, `--on-accent`, `--projected`, `--incoming`, `--outgoing`, `--warn`, `--error`). `--accent-bg` and `--accent-border` apply alpha to the clay token for selected surfaces and outlines.
+CSS uses the variables defined by the resolver (`--bg`, `--surface`, `--raised`, `--border`, `--text-h`, `--text`, `--muted`, `--accent`, `--on-accent`, `--projected`, `--incoming`, `--outgoing`, `--warn`, `--error`). `--accent-bg` and `--accent-border` apply alpha to the clay token for selected surfaces and outlines.
 
 Mantine's semantic color names derive from these palette values. Its `clay` primary ramp uses shade 5 for the exact accent, with shade 6 on hover. Automatic contrast uses `onAccent` for dark text on light fills, including semantic badges. The `dark` ramp and default, placeholder, and disabled variables use earth neutrals.
 
@@ -44,9 +45,12 @@ Use WCAG AA's 4.5:1 minimum for normal text. The palette provides these ratios:
 | Dark text on clay fill / hover | 5.65:1 / 4.65:1 |
 | Primary text on tooltip/popover | 11.58:1 |
 | Lighter clay ink on overlay | 4.95:1 |
-| Muted supporting text on page ground | 9.78:1 |
+| Muted supporting text on page ground | 5.77:1 |
+| Input placeholder on surface | 5.26:1 |
+| Select chevron on surface | 5.26:1 |
+| Overlay clay ink on Menu hover/focus surface | 5.62:1 |
 
-Dropdowns (Select, Combobox, MultiSelect, Autocomplete, and Menu), popovers, and tooltips share overlay surfaces and lighter clay ink for links and accent text. `.muted` uses solid secondary text rather than reducing opacity. Keyboard-highlighted options use dark `onAccent` text on the clay fill.
+Dropdowns (Select, Combobox, MultiSelect, Autocomplete, and Menu), popovers, and tooltips share overlay surfaces and lighter clay ink for links and accent text. `.muted` uses a separate solid muted token rather than reducing opacity. Default and filled inputs explicitly use `surface`, with muted placeholders and chevrons; disabled fields keep their separate disabled fill. Menu hover and focus use `raised` to preserve overlay ink contrast. Keyboard-highlighted options use dark `onAccent` text on the clay fill.
 
 Use light or outline badges on dark surfaces, or automatic contrast for filled badges. Avoid using primary text on clay fills. Disabled controls are exempt from the normal-text contrast requirement.
 

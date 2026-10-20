@@ -667,7 +667,7 @@
   color: var(--accent);
 }
 .muted {
-  color: var(--text);
+  color: var(--muted);
   font-size: 14px;
 }
 .error {
@@ -1264,13 +1264,4 @@ a.lineup-open-spot:focus-visible {
   display: block;
   padding: 8px 12px;
   white-space: pre;
-}
-
-/* Mantine highlights keyboard options with the primary fill; its default white ink
-   does not have enough contrast on clay. */
-.mantine-Combobox-option[data-combobox-selected],
-.mantine-Select-option[data-combobox-selected],
-.mantine-MultiSelect-option[data-combobox-selected],
-.mantine-Autocomplete-option[data-combobox-selected] {
-  color: var(--on-accent);
 }
