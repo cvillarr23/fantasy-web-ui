@@ -61,3 +61,11 @@ In **Build your own**, a scored result shows a verdict and four tiles: our lineu
 :::warning
 Approval is not an ESPN confirmation. If the outcome is unknown, don't approve again until you refresh status.
 :::
+
+## Reviewing approved offers
+
+Open **Sent trades** in the Trades header (`/trades/sent`) to review approved offers. Filter by outcome, then select an offer to see its players, message, score and timeline. On a phone, the list appears above the detail. Edited messages retain the editor's label and a toggle for the original generated draft when one was recorded.
+
+Queued approval is separate from confirmed ESPN submission. Submitted offers stay **Waiting** while the API does not record the other manager's answer. **View on ESPN** opens the league's transactions view; a direct offer link is not available yet. Withdrawal is shown disabled for submitted waiting offers.
+
+Opening a pending offer requests `POST /v1/trade/score` for the same player sides and current league week, using the stored horizon when available. Finished offers retain the stored score. The score tiles label stored scan evidence explicitly: the API does not yet expose an approval-time re-score. **Cost of helping them** shows the signed schedule-weighted penalty. Unavailable evidence and uncertain sends are labeled rather than treated as zero or a confirmed failure. Use **Refresh offers** to re-read status and scores.

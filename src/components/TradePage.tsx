@@ -1,6 +1,6 @@
-import { Badge, Group, Stack, Text } from '@mantine/core'
+import { Badge, Button, Group, Stack, Text } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useTradeContextControls } from '../hooks/useTradeContextControls'
 import { useTradeContext } from '../hooks/useTradeContext'
 import { useOutgoingTradeOffers } from '../hooks/useOutgoingTradeOffers'
@@ -38,7 +38,7 @@ export function TradePage() {
     <div className="dashboard trades-page">
       <Stack gap="xl">
         <PageHeader title="Trades" level={1} subtitle={`Week ${selectedWeek ?? '—'} · scored over the next ${tradeContextControls.horizon} weeks`}
-          actions={<WeekSelector week={week} onChange={setWeek} />} />
+          actions={<Group gap="sm"><Button component={Link} to="/trades/sent" variant="default">Sent trades</Button><WeekSelector week={week} onChange={setWeek} /></Group>} />
         <Group gap="sm" aria-label="Trade summary">
           <Badge component="a" href="#approve" size="lg" variant="light">{offers.isError ? 'Approval count unavailable' : `${offers.data?.length ?? '…'} proposals awaiting your approval`}</Badge>
           <Badge component="a" href="#finder" size="lg" color="teal" variant="light">Proposable trades found: coming soon</Badge>
