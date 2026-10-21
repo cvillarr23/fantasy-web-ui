@@ -28,8 +28,12 @@ it('opens the selected sides in the builder and scores the exact package live on
   expect(screen.getByText('Received Wideout')).toBeTruthy()
   expect(screen.getByText('Sent Back')).toBeTruthy()
   expect(await screen.findByText(/Scored live just now/)).toBeTruthy()
-  fireEvent.click(screen.getByText('Prefill'))
+  fireEvent.click(screen.getByRole('button', { name: 'Score trade' }))
   await waitFor(() => expect(scored).toHaveLength(2))
+  await waitFor(() => expect(screen.queryByText(/Scored live just now/)).toBeNull())
+  fireEvent.click(screen.getByText('Prefill'))
+  await waitFor(() => expect(scored).toHaveLength(3))
+  expect(await screen.findByText(/Scored live just now/)).toBeTruthy()
 })
 
 it('mounts the finder, reports its unfiltered count and expands the collapsed page builder', async () => {

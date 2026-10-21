@@ -4,7 +4,7 @@ description: Palette tokens, labeling rules, layout conventions and where shared
 sidebar_position: 4
 ---
 
-Browse the shared components in the [component library](pathname:///ui/components/), a Storybook build of the stories in this repository.
+Browse the shared components in the [component library](pathname:///ui/components/), a Storybook build of the stories in this repository. The [Patterns page](pathname:///ui/components/?path=/docs/patterns--guide) renders the real components next to the guidance below.
 
 Edit `src/theme.ts` to change the application palette. It exports the semantic `palette`, Mantine `theme`, and `cssVariablesResolver`; `src/main.tsx` installs all three through MantineProvider. Do not add page-specific hex colors.
 
@@ -49,8 +49,17 @@ Use WCAG AA's 4.5:1 minimum for normal text. The palette provides these ratios:
 | Input placeholder on surface | 5.26:1 |
 | Select chevron on surface | 5.26:1 |
 | Overlay clay ink on Menu hover/focus surface | 5.62:1 |
+| Secondary text on overlay | 6.93:1 |
+| Muted text on overlay | 4.09:1 (fails AA) |
 
 Dropdowns (Select, Combobox, MultiSelect, Autocomplete, and Menu), popovers, and tooltips share overlay surfaces and lighter clay ink for links and accent text. `.muted` uses a separate solid muted token rather than reducing opacity. Default and filled inputs explicitly use `surface`, with muted placeholders and chevrons; disabled fields keep their separate disabled fill. Menu hover and focus use `raised` to preserve overlay ink contrast. Keyboard-highlighted options use dark `onAccent` text on the clay fill.
+
+Rules from the Trades redesign review:
+
+- Muted text must be clearly different from body text. Use `.muted` or `c="dimmed"` for it, never reduced opacity.
+- Inputs have their own `surface` background, separate from the open dropdown's `overlay`, and a filled input must not look like a disabled one.
+- Placeholder text, the Select chevron and hovered menu items must all meet AA.
+- Muted `#9a8e80` is only 4.09:1 on the overlay `#382f26`. Tooltip, InfoTip and popover bodies therefore use secondary text (`c="dimmed"` resolves to it), or the overlay would have to be darkened until muted passes.
 
 Use light or outline badges on dark surfaces, or automatic contrast for filled badges. Avoid using primary text on clay fills. Disabled controls are exempt from the normal-text contrast requirement.
 
@@ -108,3 +117,37 @@ The app forces dark mode, and `palette` only defines dark values. The library re
 `StrengthChip` takes a nullable numeric `value`, optional `label` and optional boolean `info` (default false). It displays two decimals and uses that displayed value to label strength: at least +0.50 is strong, at most −0.50 is weak, and other values are average. Colour uses the rounded displayed value with a ±0.05 dead band: values above it are orange, values below it are blue, and values inside it are secondary. Nonzero displayed values have an up or down arrow. Unknown values use a dashed border. Opt into help for standalone chips; tables place a single InfoTip on each strength column header.
 
 `StatTile` takes a `label`, nullable numeric `value`, optional `info`, optional `caption` and optional decimal `precision` (default 1). Values above +0.05 are teal, values below −0.05 are pink, and values inside the dead band or unavailable values use secondary text. Colour follows the rounded displayed value, and signed zero is shown without a sign. It uses `signedScore` for number formatting and the shared “Not available” label. Trade explanations live in `tradeScore/tradeGlossary.ts`; use `tradeGlossaryForWeights(score.weights)` for scored proposals so formula copy reflects the returned strength weight, z clamp and indirect factor. The static `tradeGlossary` contains only weight-independent entries. Missing or nonfinite weights produce plain explanations without formulas.
+
+## Page anatomy
+
+The Trades page (`TradePage`, [Patterns story](pathname:///ui/components/?path=/docs/patterns--guide)) is the model for other pages:
+
+1. `PageHeader` with summary pills. Each pill is a `Badge` that links to the section it counts, and loading or failed counts say so ("… proposable trades found", "Approval count unavailable").
+2. The main "ready to act" section first.
+3. Then a browser: team filter cards (`TradeFinderTeamCards`), filters, and a table on desktop that turns into cards on phones (`TradeFinder`, `TradeCandidateRow`).
+4. Secondary sections in collapsed `<details className="trade-section">` panels, such as "Build your own" and "League context". A panel opens itself when something sends the user there, such as "Open in builder".
+5. On desktop, a sticky right rail (`.finder-details`) shows the selected item. On phones it is a single column with no page overflow; wide tables scroll inside their container.
+
+## Explaining numbers
+
+- **`InfoTip`** for every unfamiliar term. Copy comes from the shared glossary module `tradeScore/tradeGlossary.ts`, never inline. It works on hover, focus and tap. Escape closes only the tip and must not close other overlays such as a modal behind it.
+- **Signed values** (`StatTile`, `signedScore`): green means good for us and pink means bad. Color comes from the rounded value shown, with a neutral zone of ±0.05 around zero. Unknown shows a dash.
+- **`StrengthChip`** for z strength: arrow, two decimals and the labels strong, average or weak.
+- **Totals get a breakdown.** Any score shown as a total opens a week-by-week hover breakdown (`GainBreakdown`). It is a non-modal `role="dialog"` named for what it explains, not a tooltip, because it can contain a Retry button. Opening it fires a live solve, so hover opens after a short delay.
+
+## Status and actions
+
+- Shared status labels (`CandidateStatus`): **Proposable**, **Needs a drop**, and one-sided with its reason (for example "Hurts them").
+- Generated messages can be edited before sending, and the generated draft is kept with the offer (`ProposalMessage`).
+- Approval steps (`TradeOfferApproval`) need a confirmation checkbox, an approver name and a visible warning before the primary button turns on.
+- "Scored live just now" appears only for the automatic score. A manual re-score removes it.
+
+## Copy rules
+
+- Use explicit labels, not color alone.
+- Show a dash for unknown values, never zero.
+- VORP is a value comparison, not fantasy points.
+
+## Storybook definition of done
+
+Each new component or page gets stories for loading, error, empty, stale and phone width (`globals: { viewport: { value: 'mobile1' } }`), `mockFetch` fixtures for any network reads, and `play` tests. Attach desktop and phone screenshots to the PR. `npm run lint`, `npm test` and `npm run test:stories` must pass, and no page-specific hex colors may be added.

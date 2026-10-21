@@ -19,12 +19,13 @@ export function GainBreakdown({ side, ...props }: CandidateEvidenceProps & { sid
   const liveValue = score.data?.roster_impact[side].total_delta
   return <Popover opened={opened} onChange={setOpened} width={330} position="bottom-start" withinPortal shadow="md" withRoles={false}>
     <Popover.Target>
-      <button type="button" className={`finder-gain ${scoreTone(value)}`} aria-label={side === 'us' ? 'Where our gain comes from' : 'Where their change comes from'} aria-expanded={opened} aria-describedby={opened ? id : undefined}
+      <button type="button" className={`finder-gain ${scoreTone(value)}`} aria-label={side === 'us' ? 'Where our gain comes from' : 'Where their change comes from'} aria-haspopup="dialog" aria-expanded={opened} aria-controls={opened ? id : undefined}
         onMouseEnter={openSoon} onMouseLeave={closeSoon} onFocus={open} onBlur={closeSoon} onClick={() => { clearTimeout(timer.current); setOpened(true) }}>
         {signedScore(value)}
       </button>
     </Popover.Target>
-    <Popover.Dropdown id={id} role="tooltip" className="info-tip-popover" onMouseEnter={open} onMouseLeave={closeSoon}>
+    {/* A non-modal dialog, not a tooltip: it can hold a Retry button. */}
+    <Popover.Dropdown id={id} role="dialog" aria-label={side === 'us' ? 'Where our gain comes from' : `Where ${props.candidate.counterparty.name}'s change comes from`} className="info-tip-popover" onMouseEnter={open} onMouseLeave={closeSoon}>
       <strong>{side === 'us' ? 'Where our' : `${props.candidate.counterparty.name}: where`} {signedScore(liveValue ?? value)} comes from</strong>
       <Text size="xs" c="dimmed">Live score · snapshot value {signedScore(value)}</Text>
       {score.isLoading && <Text size="sm">Loading weekly lineup changes…</Text>}

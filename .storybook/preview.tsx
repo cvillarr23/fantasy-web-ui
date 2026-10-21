@@ -20,7 +20,7 @@ const preview: Preview = {
     controls: { expanded: true },
     backgrounds: { options: { app: { name: 'App', value: palette.background } } },
     docs: { theme: storybookTheme },
-    options: { storySort: { order: ['Introduction', 'UI', 'Player', 'Inputs', 'Status', 'Trade score', 'Inbox', 'Chat'] } },
+    options: { storySort: { order: ['Introduction', 'Patterns', 'UI', 'Player', 'Inputs', 'Status', 'Trade score', 'Inbox', 'Chat'] } },
   },
   initialGlobals: { backgrounds: { value: 'app' } },
   // Every story starts from an empty cache and the real fetch; stories that need data
