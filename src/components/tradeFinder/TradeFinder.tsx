@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useDebouncedValue, useInterval } from '@mantine/hooks'
-import { NativeSelect, Skeleton, Stack, Text } from '@mantine/core'
+import { NativeSelect, SegmentedControl, Skeleton, Stack, Text } from '@mantine/core'
 import { ApiError, getRosterDeficits, getTradeCandidates } from '../../api/client'
 import { queryClient } from '../../api/queryClient'
 import type { DraftConfig } from '../../api/types'
@@ -78,8 +78,8 @@ function ScopedTradeFinder({ config, week, controls, onProposableCountChange }: 
       <NativeSelect label="I get" value={browse.filters.receive_position} data={positions} onChange={(e) => change('receive_position', e.currentTarget.value)} />
       <NativeSelect label="I give" value={browse.filters.send_position} data={positions} onChange={(e) => change('send_position', e.currentTarget.value)} />
       <NativeSelect label="Shape" value={browse.filters.shape} data={[{ value: '', label: 'Any' }, { value: '1for1', label: '1-for-1' }, { value: '2for1', label: '2-for-1 (give 2)' }, { value: '1for2', label: '1-for-2 (get 2)' }]} onChange={(e) => change('shape', e.currentTarget.value)} />
-      <div className="finder-status-filter"><NativeSelect label="Status" value={browse.filters.status} data={[{ value: 'proposable', label: 'Proposable' }, { value: 'needs_drop', label: 'Needs a drop' }, { value: 'all', label: 'Show all' }]} onChange={(e) => change('status', e.currentTarget.value)} /><InfoTip label="trade statuses">{tradeGlossary.statuses}</InfoTip></div>
       <NativeSelect label="Sort by" value={browse.filters.sort} data={[{ value: 'final_score', label: 'Final score' }, { value: 'our_gain', label: 'Our gain' }, { value: 'their_benefit', label: 'Their benefit (lineup change)' }]} onChange={(e) => change('sort', e.currentTarget.value)} />
+      <div className="finder-status-filter"><span className="finder-filter-label">Show <InfoTip label="trade statuses">{tradeGlossary.statuses}</InfoTip></span><SegmentedControl aria-label="Status" color="clay" value={browse.filters.status} data={[{ value: 'proposable', label: 'Proposable' }, { value: 'needs_drop', label: 'Needs a drop' }, { value: 'all', label: 'Show all' }]} onChange={(value) => change('status', value)} /></div>
     </div>
     {!valid ? <Text size="sm">Select a valid week to browse candidate trades.</Text> : query.error ? missingRun ? <Text size="sm">The trade-candidates job has not run for week {week} yet. Candidates will appear after the next scheduled computation.</Text> : <ErrorAlert onRetry={() => void query.refetch()}>{query.error.message}</ErrorAlert> : <div className="finder-content">
       <div className="finder-list" aria-busy={busy || query.isLoading}>

@@ -16,8 +16,8 @@ beforeEach(() => {
   queryClient.clear()
   queryClient.setDefaultOptions({ queries: { retry: false }, mutations: { retry: false } })
   payload = candidates(); failure = 0; requests.length = 0; scores = 0; liveScore = completeScore()
-  vi.stubGlobal('fetch', vi.fn(async (input: string) => {
-    const url = new URL(input, 'http://localhost')
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+    const url = new URL(input instanceof Request ? input.url : input, 'http://localhost')
     if (url.pathname === '/v1/trade/candidates') {
       requests.push(url)
       return new Response(JSON.stringify(failure ? { detail: 'Candidates unavailable' } : payload), { status: failure || 200 })
@@ -26,9 +26,9 @@ beforeEach(() => {
     if (url.pathname === '/v1/roster/deficits') return new Response(JSON.stringify(finderDeficits))
     if (url.pathname === '/v1/trade/score') { scores++; return new Response(JSON.stringify(liveScore)) }
     throw new Error(`Unexpected request: ${url}`)
-  }))
+  })
 })
-afterEach(() => { cleanup(); queryClient.clear(); vi.unstubAllGlobals() })
+afterEach(() => { cleanup(); queryClient.clear(); vi.restoreAllMocks() })
 function view(props: Partial<React.ComponentProps<typeof TradeFinder>> = {}) {
   return <MantineProvider><MemoryRouter><TradeFinder config={finderConfig} week={5} {...props} /></MemoryRouter></MantineProvider>
 }
@@ -54,7 +54,7 @@ it('debounces every filter and resets paging, including clicking a team card', a
   fireEvent.change(screen.getByLabelText('I get'), { target: { value: 'WR' } })
   fireEvent.change(screen.getByLabelText('I give'), { target: { value: 'RB' } })
   fireEvent.change(screen.getByLabelText('Shape'), { target: { value: '2for1' } })
-  fireEvent.change(screen.getByLabelText('Status'), { target: { value: 'needs_drop' } })
+  fireEvent.click(screen.getByRole('radio', { name: 'Needs a drop' }))
   fireEvent.change(screen.getByLabelText('Sort by'), { target: { value: 'their_benefit' } })
   expect(requests.length).toBe(before)
   await waitFor(() => expect(latest()).toMatchObject({ receive_position: 'WR', send_position: 'RB', shape: '2for1', status: 'needs_drop', sort: 'their_benefit', offset: '0' }))

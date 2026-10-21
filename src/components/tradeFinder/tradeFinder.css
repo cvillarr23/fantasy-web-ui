@@ -73,6 +73,6 @@
   .finder-filters > :first-child { flex-basis: 100%; }
 }
 
-.finder-status-filter { display: flex; gap: 6px; align-items: end; }
-.finder-status-filter > :first-child { flex: 1; min-width: 0; }
-.finder-status-filter > .info-tip { margin-bottom: 9px; flex-shrink: 0; }
+.finder-filters > .finder-status-filter { flex: 1 1 300px; display: flex; flex-direction: column; gap: 4px; align-items: stretch; }
+.finder-filter-label { display: flex; gap: 6px; align-items: center; color: var(--text-h); font-weight: 500; }
+.finder-count.finder-neutral { background: var(--raised); }
