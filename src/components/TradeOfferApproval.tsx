@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Alert, Button, Checkbox, Group, Modal, Stack, Text, TextInput } from '@mantine/core'
-import { ApiError } from '../api/client'
+import { Alert, Button, Checkbox, Group, Modal, SimpleGrid, Stack, Text, TextInput } from '@mantine/core'
+import { ScoreVerdict } from './tradeScore/ScoreVerdict'
+import { isProposalEvaluation, isProposable } from './tradeScore/tradeScoreFormat'
+import { ApiError, scoreTrade } from '../api/client'
 import { approveTradeOffer, getTradeProposalStates, validApprover, validOfferKey } from '../api/tradeApproval'
 import { queryClient } from '../api/queryClient'
-import type { DraftConfig, TradeOffer } from '../api/types'
+import type { DraftConfig, TradeOffer, TradeScore } from '../api/types'
 import { canReview, offerFingerprint, retryProven, readApprovalAttempt, recordApprovalOutcome, saveApprovalAttempt, scope, statusCopy, useApprovalAttempt, useApprovalAttempts } from './tradeApprovalState'
 
 function useTradeStatuses(config: DraftConfig, poll = false) {
@@ -32,15 +34,18 @@ function approvalError(error: unknown) {
   return `${copy} ${reason}`
 }
 interface ApprovalProps {
-  config: DraftConfig; offer: TradeOffer; counterparty: string; disabled: boolean
+  config: DraftConfig; offer: TradeOffer; counterparty: string; disabled: boolean; finalMessage?: string
 }
 export function TradeOfferApproval(props: ApprovalProps) {
-  return <OfferApprovalDialog key={`${scope(props.config)}:${offerFingerprint(props.offer)}:${props.counterparty}`} {...props} />
+  return <OfferApprovalDialog key={`${scope(props.config)}:${offerFingerprint(props.offer)}:${props.counterparty}:${props.finalMessage ?? props.offer.message}`} {...props} />
 }
-function OfferApprovalDialog({ config, offer, counterparty, disabled }: ApprovalProps) {
+function OfferApprovalDialog({ config, offer, counterparty, disabled, finalMessage = offer.message ?? '' }: ApprovalProps) {
   const query = useTradeStatuses(config)
+  const draft = offer.drafted_message ?? offer.message ?? ''
+  const edited = finalMessage !== draft
   const key = offer.offer_key || ''
   const attempt = useApprovalAttempt(key)
+  const [liveScore, setLiveScore] = useState<TradeScore | null>(null)
   const [open, setOpen] = useState(false)
   const [verified, setVerified] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -59,7 +64,7 @@ function OfferApprovalDialog({ config, offer, counterparty, disabled }: Approval
   }, [])
   const retryable = Boolean(attempt && !query.isFetching && !query.isError && query.data &&
     retryProven(attempt, query.data.filter(row => row.offer_key === key)))
-  const eligible = validOfferKey(key) && !disabled && (!attempt || retryable) && !query.isError &&
+  const eligible = validOfferKey(key) && (!offer.message_edited || finalMessage === (offer.message ?? '')) && !disabled && (!attempt || retryable) && !query.isError &&
     Boolean(query.data && canReview(offer, config, query.data))
   async function verify() {
     const result = await query.refetch()
@@ -71,8 +76,20 @@ function OfferApprovalDialog({ config, offer, counterparty, disabled }: Approval
     if (lock.current || !eligible) return
     lock.current = true
     const owner = lifecycle.current
-    setOpen(true); setBusy(true); setVerified(false); setChecked(false); setLabel(''); setMessage('')
-    try { await verify(); if (owner.active) setVerified(true) }
+    setOpen(true); setBusy(true); setVerified(false); setChecked(false); setLabel(''); setMessage(''); setLiveScore(null)
+    try {
+      await verify()
+      if (!owner.active) return
+      if (isProposalEvaluation(offer.evaluation)) {
+        const score = await scoreTrade({ ...offer.evaluation.request, league_id: config.league_id,
+          season: config.season, our_team_id: config.team_id, counterparty_team_id: offer.to_team_id!,
+          send_espn_ids: offer.outgoing_player_ids, receive_espn_ids: offer.incoming_player_ids })
+        if (!owner.active) return
+        setLiveScore(score)
+        if (!isProposable(score)) throw new Error('The live score is not proposable. Review the players and coverage before approving.')
+      }
+      setVerified(true)
+    }
     catch (error) { if (owner.active) setMessage(error instanceof Error ? error.message : 'Could not verify the current outcome.') }
     finally { lock.current = false; if (owner.active) setBusy(false) }
   }
@@ -92,10 +109,19 @@ function OfferApprovalDialog({ config, offer, counterparty, disabled }: Approval
       if (stored && !retryProven(JSON.parse(stored), rows)) throw new Error('Approval is already pending or its outcome is unknown. Refresh status before retrying.')
       saveApprovalAttempt(key, { ...details, message: 'Approval outcome is unknown. Checking status…', priorTrackingId })
       sent = true
-      const response = await approveTradeOffer(key, label.trim())
-      recordApprovalOutcome(key, { ...details, response, message: response.duplicate
+      const response = await (edited ? approveTradeOffer(key, label.trim(), finalMessage) : approveTradeOffer(key, label.trim()))
+      const outcome = { ...details, response, message: response.duplicate
         ? 'This offer was already approved; no additional offer was queued.'
-        : 'Offer queued. ESPN submission is not yet confirmed.' })
+        : 'Offer queued. ESPN submission is not yet confirmed.' }
+      if (response.offer_key === key) recordApprovalOutcome(key, outcome)
+      else {
+        // Save the receipt under its new identity before changing the original replay guard.
+        // If either write fails the durable pre-request marker still blocks a repeat POST.
+        try {
+          saveApprovalAttempt(response.offer_key, outcome)
+          saveApprovalAttempt(key, { message: `Approval recorded under offer ${response.offer_key}.`, response })
+        } catch { /* The original guard remains authoritative when storage is unavailable. */ }
+      }
     } catch (error) {
       if (sent) {
         if (error instanceof ApiError && error.status === 422) {
@@ -115,25 +141,31 @@ function OfferApprovalDialog({ config, offer, counterparty, disabled }: Approval
     }
   }
   return <Stack gap="xs" mt="sm">
-    <Button size="xs" variant="light" disabled={!eligible || busy} onClick={() => { void review() }}>Review approval</Button>
+    <Button size="xs" variant="filled" disabled={!eligible || busy} onClick={() => { void review() }}>Review approval</Button>
     {attempt && !attempt.configScope && <Alert color="yellow">{attempt.message}</Alert>}
     {!validOfferKey(key) && <Text size="sm">Approval unavailable: no valid supplied offer key.</Text>}
     {message && !attempt && !open && <Alert color="yellow">{message}</Alert>}
-    <Modal opened={open} onClose={() => { if (!busy) setOpen(false) }} title="Review trade approval" closeOnClickOutside={!busy} closeOnEscape={!busy} withCloseButton={!busy}>
+    <Modal opened={open} onClose={() => { if (!busy) setOpen(false) }} title="Review and approve" size="lg" closeOnClickOutside={!busy} closeOnEscape={!busy} withCloseButton={!busy}>
       <Stack>
-        <Text>League {config.league_id}, season {config.season}, your team {config.team_id}</Text>
+        <Text size="sm" c="dimmed">League {config.league_id} · {config.season}{isProposalEvaluation(offer.evaluation) && ` · week ${offer.evaluation.request.week}`}</Text>
         <Text fw={600}>{counterparty} (Team {offer.to_team_id})</Text>
-        {(['incoming', 'outgoing'] as const).map(side => <div key={side}>
-          <Text fw={600}>{side === 'incoming' ? 'You receive' : 'You send'}</Text>
+        {liveScore && <ScoreVerdict score={liveScore} live />}
+        {!isProposalEvaluation(offer.evaluation) && <Alert color="yellow">Live scoring is unavailable: this offer has no supported score request. Review the players and message carefully.</Alert>}
+        {liveScore && (liveScore.coverage.partial_roster_weeks.length > 0 || liveScore.coverage.unmapped_traded_espn_ids.length > 0 || liveScore.coverage.nfl_schedule_unavailable_weeks.length > 0) && <Alert color="yellow">Some roster or NFL schedule data is missing from the live score. Review the full breakdown before approving.</Alert>}
+        <SimpleGrid cols={{ base: 1, xs: 2 }}>{(['incoming', 'outgoing'] as const).map(side => <div key={side} className="approval-players">
+          <Text fw={600}>{side === 'incoming' ? 'You get' : 'You give'}</Text>
           <ul>{offer[`${side}_player_ids`].map(id => {
             const name = offer[`${side}_players`].find(player => player.espn_id === id)?.name
             return <li key={id}>{name ? `${name} (ESPN ${id})` : `ESPN player ${id}`}</li>
           })}</ul>
-        </div>)}
-        <Text data-testid="approval-pitch" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{offer.message ?? 'No pitch provided.'}</Text>
-        <Alert color="yellow">Approving queues this exact offer. The worker may propose a real trade to this manager in ESPN.</Alert>
-        <TextInput label="Approver label" description="Self-reported name for the approval audit; this is not a verified account identity." value={label} onChange={event => setLabel(event.currentTarget.value)} disabled={busy} error={label && !validApprover(label) ? 'Enter a nonblank label of at most 200 characters.' : undefined} />
-        <Checkbox label="I have reviewed these players, counterparty and pitch." checked={checked} onChange={event => setChecked(event.currentTarget.checked)} disabled={busy} />
+        </div>)}</SimpleGrid>
+        <Text size="xs" fw={700}>MESSAGE THAT WILL BE SENT</Text>
+        {edited && <Text>Edited by you</Text>}
+        <Text component="blockquote" className="proposal-message" data-testid="approval-pitch">{finalMessage || 'No pitch provided.'}</Text>
+        <Text size="xs" c="dimmed">Generated draft is kept with the offer.</Text>
+        <Checkbox label="I've checked the players, the score and the message" checked={checked} onChange={event => setChecked(event.currentTarget.checked)} disabled={busy} />
+        <TextInput label="Approver name" description="Self-reported name for the approval audit; this is not a verified account identity." value={label} onChange={event => setLabel(event.currentTarget.value)} disabled={busy} error={label && !validApprover(label) ? 'Enter a nonblank name of at most 200 characters.' : undefined} />
+        <Alert color="yellow">Approving queues this exact offer for the browser worker to send on ESPN. You can't edit it after you approve. If either roster has changed by then, the worker re-checks and stops.</Alert>
         {busy && !verified && <Text>Verifying current offer…</Text>}
         {message && <Alert color="red">{message}</Alert>}
         <Group><Button variant="default" disabled={busy} onClick={() => setOpen(false)}>Cancel</Button>

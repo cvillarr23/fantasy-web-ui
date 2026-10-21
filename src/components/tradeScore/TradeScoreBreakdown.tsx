@@ -1,3 +1,7 @@
+import { SimpleGrid } from '@mantine/core'
+import { StatTile } from '../ui/StatTile'
+import { ScoreVerdict } from './ScoreVerdict'
+import { WeeklyLineupTable } from './WeeklyLineupTable'
 import { InfoTip } from '../ui/InfoTip'
 import { StrengthChip } from '../ui/StrengthChip'
 import { tradeGlossaryForWeights, type TradeGlossary } from './tradeGlossary'
@@ -52,9 +56,10 @@ function TermRow({ label, value, detail }: { label: string; value: string; detai
   )
 }
 
-export function TradeScoreBreakdown({ score, teamNames }: {
+export function TradeScoreBreakdown({ score, teamNames, builder = false }: {
   score: TradeScore
   teamNames?: Record<string, string>
+  builder?: boolean
 }) {
   const glossary = tradeGlossaryForWeights(score.weights)
   const { horizon, score: terms, raw_vorp: raw, roster_impact: impact } = score
@@ -76,7 +81,7 @@ export function TradeScoreBreakdown({ score, teamNames }: {
 
   return (
     <Stack gap="md" aria-label="Trade score breakdown" component="section">
-      <Group justify="space-between" align="flex-start">
+      {builder ? <ScoreVerdict score={score} /> : <Group justify="space-between" align="flex-start">
         <div>
           <Text size="sm" c="dimmed">Final score <InfoTip label="the final score">{glossary.finalScore}</InfoTip></Text>
           <Text size="xl" fw={700}>{terms.final_score == null ? 'Score unavailable' : signedScore(terms.final_score)}</Text>
@@ -88,14 +93,20 @@ export function TradeScoreBreakdown({ score, teamNames }: {
           {!horizon.complete_horizon && <Badge color="yellow">Partial horizon</Badge>}
           <Text size="xs" c="dimmed">{score.scoring_version}</Text>
         </Group>
-      </Group>
+      </Group>}
+      {builder && <SimpleGrid cols={{ base: 2, md: 4 }} aria-label="Builder score terms">
+        <StatTile label="Our lineup gain" value={terms.our_lineup_gain} info={glossary.ourLineupGain} />
+        <StatTile label="Schedule boost" value={terms.our_schedule_adjustment} info={glossary.scheduleBoost} />
+        <StatTile label="Their lineup change" value={terms.counterparty_lineup_change} info={glossary.theirChange} />
+        <StatTile label="Cost of helping them" value={terms.counterparty_weighted_benefit} info={glossary.costOfHelpingThem} />
+      </SimpleGrid>}
       {!horizon.complete_horizon && (
         <Text size="sm">
           {scoredCount ? `Totals cover weeks ${horizon.scored_weeks.join(', ')} only.` : 'No week in the horizon was scored.'}
         </Text>
       )}
 
-      <Table.ScrollContainer minWidth={420}>
+      {!builder && <Table.ScrollContainer minWidth={420}>
         <Table aria-label="Score terms">
           <Table.Tbody>
             <TermRow label={`Raw VORP received (week ${raw.week})`} value={rawCells.received}
@@ -118,11 +129,13 @@ export function TradeScoreBreakdown({ score, teamNames }: {
               detail={glossary.finalScore} />
           </Table.Tbody>
         </Table>
-      </Table.ScrollContainer>
+      </Table.ScrollContainer>}
 
       {score.bye_coverage && <ByeCoverage coverage={score.bye_coverage} ours={ours} theirs={theirs} glossary={glossary} />}
-      <WeekTable score={score} teamName={teamName} glossary={glossary} />
-      <WhyDetails score={score} ours={ours} theirs={theirs} playerName={playerName} />
+      {builder ? <WeeklyLineupTable score={score} teamNames={teamNames} /> : <>
+        <WeekTable score={score} teamName={teamName} glossary={glossary} />
+        <WhyDetails score={score} ours={ours} theirs={theirs} playerName={playerName} />
+      </>}
       <Coverage score={score} ours={ours} theirs={theirs} playerName={playerName} />
     </Stack>
   )

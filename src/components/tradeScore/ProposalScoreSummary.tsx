@@ -38,9 +38,10 @@ function PitchEvidence({ evaluation, message }: { evaluation: ProposalEvaluation
 
 /** Shows only the evidence stored when the proposal was generated, never a fresh score, so
  * the numbers always match what the pitch was written from. */
-export function ProposalScoreSummary({ offer, teamNames }: {
+export function ProposalScoreSummary({ offer, teamNames, compact = false }: {
   offer: TradeOffer
   teamNames?: Record<string, string>
+  compact?: boolean
 }) {
   const evaluation = offer.evaluation
   let body
@@ -68,7 +69,7 @@ export function ProposalScoreSummary({ offer, teamNames }: {
     body = (
       <Stack gap="xs">
         <Group gap="xs">
-          <Text fw={700}>{final == null ? 'Score unavailable' : signedScore(final)}</Text>
+          {!compact && <Text fw={700}>{final == null ? 'Score unavailable' : signedScore(final)}</Text>}
           <Badge variant="light">{`Weeks ${score.horizon.start_week}–${score.horizon.end_week} · ${scored} of ${total} scored`}</Badge>
           {!score.horizon.complete_horizon && <Badge color="yellow">Partial horizon</Badge>}
         </Group>
@@ -78,23 +79,23 @@ export function ProposalScoreSummary({ offer, teamNames }: {
         {/* Kept outside the collapsed breakdown: a proposal ranked by our lineup gain has no
             final score, and our value must stay distinct from what the trade does to them.
             G + adjustment + C* is the final score, so the tiles reconcile with the headline. */}
-        <SimpleGrid cols={{ base: 1, xs: 3 }} spacing="xs" aria-label="Score terms summary">
+        <SimpleGrid cols={3} spacing="xs" aria-label="Score terms summary">
           <StatTile label="Our lineup gain" value={score.score.our_lineup_gain} info={glossary.ourLineupGain} />
           <StatTile label="Schedule boost" value={score.score.our_schedule_adjustment} info={glossary.scheduleBoost} />
           <StatTile label="Cost of helping them" value={score.score.counterparty_weighted_benefit}
             info={glossary.costOfHelpingThem} />
         </SimpleGrid>
-        <Text size="xs" c="dimmed" aria-label="Counterparty lineup change">
-          {`Their lineup changes by ${signedScore(score.score.counterparty_lineup_change)} (negative means the trade weakens them).`}
-        </Text>
-        <Text size="xs" c="dimmed">
-          Scored for week {request.week} with a {request.horizon}-week horizon at{' '}
-          <time dateTime={evaluation.evaluated_at}>{new Date(evaluation.evaluated_at).toLocaleString()}</time>
-          {ranking && ` · Ranked ${ranking.rank} of ${ranking.packages_eligible} eligible packages by ${basis}`}
-        </Text>
         <details role="group" aria-label="Score breakdown">
           <summary>Score breakdown</summary>
           <Stack gap="md" mt="sm">
+            <Text size="xs" c="dimmed" aria-label="Counterparty lineup change">
+              {`Their lineup changes by ${signedScore(score.score.counterparty_lineup_change)} (negative means the trade weakens them).`}
+            </Text>
+            <Text size="xs" c="dimmed">
+              Scored for week {request.week} with a {request.horizon}-week horizon at{' '}
+              <time dateTime={evaluation.evaluated_at}>{new Date(evaluation.evaluated_at).toLocaleString()}</time>
+              {ranking && ` · Ranked ${ranking.rank} of ${ranking.packages_eligible} eligible packages by ${basis}`}
+            </Text>
             <TradeScoreBreakdown score={score} teamNames={teamNames} />
             <PitchEvidence evaluation={evaluation} message={offer.message} />
           </Stack>
@@ -104,7 +105,7 @@ export function ProposalScoreSummary({ offer, teamNames }: {
   }
   return (
     <Stack gap="xs" my="sm" component="section" aria-label="Proposal score">
-      <Text size="sm" fw={600}>Schedule-aware score</Text>
+      {!compact && <Text size="sm" fw={600}>Schedule-aware score</Text>}
       {body}
     </Stack>
   )

@@ -20,6 +20,7 @@ interface Props {
   config: DraftConfig
   /** Counterparty and horizon shared with the league trade context panel. */
   controls?: TradeContextControls
+  hideWeekSelector?: boolean
 }
 
 interface Side {
@@ -65,7 +66,7 @@ export function TradeBuilder(props: Props) {
   return <TradeBuilderForm key={`${props.config.league_id}:${props.config.team_id}:${props.config.season}:${draft?.revision ?? 0}`} {...props} initialDraft={draft ?? undefined} />
 }
 
-function TradeBuilderForm({ config, controls, initialDraft }: Props & { initialDraft?: TradeBuilderDraft }) {
+function TradeBuilderForm({ config, controls, initialDraft, hideWeekSelector = false }: Props & { initialDraft?: TradeBuilderDraft }) {
   const [incoming, setIncoming] = useState<PlayerSearchResult[]>(initialDraft?.incoming ?? [])
   const [outgoing, setOutgoing] = useState<PlayerSearchResult[]>(initialDraft?.outgoing ?? [])
   // number | string, same reasoning as LineupPage's week field - NumberInput passes
@@ -119,7 +120,7 @@ function TradeBuilderForm({ config, controls, initialDraft }: Props & { initialD
         <RosterQuickActions page="trades" week={week} />
       </Group>
       {initialDraft && <Text size="sm">Prefilled from the trade finder: {initialDraft.teamName}.</Text>}
-      <WeekSelector week={week} onChange={setWeek} />
+      {!hideWeekSelector && <WeekSelector week={week} onChange={setWeek} />}
 
       <div className="trade-columns">
         <TradeSideColumn

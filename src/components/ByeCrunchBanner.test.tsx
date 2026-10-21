@@ -27,7 +27,7 @@ it('names the crunch week, who is on bye and why, with links to fix it', () => {
   expect(screen.getByText('Bye-week crunch ahead')).toBeTruthy()
   expect(screen.getByText(/Back One, Back Two on bye leaves RB slot empty/)).toBeTruthy()
   expect(screen.getByRole('link', { name: 'Find a fill-in' }).getAttribute('href')).toBe('/waivers?week=7')
-  expect(screen.getByRole('link', { name: 'Look for a trade' }).getAttribute('href')).toBe('/trades')
+  expect(screen.getByRole('link', { name: 'Look for a trade' }).getAttribute('href')).toBe('/trades#finder')
 })
 
 it('explains a crunch without an empty seat as a forced below-replacement starter', () => {

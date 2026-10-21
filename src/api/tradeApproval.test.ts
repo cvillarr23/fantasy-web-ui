@@ -43,3 +43,21 @@ it('reads all statuses and pages before applying scope and source filters', asyn
   expect(await getTradeProposalStates(config)).toEqual([offer])
   expect(new Set(fetch.mock.calls.map(([url]) => new URL(url, 'http://mock').searchParams.get('status'))).size).toBe(8)
 })
+
+it('sends edited text exactly and accepts the new offer identity', async () => {
+  const response = { offer_key: 'b'.repeat(64), status: 'approved', tracking_id: 'edited-track', approved_by: 'Manager', approved_at: '2026-10-06T10:00:00Z', duplicate: false }
+  const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify(response), { status: 202 }))
+  vi.stubGlobal('fetch', fetch)
+  expect(await approveTradeOffer(key, 'Manager', '  My message\n第二行  ')).toEqual(response)
+  expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ approved_by: 'Manager', message: '  My message\n第二行  ' })
+})
+it.each(['', ' ', 'x'.repeat(1001)])('rejects invalid edited messages before publication', async message => {
+  const fetch = vi.fn(); vi.stubGlobal('fetch', fetch)
+  await expect(approveTradeOffer(key, 'Manager', message)).rejects.toThrow()
+  expect(fetch).not.toHaveBeenCalled()
+})
+it('accepts a message at the limit', async () => {
+  const response = { offer_key: 'b'.repeat(64), status: 'approved', tracking_id: 'track', approved_by: 'Manager', approved_at: '2026-10-06T10:00:00Z', duplicate: false }
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(response), { status: 202 })))
+  expect(await approveTradeOffer(key, 'Manager', 'x'.repeat(1000))).toEqual(response)
+})

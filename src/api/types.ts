@@ -513,6 +513,9 @@ export interface TradeOffer {
   incoming_players: { espn_id: string; name: string | null }[]
   outgoing_players: { espn_id: string; name: string | null }[]
   message?: string | null
+  drafted_message?: string | null
+  message_edited?: boolean
+  edited_by?: string | null
   approval?: { tracking_id?: string; approved_by?: string; approved_at?: string; publish_error?: string } | null
   /** Score evidence stored by the proposal generator. null means none was stored; absent means
    * the API didn't send the field, so whether evidence exists is unknown. Don't normalize one to the other. */
