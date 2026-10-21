@@ -73,8 +73,21 @@ export function formatEvidenceValue(value: unknown): string {
   return JSON.stringify(value)
 }
 
+/** The worker's staging gates. final_score isn't one: a proposal ranked by our lineup gain has
+ * none, and it is still proposable. */
 export function isProposable(score: TradeScore) {
-  return score.score.final_score != null && (score.score.our_lineup_gain ?? 0) > 0
-    && score.score.counterparty_lineup_change != null && score.score.counterparty_lineup_change >= 0
+  const { our_lineup_gain: gain, counterparty_lineup_change: theirs } = score.score
+  return gain != null && gain > 0 && theirs != null && theirs >= 0
+    && score.horizon.scored_weeks.length > 0
     && !score.roster_impact.us.exceeds_roster_limit && !score.roster_impact.counterparty.exceeds_roster_limit
 }
+
+export type ScoreTone = 'neutral' | 'positive' | 'negative'
+/** Tone of a value as displayed, so two values that both read "−0.0" or "+0.1" never differ in
+ * color. Anything that rounds to within 0.05 of zero is neutral. */
+export function scoreTone(value: number | null | undefined, precision = 1): ScoreTone {
+  if (value == null || !Number.isFinite(value)) return 'neutral'
+  const displayed = Number(value.toFixed(precision))
+  return Math.abs(displayed) <= 0.05 ? 'neutral' : displayed > 0 ? 'positive' : 'negative'
+}
+export const toneColor: Record<ScoreTone, string> = { neutral: 'dimmed', positive: 'var(--incoming)', negative: 'var(--error)' }

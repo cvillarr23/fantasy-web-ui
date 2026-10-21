@@ -3,8 +3,8 @@ import { Badge, Button, Group, Stack, Text, Textarea } from '@mantine/core'
 import { validTradeMessage } from '../api/tradeApproval'
 import { InfoTip } from './ui/InfoTip'
 
-export function ProposalMessage({ value, draft, counterparty, onChange, onEditingChange, readOnly = false }: {
-  value: string; draft: string; counterparty: string; readOnly?: boolean
+export function ProposalMessage({ value, draft, counterparty, onChange, onEditingChange, readOnly = false, editedBy }: {
+  value: string; draft: string; counterparty: string; readOnly?: boolean; editedBy?: string | null
   onChange: (message: string) => void
   onEditingChange: (editing: boolean) => void
 }) {
@@ -35,7 +35,7 @@ export function ProposalMessage({ value, draft, counterparty, onChange, onEditin
         <Group gap="xs">
           {!readOnly && <Button size="xs" variant="default" onClick={() => { setBuffer(value); edit(true) }}>Edit message</Button>}
           {edited && <>
-            <Badge variant="light">Edited by you</Badge>
+            <Badge variant="light">{readOnly && editedBy ? `Edited by ${editedBy}` : 'Edited by you'}</Badge>
             {!readOnly && <Button size="xs" variant="subtle" onClick={() => onChange(draft)}>Reset to generated draft</Button>}
             <InfoTip label="edited messages">The generated draft only states facts backed by the trade score. Edited text is sent exactly as written and isn't checked against the score. The original draft is kept with the offer.</InfoTip>
           </>}

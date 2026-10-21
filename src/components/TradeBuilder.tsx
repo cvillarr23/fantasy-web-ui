@@ -50,9 +50,9 @@ function TradeSideColumn({ side }: { side: Side }) {
       {side.players.length > 0 && (
         <ul className="trade-side-list">
           {side.players.map((p) => (
-            <li key={p.player_id}>
+            <li key={p.espn_id ?? p.player_id}>
               <PlayerCard variant="row" player={{ id: p.player_id, name: p.name, position: p.position, team: p.team }} />
-              <Button variant="subtle" size="xs" onClick={() => side.remove(p.player_id)}>✕</Button>
+              <Button variant="subtle" size="xs" onClick={() => side.remove(p.espn_id ?? p.player_id)}>✕</Button>
             </li>
           ))}
         </ul>
@@ -106,7 +106,7 @@ function TradeBuilderForm({ config, controls, initialDraft, hideWeekSelector = f
     return (p: PlayerSearchResult) => setter((prev) => [...prev, p])
   }
   function removeFrom(setter: typeof setIncoming) {
-    return (playerId: string) => setter((prev) => prev.filter((p) => p.player_id !== playerId))
+    return (playerId: string) => setter((prev) => prev.filter((p) => (p.espn_id ?? p.player_id) !== playerId))
   }
 
   function submit() {

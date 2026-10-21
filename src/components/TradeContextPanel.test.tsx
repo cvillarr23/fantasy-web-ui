@@ -9,7 +9,10 @@ import { TradePage } from './TradePage'
 import { DraftConfigContext } from '../hooks/useDraftConfig'
 import type { DraftConfig } from '../api/types'
 
-vi.mock('../api/client', () => ({ getTradeContext: vi.fn(), getCurrentWeek: vi.fn(), getOutgoingTradeOffers: vi.fn().mockResolvedValue([]), getTeamNames: vi.fn().mockResolvedValue({}), evaluateTrade: vi.fn(), searchPlayers: vi.fn() }))
+vi.mock('../api/client', async (importOriginal) => ({ ...await importOriginal<typeof import('../api/client')>(),
+  getTradeCandidates: vi.fn().mockResolvedValue({ league_id: '123', season: 2026, week: 5, horizon: 4, run_id: 'empty', computed_at: '2026-10-20T12:00:00Z', total: 0, team_counts: [], items: [] }),
+  getRosterDeficits: vi.fn().mockResolvedValue({ season: 2026, week: 5, roster_snapshot: 'current', teams: {} }),
+ getTradeContext: vi.fn(), getCurrentWeek: vi.fn(), getOutgoingTradeOffers: vi.fn().mockResolvedValue([]), getTeamNames: vi.fn().mockResolvedValue({}), evaluateTrade: vi.fn(), searchPlayers: vi.fn() }))
 const config: DraftConfig = { league_id: '123', team_id: '1', season: 2026, mode: 'live' }
 function fixture() {
   const strength = { points_per_week: 100, completed_matchups: 2, completed_scoring_weeks: 2, unavailable_history_periods: 1, z_score: 0 }

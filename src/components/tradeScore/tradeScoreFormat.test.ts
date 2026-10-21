@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import { completeScore, proposalEvaluation } from './fixtures'
-import { formatEvidenceValue, isProposalEvaluation, lineupMoves, resolvePointer, scoreInputSignature, signedScore } from './tradeScoreFormat'
+import { formatEvidenceValue, isProposable, isProposalEvaluation, lineupMoves, resolvePointer, scoreInputSignature, scoreTone, signedScore } from './tradeScoreFormat'
 
 it('formats returned values with an explicit sign', () => {
   expect(signedScore(3.14159)).toBe('+3.1')
@@ -62,4 +62,21 @@ it('formats the object values the proposal generator cites, never as raw JSON', 
   expect(formatEvidenceValue({ week: 8, reasons: ['lineup_unfillable', 'brand_new_reason'] }))
     .toBe('Week 8 not scored: Lineup could not be filled; Unrecognized reason (brand_new_reason)')
   expect(formatEvidenceValue({ something: 'else' })).toBe('{"something":"else"}')
+})
+
+it('treats a lineup-gain-ranked score with no final score as proposable', () => {
+  const score = completeScore()
+  const gated = { ...score, score: { ...score.score, final_score: null, our_lineup_gain: 2.4, counterparty_lineup_change: 0 } }
+  expect(isProposable(gated)).toBe(true)
+  expect(isProposable({ ...gated, score: { ...gated.score, our_lineup_gain: 0 } })).toBe(false)
+  expect(isProposable({ ...gated, score: { ...gated.score, counterparty_lineup_change: -0.1 } })).toBe(false)
+  expect(isProposable({ ...gated, horizon: { ...gated.horizon, scored_weeks: [] } })).toBe(false)
+})
+
+it('picks a tone from the displayed value, with a neutral band around zero', () => {
+  expect(scoreTone(0.04)).toBe('neutral')
+  expect(scoreTone(-0.049)).toBe('neutral')
+  expect(scoreTone(0.06)).toBe('positive')
+  expect(scoreTone(-0.06)).toBe('negative')
+  expect(scoreTone(null)).toBe('neutral')
 })

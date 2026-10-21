@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { signedScore } from '../tradeScore/tradeScoreFormat'
+import { scoreTone, signedScore } from '../tradeScore/tradeScoreFormat'
 import { InfoTip } from './InfoTip'
 
 export interface StatTileProps {
@@ -13,7 +13,7 @@ export interface StatTileProps {
 export function StatTile({ label, value, info, caption, precision = 1 }: StatTileProps) {
   const known = value != null && Number.isFinite(value)
   const displayed = known ? Number(value.toFixed(precision)) : null
-  const tone = displayed == null || Math.abs(displayed) <= 0.05 ? 'neutral' : displayed > 0 ? 'positive' : 'negative'
+  const tone = scoreTone(displayed, precision)
   return (
     <div className="stat-tile">
       <div className="stat-tile-label">{label} {info && <InfoTip label={label.toLowerCase()}>{info}</InfoTip>}</div>

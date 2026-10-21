@@ -58,11 +58,16 @@ export function TradeCandidateDetails({ context, deficits, onOpenBuilder, ...pro
       })}</Stack>
       <Button variant="subtle" size="xs" aria-expanded={fullLineup} onClick={() => setFullLineup(!fullLineup)}>{fullLineup ? 'Hide their full lineup' : 'Show their full lineup'}</Button>
       {fullLineup && score.data.roster_impact.counterparty.weeks.filter((week) => week.week === lineupWeek).map((week) => {
-        const outgoing = c.receive
+        const afterIds = new Set(week.starters_after.map((p) => p.espn_id))
+        const tradedAwayIds = new Set(c.receive.map((p) => p.espn_id))
+        const displaced = lineupChanges(week).leaving.filter((p) => !tradedAwayIds.has(p.espn_id))
+        const incomingBench = c.send.filter((p) => !afterIds.has(p.espn_id))
         const incomingIds = new Set(c.send.map((p) => p.espn_id))
         return <div key={week.week} className="finder-full-lineup"><strong>Their starters after the trade · Wk {week.week}</strong>
           {week.starters_after.map((p) => <div key={p.espn_id} className={incomingIds.has(p.espn_id) ? 'finder-positive' : ''}>{p.position} · {p.name || p.espn_id} {incomingIds.has(p.espn_id) && '(incoming)'} <span>{p.vorp_score.toFixed(1)}</span></div>)}
-          {outgoing.map((p) => <div key={p.espn_id} className="finder-leaving">{p.position} · {p.name || p.espn_id} (outgoing)</div>)}
+          {c.receive.map((p) => <div key={p.espn_id} className="finder-leaving">{p.position} · {p.name || p.espn_id} (outgoing)</div>)}
+          {displaced.map((p) => <div key={p.espn_id} className="finder-leaving">{p.position} · {p.name || p.espn_id} (to bench)</div>)}
+          {incomingBench.map((p) => <div key={p.espn_id} className="finder-positive">{p.position} · {p.name || p.espn_id} (incoming · bench)</div>)}
         </div>
       })}
     </>}

@@ -11,10 +11,11 @@ let payload = candidates()
 let failure = 0
 const requests: URL[] = []
 let scores = 0
+let liveScore = completeScore()
 beforeEach(() => {
   queryClient.clear()
   queryClient.setDefaultOptions({ queries: { retry: false }, mutations: { retry: false } })
-  payload = candidates(); failure = 0; requests.length = 0; scores = 0
+  payload = candidates(); failure = 0; requests.length = 0; scores = 0; liveScore = completeScore()
   vi.stubGlobal('fetch', vi.fn(async (input: string) => {
     const url = new URL(input, 'http://localhost')
     if (url.pathname === '/v1/trade/candidates') {
@@ -23,7 +24,7 @@ beforeEach(() => {
     }
     if (url.pathname === '/v1/trade/context') return new Response(JSON.stringify(finderContext))
     if (url.pathname === '/v1/roster/deficits') return new Response(JSON.stringify(finderDeficits))
-    if (url.pathname === '/v1/trade/score') { scores++; return new Response(JSON.stringify(completeScore())) }
+    if (url.pathname === '/v1/trade/score') { scores++; return new Response(JSON.stringify(liveScore)) }
     throw new Error(`Unexpected request: ${url}`)
   }))
 })
@@ -121,4 +122,14 @@ it('clears the selected package and filters when the week changes', async () => 
   mounted.rerender(view({ week: 6 }))
   await waitFor(() => expect(latest().week).toBe('6'))
   expect(screen.queryByRole('complementary')).toBeNull()
+})
+
+it('keeps a displaced starter visible as benched in the expanded lineup', async () => {
+  liveScore.roster_impact.counterparty.weeks[0].starters_before.push({ espn_id: '999', player_id: 'p999', name: 'Benched Wideout', position: 'WR', vorp_score: 3 })
+  render(view())
+  await screen.findByText('Received Wideout')
+  fireEvent.click(screen.getByRole('button', { name: 'Details' }))
+  const rail = screen.getByRole('complementary', { name: 'Selected trade details' })
+  fireEvent.click(await within(rail).findByRole('button', { name: 'Show their full lineup' }))
+  expect(within(rail).getByText(/Benched Wideout.*to bench/)).toBeTruthy()
 })

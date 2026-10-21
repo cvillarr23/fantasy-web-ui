@@ -28,9 +28,9 @@ function PlayerChips({ players, side }: { players: TradeCandidatePlayer[]; side:
   </div>
 }
 const candidateHeaders = [
-  ['Team', 'The opponent who would receive this offer.'], ['You get', tradeGlossary.vorp], ['You give', tradeGlossary.vorp],
+  ['Team', tradeGlossary.counterparty], ['You get', tradeGlossary.vorp], ['You give', tradeGlossary.vorp],
   ['Our gain', tradeGlossary.ourLineupGain], ['Theirs', tradeGlossary.theirChange],
-  ['Final', tradeGlossaryForWeights(undefined).finalScore], ['Status', tradeGlossary.statuses], ['Details', 'Inspect both starting lineups and re-score the trade live before acting.'],
+  ['Final', tradeGlossaryForWeights(undefined).finalScore], ['Status', tradeGlossary.statuses], ['Details', tradeGlossary.candidateDetails],
 ]
 export function TradeCandidateHeaders() {
   return <div className="finder-row finder-head" role="row">{candidateHeaders.map(([label, help]) => <div key={label} role="columnheader">{label} <InfoTip label={label.toLowerCase()}>{help}</InfoTip></div>)}</div>

@@ -1,4 +1,5 @@
-import { Badge, Group, Stack, Text } from '@mantine/core'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Badge, Group, Stack } from '@mantine/core'
 import { useQuery } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { useTradeContextControls } from '../hooks/useTradeContextControls'
@@ -8,6 +9,7 @@ import { useSelectedWeek, validWeek } from '../hooks/useSelectedWeek'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { byeOutlookQuery } from '../api/weekReads'
 import { queryClient } from '../api/queryClient'
+import { TradeFinder } from './tradeFinder/TradeFinder'
 import { TradeBuilder } from './TradeBuilder'
 import { TradeContextPanel } from './TradeContextPanel'
 import { OutgoingTradeProposals } from './OutgoingTradeProposals'
@@ -27,6 +29,17 @@ export function TradePage() {
   const context = useTradeContext(config, week, tradeContextControls.horizon)
   const offers = useOutgoingTradeOffers(config)
   const byes = useQuery(byeOutlookQuery(config, selectedWeek ?? 0), queryClient)
+  const finderScope = `${config.league_id}:${config.team_id}:${config.season}:${selectedWeek}`
+  const [finderCount, setFinderCount] = useState<{ scope: string; count: number | null } | null>(null)
+  const reportFinderCount = useCallback((count: number | null) => setFinderCount({ scope: finderScope, count }), [finderScope])
+  const builderRef = useRef<HTMLDetailsElement>(null)
+  useEffect(() => {
+    if (!tradeContextControls.builderDraft || !builderRef.current) return
+    builderRef.current.open = true
+    const frame = requestAnimationFrame(() => builderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+    return () => cancelAnimationFrame(frame)
+  }, [tradeContextControls.builderDraft])
+  const proposableCount = finderCount?.scope === finderScope ? finderCount.count : null
   const isConfigured = Boolean(config.league_id && config.team_id)
 
   if (!isConfigured) {
@@ -41,16 +54,13 @@ export function TradePage() {
           actions={<WeekSelector week={week} onChange={setWeek} />} />
         <Group gap="sm" aria-label="Trade summary">
           <Badge component="a" href="#approve" size="lg" variant="light">{offers.isError ? 'Approval count unavailable' : `${offers.data?.length ?? '…'} proposals awaiting your approval`}</Badge>
-          <Badge component="a" href="#finder" size="lg" color="teal" variant="light">Proposable trades found: coming soon</Badge>
+          <Badge component="a" href="#finder" size="lg" color="teal" variant="light">{proposableCount == null ? 'Proposable count unavailable' : `${proposableCount} proposable trades found`}</Badge>
           <Badge size="lg" color="yellow" variant="light">{byes.data?.schedule_known ? byes.data.crunch_weeks.length ? `Bye crunch: weeks ${byes.data.crunch_weeks.join(', ')}` : 'No bye crunch ahead' : 'Bye outlook unavailable'}</Badge>
           <InfoTip label="a bye crunch">{tradeGlossary.byeCrunch}</InfoTip>
         </Group>
         <OutgoingTradeProposals config={config} linkedOfferKey={params.get('offer')} players={roster} week={selectedWeek ?? undefined} />
-        <section id="finder" className="trade-builder" aria-labelledby="finder-title">
-          <h2 id="finder-title">Trade finder</h2>
-          <Text c="dimmed">Proposable trades across the league are coming soon. Build your own trade below to score a package now.</Text>
-        </section>
-        <details className="trade-section" id="builder">
+        <TradeFinder config={config} week={selectedWeek ?? 0} controls={tradeContextControls} onProposableCountChange={reportFinderCount} />
+        <details className="trade-section" id="builder" ref={builderRef}>
           <summary>Build your own</summary>
           <TradeBuilder config={config} controls={tradeContextControls} hideWeekSelector />
         </details>

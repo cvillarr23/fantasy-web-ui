@@ -9,7 +9,9 @@ import { getCurrentWeek, getLineupRoster, triggerLineupSwap } from '../api/clien
 import { CONFIG_STORAGE_KEY } from '../hooks/useDraftConfig'
 import type { LineupPlayerLine, LineupRosterResponse } from '../api/types'
 
-vi.mock('../api/client', () => ({
+vi.mock('../api/client', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../api/client')>(),
+  getTradeCandidates: vi.fn().mockResolvedValue({ league_id: '123', season: 2026, week: 5, horizon: 4, run_id: 'empty', computed_at: '2026-10-20T12:00:00Z', total: 0, team_counts: [], items: [] }),
   getLineupRoster: vi.fn(), triggerLineupSwap: vi.fn(),
   getCurrentWeek: vi.fn().mockResolvedValue({ week: 5 }),
   getRosterDeficits: vi.fn().mockResolvedValue({ teams: {} }),

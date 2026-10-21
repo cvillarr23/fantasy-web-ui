@@ -4,6 +4,7 @@ import { mockFetch } from '../../.storybook/mockFetch'
 import { DraftConfigContext } from '../hooks/useDraftConfig'
 import { TradePage } from './TradePage'
 import { stagedProposal, tradeConfig, tradeContext, byeOutlook } from './tradeScore/proposalFixtures'
+import { candidates, finderDeficits } from './tradeFinder/fixtures'
 import { partialScore, proposalEvaluation } from './tradeScore/fixtures'
 
 const meta = {
@@ -18,6 +19,8 @@ const meta = {
       { path: '/v1/trade/score', method: 'POST', body: stagedProposal().evaluation!.score },
       { path: /\/v1\/trade\/offers\/.+\/approve/, method: 'POST', status: 202, body: { offer_key: 'b'.repeat(64), status: 'approved', tracking_id: 'story-queue', approved_by: 'Sample Manager', approved_at: '2026-10-07T12:00:00Z', duplicate: false } },
       { path: '/v1/league/teams', body: { '7': 'Our Team', '8': 'Rival Team' } },
+      { path: '/v1/trade/candidates', body: candidates() },
+      { path: '/v1/roster/deficits', body: finderDeficits },
       { path: /\/v1\/trade\/context/, body: tradeContext },
       { path: /\/v1\/roster\/bye-outlook/, body: byeOutlook },
       { path: /\/v1\/league\/current-week/, body: { week: 5 } },

@@ -1,6 +1,6 @@
 ---
 title: Trades
-description: Approve outgoing proposals, read league trade context and evaluate a trade.
+description: Approve outgoing proposals, browse candidate trades, read league trade context and evaluate a trade.
 sidebar_position: 7
 ---
 
@@ -15,11 +15,23 @@ Route: `/trades`. Start with proposals that need approval, then discover or buil
 | Ready to approve | Proposals awaiting your approval: counterparty, players sent and received, pitch, score evidence. Each trade scan (Wednesday and Friday) can stage up to three alternatives, one per team, best first. |
 | League context (collapsed) | Team needs, schedule, each player's NFL bye and the counterparty's bye-crunch weeks, and provenance, for a chosen horizon and counterparty |
 | Build your own (collapsed) | Pick players, choose a trading team and horizon, score the trade live, or compare single-week VORP |
-| Trade finder | A placeholder for upcoming league-wide trade discovery |
+| Trade finder | Precomputed candidate trades, team counts, filters, weekly gain evidence and current lineup impact |
 
-The header summarizes proposals awaiting approval and upcoming bye-crunch weeks. The finder count remains a “coming soon” placeholder. **Look for a trade** in a bye-crunch banner opens `/trades#finder`.
+The header summarizes proposals awaiting approval, proposable candidates across the whole run and upcoming bye-crunch weeks. **Look for a trade** in a bye-crunch banner opens `/trades#finder`.
 
 Proposal cards show **You get** and **You give**, with position, VORP and NFL bye when those players can be matched to the current league roster. Unmatched players retain their names or ESPN IDs. A notification's `?offer=` link highlights its proposal.
+
+## Browse trade candidates
+
+Use the team cards or **Team** filter to choose an opponent. Cards show each team's proposable count, roster needs and depth, strength and head-to-head weeks. Counts cover the whole computed run, independently of your filters. Narrow **I get**, **I give**, **Shape**, **Status** or **Sort by** to browse every matching candidate. Shapes are from your side: 2-for-1 means you give two and receive one. **Proposable** is the default; **Needs a drop** shows packages that exceed a roster limit, and **Show all** includes one-sided packages with reasons.
+
+The computed timestamp identifies the snapshot. A warning appears after 36 hours. If the computation has not run for the selected week, the finder explains that; a completed run with no matches shows a separate empty state.
+
+Hover, focus or tap **Our gain** or **Theirs** for a live week-by-week lineup breakdown. **Details** opens the team's starting lineup changes, a week selector and an optional full lineup. These reads use current rosters and can differ from the snapshot scores. **Full breakdown** shows the returned live scoring evidence.
+
+**Open in builder** expands Build your own, prefills the exact players and opponent, selects the candidate's horizon and scores the package live. **Review roster impact** opens the move review page with those players. Neither action submits an offer.
+
+![Trade finder on desktop](../screenshots/trade-finder-desktop.png)
 
 ## Review the outgoing message
 
@@ -44,6 +56,8 @@ In **Build your own**, a scored result shows a verdict and four tiles: our lineu
 | `GET /v1/trade/offers` | Outgoing proposals |
 | `POST /v1/trade/offers/<key>/approve` | Approve a proposal |
 | `GET /v1/roster/bye-outlook` | Upcoming bye-crunch summary |
+| `GET /v1/trade/candidates` | Filtered and paginated candidate trades and team counts |
+| `GET /v1/roster/deficits` | Opponent roster needs and depth |
 | `GET /v1/trade/context` | League context (collapsed) |
 | `POST /v1/trade/score` | Score and reasons for a proposal |
 | `POST /v1/trade/evaluate` | Manual evaluator |

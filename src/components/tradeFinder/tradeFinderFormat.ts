@@ -1,3 +1,4 @@
+import { scoreTone as displayedScoreTone } from '../tradeScore/tradeScoreFormat'
 import type { TradeScoreLineupWeek } from '../../api/tradeScoreTypes'
 import type { LeagueTradeContext, RosterDeficitsResponse } from '../../api/types'
 
@@ -10,7 +11,7 @@ export function lineupChanges(week: TradeScoreLineupWeek) {
   }
 }
 export function scoreTone(value: number | null) {
-  return value == null || Math.abs(value) < 0.05 ? 'finder-neutral' : value > 0 ? 'finder-positive' : 'finder-negative'
+  return `finder-${displayedScoreTone(value)}`
 }
 
 export function teamNeeds(deficits: RosterDeficitsResponse | undefined, teamId: string) {
