@@ -1,4 +1,4 @@
-import { Alert, Button, Group, Stack, Text } from '@mantine/core'
+import { Alert, Button, Group, NativeSelect, Stack, Text } from '@mantine/core'
 import { useMutation } from '@tanstack/react-query'
 import { ApiError, scoreTrade } from '../../api/client'
 import { queryClient } from '../../api/queryClient'
@@ -39,7 +39,7 @@ export function TradeScorePanel({ config, week, incoming, outgoing, controls }: 
 
   const unmapped = [...incoming, ...outgoing].filter((p) => !p.espn_id)
   const blocker = selectedWeek === null ? 'Select a valid week to score this trade.'
-    : !counterpartyTeamId ? 'Select a counterparty in League trade context above to score this trade.'
+    : !counterpartyTeamId ? 'Select a counterparty to score this trade.'
       : !incoming.length || !outgoing.length ? 'Add at least one player on each side to score this trade.'
         : unmapped.length ? `${unmapped.map((p) => p.name).join(', ')} ${unmapped.length === 1 ? 'has' : 'have'} no ESPN id, so this trade cannot be scored.`
           : null
@@ -64,8 +64,14 @@ export function TradeScorePanel({ config, week, incoming, outgoing, controls }: 
       <h3>Schedule-aware score</h3>
       <Text size="sm" c="dimmed">
         Scores both teams' best lineups over the {horizon}-week horizon, weighted by fantasy opponent strength.
-        Counterparty and horizon come from League trade context.
+        Choose a trading team and horizon, then score the players above.
       </Text>
+      <Group align="end">
+        <NativeSelect label="Trading with" value={counterpartyTeamId} data={[{ value: '', label: 'Select a counterparty' }, ...Object.entries(teamNames ?? {}).filter(([id]) => id !== config.team_id).map(([value, label]) => ({ value, label }))]}
+          onChange={event => controls.onCounterpartyTeamChange(event.currentTarget.value)} />
+        <NativeSelect label="Scoring horizon" value={horizon} data={Array.from({ length: 18 }, (_, i) => ({ value: String(i + 1), label: `${i + 1} weeks` }))}
+          onChange={event => controls.onHorizonChange(Number(event.currentTarget.value))} />
+      </Group>
       <Group>
         <Button onClick={() => request && scoring.mutate(request)} disabled={!request} loading={scoring.isPending}>
           Score trade
@@ -77,7 +83,7 @@ export function TradeScorePanel({ config, week, incoming, outgoing, controls }: 
         <Text size="sm" c="dimmed">Inputs changed — score again to see a result for this trade.</Text>
       )}
       {current && scoring.isError && <Alert color="red" role="alert">{errorMessage(scoring.error)}</Alert>}
-      {current && scoring.data && <TradeScoreBreakdown score={scoring.data} teamNames={teamNames} />}
+      {current && scoring.data && <><TradeScoreBreakdown score={scoring.data} teamNames={teamNames} builder /><Button disabled variant="default">Propose this trade (coming soon)</Button></>}
     </Stack>
   )
 }

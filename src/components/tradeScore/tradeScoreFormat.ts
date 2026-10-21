@@ -1,5 +1,5 @@
 import { reasonLabel } from './tradeScoreReasons'
-import type { ProposalEvaluation, TradeScoreLineupWeek, TradeScoreRequest, TradeScoreStarter } from '../../api/types'
+import type { ProposalEvaluation, TradeScore, TradeScoreLineupWeek, TradeScoreRequest, TradeScoreStarter } from '../../api/types'
 
 /** Formats a value core returned. A missing value is unknown, so it never reads as zero. */
 export function signedScore(value: number | null | undefined, digits = 1): string {
@@ -71,4 +71,10 @@ export function formatEvidenceValue(value: unknown): string {
     return `Week ${record.week} not scored: ${record.reasons.map((code) => reasonLabel(String(code)).label).join('; ')}`
   }
   return JSON.stringify(value)
+}
+
+export function isProposable(score: TradeScore) {
+  return score.score.final_score != null && (score.score.our_lineup_gain ?? 0) > 0
+    && score.score.counterparty_lineup_change != null && score.score.counterparty_lineup_change >= 0
+    && !score.roster_impact.us.exceeds_roster_limit && !score.roster_impact.counterparty.exceeds_roster_limit
 }

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
 import { ApiError, getTradeContext, scoreTrade } from '../../api/client'
 import { TradeScorePanel } from './TradeScorePanel'
@@ -34,7 +34,7 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.resetAllMocks() })
 
 it.each([
-  [{ controls: controls({ counterpartyTeamId: '' }) }, /Select a counterparty in League trade context/],
+  [{ controls: controls({ counterpartyTeamId: '' }) }, /Select a counterparty to score/],
   [{ incoming: [] }, /at least one player on each side/],
   [{ outgoing: [] }, /at least one player on each side/],
   [{ outgoing: [player('p9', null, 'No Espn Guy')] }, /No Espn Guy has no ESPN id/],
@@ -100,4 +100,17 @@ it.each([
   render(view())
   fireEvent.click(button())
   await waitFor(() => expect(screen.getByRole('alert').textContent).toMatch(copy))
+})
+
+it('shows inline weekly lineup evidence, four score tiles and an unavailable propose action', async () => {
+  render(view())
+  fireEvent.click(button())
+  const table = await screen.findByRole('table', { name: 'Week by week: where the score comes from' })
+  expect(within(table).getAllByRole('columnheader')).toHaveLength(6)
+  const row = within(table).getByRole('row', { name: 'Week 5' })
+  expect(within(row).getAllByText(/Enters: Received Wideout/).length).toBeGreaterThan(0)
+  expect(within(row).getByText('+4.2')).toBeTruthy()
+  expect(screen.getByLabelText('Builder score terms').children).toHaveLength(4)
+  expect((screen.getByRole('button', { name: 'Propose this trade (coming soon)' }) as HTMLButtonElement).disabled).toBe(true)
+  expect(screen.queryByText(/Proposable: we gain/)).toBeNull()
 })

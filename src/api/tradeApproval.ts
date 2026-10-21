@@ -17,12 +17,16 @@ export function validApprover(label: string) {
 export function validOfferKey(key: unknown): key is string {
   return typeof key === 'string' && /^[0-9a-f]{64}$/.test(key)
 }
-export async function approveTradeOffer(offerKey: string, label: string): Promise<TradeApprovalResponse> {
+export function validTradeMessage(message: string) {
+  return Boolean(message.trim()) && [...message].length <= 1000
+}
+export async function approveTradeOffer(offerKey: string, label: string, message?: string): Promise<TradeApprovalResponse> {
   if (!validOfferKey(offerKey) || !validApprover(label)) throw new Error('Invalid offer key or approver label')
+  if (message !== undefined && !validTradeMessage(message)) throw new Error('Message must contain 1–1000 characters')
   const result = await request<TradeApprovalResponse>(`/v1/trade/offers/${offerKey}/approve`, {
-    method: 'POST', body: JSON.stringify({ approved_by: label.trim() }),
+    method: 'POST', body: JSON.stringify({ approved_by: label.trim(), ...(message === undefined ? {} : { message }) }),
   })
-  if (!result || result.offer_key !== offerKey || result.status !== 'approved' ||
+  if (!result || !validOfferKey(result.offer_key) || result.status !== 'approved' ||
       typeof result.tracking_id !== 'string' || !result.tracking_id.trim() ||
       typeof result.approved_by !== 'string' || !result.approved_by.trim() ||
       typeof result.approved_at !== 'string' || !Number.isFinite(Date.parse(result.approved_at)) ||

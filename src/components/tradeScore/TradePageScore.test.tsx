@@ -2,7 +2,8 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
 import { MemoryRouter } from 'react-router-dom'
-import { evaluateTrade, getCurrentWeek, getOutgoingTradeOffers, getTeamNames, getTradeContext, scoreTrade, searchPlayers } from '../../api/client'
+import { evaluateTrade, getCurrentWeek, getOutgoingTradeOffers, getTeamNames, getTradeContext, getByeOutlook, scoreTrade, searchPlayers } from '../../api/client'
+import { getTradeProposalStates } from '../../api/tradeApproval'
 import { DraftConfigContext } from '../../hooks/useDraftConfig'
 import { TradePage } from '../TradePage'
 import { completeScore } from './fixtures'
@@ -10,7 +11,7 @@ import type { DraftConfig, LeagueTradeContext, PlayerSearchResult } from '../../
 
 vi.mock('../../api/client', async (importOriginal) => ({
   ...await importOriginal<typeof import('../../api/client')>(),
-  getTradeContext: vi.fn(), getCurrentWeek: vi.fn(), getOutgoingTradeOffers: vi.fn(), getTeamNames: vi.fn(),
+  getTradeContext: vi.fn(), getByeOutlook: vi.fn(), getCurrentWeek: vi.fn(), getOutgoingTradeOffers: vi.fn(), getTeamNames: vi.fn(),
   evaluateTrade: vi.fn(), searchPlayers: vi.fn(), scoreTrade: vi.fn(),
 }))
 vi.mock('../../api/tradeApproval', async (importOriginal) => ({
@@ -36,6 +37,8 @@ const context: LeagueTradeContext = {
 }
 
 beforeEach(() => {
+  vi.mocked(getByeOutlook).mockRejectedValue(new Error('Unavailable'))
+  vi.mocked(getTradeProposalStates).mockResolvedValue([])
   vi.mocked(getCurrentWeek).mockResolvedValue({ week: 5 })
   vi.mocked(getOutgoingTradeOffers).mockResolvedValue([])
   vi.mocked(getTeamNames).mockResolvedValue({})
@@ -62,9 +65,11 @@ it('scores the built trade with the counterparty and horizon chosen in the conte
     </DraftConfigContext.Provider>
   </MemoryRouter></MantineProvider>)
 
+  fireEvent.click(await screen.findByText('Build your own', { selector: 'summary' }))
+  fireEvent.click(screen.getByText('League context', { selector: 'summary' }))
   const scoreButton = await screen.findByRole('button', { name: 'Score trade' }) as HTMLButtonElement
   expect(scoreButton.disabled).toBe(true)
-  expect(screen.getByText(/Select a counterparty in League trade context/)).toBeTruthy()
+  expect(screen.getByText(/Select a counterparty to score/)).toBeTruthy()
 
   fireEvent.change(await screen.findByRole('combobox', { name: 'Counterparty' }), { target: { value: '8' } })
   fireEvent.change(screen.getByRole('combobox', { name: 'Horizon' }), { target: { value: '6' } })
@@ -82,4 +87,18 @@ it('scores the built trade with the counterparty and horizon chosen in the conte
   // The manual VORP comparison is unchanged: internal player ids, single week.
   fireEvent.click(screen.getByRole('button', { name: 'Compare VORP' }))
   await waitFor(() => expect(evaluateTrade).toHaveBeenCalledWith(['p200'], ['p100'], 2026, 5))
+})
+
+
+it('puts approval first and keeps the builder and context collapsed with an honest finder placeholder', async () => {
+  render(<MantineProvider><MemoryRouter initialEntries={['/trades?week=5']}>
+    <DraftConfigContext.Provider value={{ config, loading: false, saveConfig: vi.fn(), setConfig: vi.fn() }}><TradePage /></DraftConfigContext.Provider>
+  </MemoryRouter></MantineProvider>)
+  expect(await screen.findByRole('heading', { name: 'Trades', level: 1 })).toBeTruthy()
+  expect(screen.getByText('Build your own', { selector: 'summary' }).closest('details')!.open).toBe(false)
+  expect(screen.getByText('League context', { selector: 'summary' }).closest('details')!.open).toBe(false)
+  expect(screen.getByRole('heading', { name: 'Ready to approve' }).closest('section')!.id).toBe('approve')
+  expect(document.getElementById('finder')!.textContent).toContain('coming soon')
+  expect(screen.getByRole('link', { name: /Proposable trades found/ }).getAttribute('href')).toBe('#finder')
+  expect(await screen.findByRole('link', { name: /0 proposals awaiting/ })).toBeTruthy()
 })
