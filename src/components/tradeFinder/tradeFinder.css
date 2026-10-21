@@ -1,0 +1,78 @@
+.trade-finder { display: flex; flex-direction: column; gap: 16px; min-width: 0; scroll-margin-top: 20px; font-size: 14px; }
+.finder-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px; }
+.finder-team-strip { display: flex; gap: 10px; overflow-x: auto; padding: 2px 2px 6px; scrollbar-width: thin; }
+.finder-team-card { flex: 0 0 230px; display: flex; flex-direction: column; gap: 10px; padding: 14px; text-align: left; font: inherit; font-size: 12px; color: var(--text); background: var(--surface); border: 2px solid var(--border); border-radius: 12px; cursor: pointer; }
+.finder-team-card[aria-pressed=true] { border-color: var(--accent); background: var(--accent-bg); }
+.finder-team-card-title { display: flex; width: 100%; gap: 8px; justify-content: space-between; align-items: center; color: var(--text-h); font-weight: 700; font-size: 14px; }
+.finder-count, .finder-h2h, .finder-status { border-radius: 999px; padding: 3px 8px; font-size: 11px; font-weight: 600; background: var(--raised); }
+.finder-count, .finder-status-proposable { color: var(--incoming); background: color-mix(in srgb, var(--incoming) 12%, transparent); }
+.finder-h2h { color: var(--projected); background: color-mix(in srgb, var(--projected) 12%, transparent); }
+.finder-badges { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 12px; }
+.finder-filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); padding: 14px; }
+.finder-filters > * { flex: 1 1 110px; min-width: 0; }
+.finder-filters > :first-child { flex-basis: 150px; }
+.finder-content { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+.finder-list { flex: 999 1 720px; min-width: 0; display: flex; flex-direction: column; gap: 12px; container-type: inline-size; }
+.finder-row { display: grid; grid-template-columns: 132px minmax(0,1fr) minmax(0,1fr) 104px 64px 60px 120px 74px; gap: 12px; align-items: center; }
+.finder-head { padding: 0 16px 10px; font-size: 11px; color: var(--text); }
+.finder-head > * { display: flex; align-items: center; gap: 5px; }
+.finder-candidate { padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; }
+.finder-selected { border-color: var(--accent); background: var(--accent-bg); }
+.finder-one-sided { opacity: .78; }
+.finder-updating { opacity: .6; }
+.finder-row-team, .finder-players { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.finder-row-team strong { color: var(--text-h); overflow-wrap: anywhere; }
+.finder-row-team small { color: var(--text); font-size: 12px; }
+.finder-player { display: flex; align-items: center; gap: 7px; min-width: 0; }
+.finder-position { padding: 2px 5px; border-radius: 5px; font-size: 10px; font-weight: 700; background: var(--raised); }
+.finder-receive .finder-position { color: var(--incoming); }
+.finder-send .finder-position { color: var(--outgoing); }
+.finder-player-name { flex: 1; min-width: 0; }
+.finder-player-name strong { display: block; color: var(--text-h); overflow-wrap: anywhere; font-size: 12px; }
+.finder-player small, .finder-vorp small { display: block; color: var(--text); font-size: 10px; line-height: 1.5; }
+.finder-vorp { text-align: right; font-size: 12px; color: var(--text-h); }
+.finder-positive { color: var(--incoming); }
+.finder-negative { color: var(--error); }
+.finder-neutral { color: var(--text); }
+.finder-status-needs_drop, .finder-stale { color: var(--warn); }
+.finder-status-needs_drop { background: color-mix(in srgb, var(--warn) 12%, transparent); }
+.finder-status { display: inline-block; line-height: 1.5; overflow-wrap: anywhere; }
+.finder-gain { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; text-align: left; text-decoration: underline dotted; text-underline-offset: 4px; cursor: help; }
+.finder-gain-week { display: grid; grid-template-columns: 36px 42px 1fr; gap: 8px; border-top: 1px solid var(--border); padding: 6px 0; font-size: 12px; }
+.finder-gain-track { height: 6px; background: var(--raised); border-radius: 3px; display: block; overflow: hidden; margin-top: 6px; }
+.finder-gain-track > span { height: 100%; display: block; background: var(--incoming); }
+.finder-details { flex: 1 1 340px; max-width: 420px; min-width: 0; box-sizing: border-box; position: sticky; top: 16px; padding: 18px; display: flex; flex-direction: column; gap: 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+.finder-details h3, .finder-details h4 { margin: 0; color: var(--text-h); }
+.finder-details h3 { font-size: 19px; }
+.finder-details h4 { font-size: 12px; text-transform: uppercase; }
+.finder-mini-tiles { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+.finder-mini-tiles .stat-tile { min-width: 0; padding: 10px; }
+.finder-mini-tiles .stat-tile-value { font-size: 22px; }
+.finder-lineup-week { background: var(--bg); border-radius: 10px; padding: 10px 12px; margin-bottom: 6px; font-size: 12px; }
+.finder-lineup-week small { display: block; margin-bottom: 4px; }
+.finder-lineup-week strong { margin-left: 6px; }
+.finder-leaving { color: var(--text); text-decoration: line-through; }
+.finder-full-lineup { font-size: 12px; }
+.finder-full-lineup > div { padding: 6px 0; border-bottom: 1px solid var(--border); }
+.finder-full-lineup > div span { float: right; }
+.finder-empty { padding: 28px; text-align: center; border: 1px dashed var(--border); border-radius: 12px; }
+.finder-mobile-label { display: none; font-size: 11px; color: var(--text); margin-bottom: 5px; }
+.trade-finder button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@container (max-width: 850px) {
+  .finder-row { grid-template-columns: repeat(2, minmax(0,1fr)); row-gap: 12px; }
+  .finder-head { display: none; }
+  .finder-row-team, .finder-row-action { grid-column: 1 / -1; }
+  .finder-row-team { flex-direction: row; align-items: baseline; flex-wrap: wrap; }
+  .finder-mobile-label { display: block; }
+}
+@media (max-width: 600px) {
+  .finder-details { position: static; max-width: 100%; flex-basis: 100%; }
+  .finder-candidate { padding: 12px; gap: 12px; }
+  .finder-team-card { flex-basis: 210px; }
+  .finder-filters > * { flex-basis: calc(50% - 12px); }
+  .finder-filters > :first-child { flex-basis: 100%; }
+}
+
+.finder-filters > .finder-status-filter { flex: 1 1 300px; display: flex; flex-direction: column; gap: 4px; align-items: stretch; }
+.finder-filter-label { display: flex; gap: 6px; align-items: center; color: var(--text-h); font-weight: 500; }
+.finder-count.finder-neutral { background: var(--raised); }

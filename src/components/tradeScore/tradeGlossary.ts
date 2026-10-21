@@ -2,6 +2,9 @@ import type { TradeScore } from '../../api/types'
 
 /** Explanations that do not assume any scorer weights. */
 export const tradeGlossary = {
+  counterparty: 'The opponent who would receive this offer.',
+  candidateDetails: 'Inspect both starting lineups and re-score the trade live before acting.',
+
   strength: "Strength compares a team's fantasy points per week so far to the league average, in standard deviations. +1.0 means about one standard deviation above average; 0 is average. It is not a win probability, and it is not NFL defense strength.",
   ourLineupGain: 'How many VORP points our best possible starting lineup gains over the scored weeks after this trade. Bench players count only if they would start.',
   theirChange: "Change in their best starting lineup. Zero or positive means they don't lose anything, so the trade is realistic to propose.",

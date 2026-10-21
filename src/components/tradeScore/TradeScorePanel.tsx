@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useRef } from 'react'
 import { Alert, Button, Group, NativeSelect, Stack, Text } from '@mantine/core'
 import { useMutation } from '@tanstack/react-query'
 import { ApiError, scoreTrade } from '../../api/client'
@@ -16,6 +17,7 @@ interface Props {
   incoming: PlayerSearchResult[]
   outgoing: PlayerSearchResult[]
   controls: TradeContextControls
+  autoScore?: number
 }
 
 function errorMessage(error: Error): string {
@@ -28,7 +30,7 @@ function errorMessage(error: Error): string {
   return `Could not score this trade: ${error.message}`
 }
 
-export function TradeScorePanel({ config, week, incoming, outgoing, controls }: Props) {
+export function TradeScorePanel({ config, week, incoming, outgoing, controls, autoScore }: Props) {
   const selectedWeek = validWeek(week)
   const { counterpartyTeamId, horizon } = controls
   // Shares the context panel's cached query, used here only for fantasy-opponent names.
@@ -43,7 +45,7 @@ export function TradeScorePanel({ config, week, incoming, outgoing, controls }: 
       : !incoming.length || !outgoing.length ? 'Add at least one player on each side to score this trade.'
         : unmapped.length ? `${unmapped.map((p) => p.name).join(', ')} ${unmapped.length === 1 ? 'has' : 'have'} no ESPN id, so this trade cannot be scored.`
           : null
-  const request: TradeScoreRequest | null = blocker ? null : {
+  const request = useMemo<TradeScoreRequest | null>(() => blocker ? null : {
     league_id: config.league_id,
     season: config.season,
     week: selectedWeek!,
@@ -52,9 +54,17 @@ export function TradeScorePanel({ config, week, incoming, outgoing, controls }: 
     counterparty_team_id: counterpartyTeamId,
     send_espn_ids: outgoing.map((p) => p.espn_id!),
     receive_espn_ids: incoming.map((p) => p.espn_id!),
-  }
+  }, [blocker, config.league_id, config.season, config.team_id, selectedWeek, horizon, counterpartyTeamId, outgoing, incoming])
 
   const scoring = useMutation({ mutationFn: (body: TradeScoreRequest) => scoreTrade(body) }, queryClient)
+  const autoScored = useRef<number | undefined>(undefined)
+  const mutate = scoring.mutate
+  useEffect(() => {
+    if (autoScore !== undefined && autoScored.current !== autoScore && request) {
+      autoScored.current = autoScore
+      mutate(request)
+    }
+  }, [autoScore, request, mutate])
   // A score belongs to the exact inputs it was computed for; any change hides it.
   const current = scoring.variables && request
     && scoreInputSignature(scoring.variables) === scoreInputSignature(request)
@@ -83,7 +93,11 @@ export function TradeScorePanel({ config, week, incoming, outgoing, controls }: 
         <Text size="sm" c="dimmed">Inputs changed — score again to see a result for this trade.</Text>
       )}
       {current && scoring.isError && <Alert color="red" role="alert">{errorMessage(scoring.error)}</Alert>}
-      {current && scoring.data && <><TradeScoreBreakdown score={scoring.data} teamNames={teamNames} builder /><Button disabled variant="default">Propose this trade (coming soon)</Button></>}
+      {current && scoring.data && <>
+        {autoScore !== undefined && <Text size="xs" c="dimmed">Scored live just now.</Text>}
+        <TradeScoreBreakdown score={scoring.data} teamNames={teamNames} builder />
+        <Button disabled variant="default">Propose this trade (coming soon)</Button>
+      </>}
     </Stack>
   )
 }

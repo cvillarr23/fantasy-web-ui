@@ -2,16 +2,17 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
 import { MemoryRouter } from 'react-router-dom'
-import { evaluateTrade, getCurrentWeek, getOutgoingTradeOffers, getTeamNames, getTradeContext, getByeOutlook, scoreTrade, searchPlayers } from '../../api/client'
+import { evaluateTrade, getTradeCandidates, getRosterDeficits, getCurrentWeek, getOutgoingTradeOffers, getTeamNames, getTradeContext, getByeOutlook, scoreTrade, searchPlayers } from '../../api/client'
 import { getTradeProposalStates } from '../../api/tradeApproval'
 import { DraftConfigContext } from '../../hooks/useDraftConfig'
 import { TradePage } from '../TradePage'
+import { candidates, finderDeficits } from '../tradeFinder/fixtures'
 import { completeScore } from './fixtures'
 import type { DraftConfig, LeagueTradeContext, PlayerSearchResult } from '../../api/types'
 
 vi.mock('../../api/client', async (importOriginal) => ({
   ...await importOriginal<typeof import('../../api/client')>(),
-  getTradeContext: vi.fn(), getByeOutlook: vi.fn(), getCurrentWeek: vi.fn(), getOutgoingTradeOffers: vi.fn(), getTeamNames: vi.fn(),
+  getTradeCandidates: vi.fn(), getRosterDeficits: vi.fn(), getTradeContext: vi.fn(), getByeOutlook: vi.fn(), getCurrentWeek: vi.fn(), getOutgoingTradeOffers: vi.fn(), getTeamNames: vi.fn(),
   evaluateTrade: vi.fn(), searchPlayers: vi.fn(), scoreTrade: vi.fn(),
 }))
 vi.mock('../../api/tradeApproval', async (importOriginal) => ({
@@ -37,6 +38,8 @@ const context: LeagueTradeContext = {
 }
 
 beforeEach(() => {
+  vi.mocked(getTradeCandidates).mockResolvedValue(candidates({ total: 0, items: [], team_counts: [] }))
+  vi.mocked(getRosterDeficits).mockResolvedValue(finderDeficits)
   vi.mocked(getByeOutlook).mockRejectedValue(new Error('Unavailable'))
   vi.mocked(getTradeProposalStates).mockResolvedValue([])
   vi.mocked(getCurrentWeek).mockResolvedValue({ week: 5 })
@@ -90,7 +93,7 @@ it('scores the built trade with the counterparty and horizon chosen in the conte
 })
 
 
-it('puts approval first and keeps the builder and context collapsed with an honest finder placeholder', async () => {
+it('puts approval first and keeps the builder and context collapsed with the finder between approval and the builder', async () => {
   render(<MantineProvider><MemoryRouter initialEntries={['/trades?week=5']}>
     <DraftConfigContext.Provider value={{ config, loading: false, saveConfig: vi.fn(), setConfig: vi.fn() }}><TradePage /></DraftConfigContext.Provider>
   </MemoryRouter></MantineProvider>)
@@ -98,7 +101,7 @@ it('puts approval first and keeps the builder and context collapsed with an hone
   expect(screen.getByText('Build your own', { selector: 'summary' }).closest('details')!.open).toBe(false)
   expect(screen.getByText('League context', { selector: 'summary' }).closest('details')!.open).toBe(false)
   expect(screen.getByRole('heading', { name: 'Ready to approve' }).closest('section')!.id).toBe('approve')
-  expect(document.getElementById('finder')!.textContent).toContain('coming soon')
-  expect(screen.getByRole('link', { name: /Proposable trades found/ }).getAttribute('href')).toBe('#finder')
+  expect(screen.getByRole('heading', { name: 'Trade finder' })).toBeTruthy()
+  expect((await screen.findByRole('link', { name: '0 proposable trades found' })).getAttribute('href')).toBe('#finder')
   expect(await screen.findByRole('link', { name: /0 proposals awaiting/ })).toBeTruthy()
 })
