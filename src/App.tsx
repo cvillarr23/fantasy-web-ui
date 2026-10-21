@@ -28,6 +28,7 @@ import { ScoreboardPage } from './components/ScoreboardPage'
 const TradePage = lazy(() =>
   import('./components/TradePage').then((m) => ({ default: m.TradePage })),
 )
+const SentTradesPage = lazy(() => import('./components/sentTrades/SentTradesPage').then((m) => ({ default: m.SentTradesPage })))
 import { WaiverPage } from './components/WaiverPage'
 import './App.css'
 
@@ -50,6 +51,7 @@ function App() {
               <Route path="scoreboard" element={<ScoreboardPage />} />
               <Route path="inbox" element={<TradeInboxPage />} />
               <Route path="trades" element={<TradePage />} />
+              <Route path="trades/sent" element={<SentTradesPage />} />
               <Route path="chat" element={<ChatPage />} />
               <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="waivers" element={<WaiverPage />} />

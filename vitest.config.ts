@@ -4,6 +4,10 @@ import { playwright } from '@vitest/browser-playwright'
 
 export default defineConfig({
   test: {
+    // Local runs and the self-hosted CI runners share one 8-core host with the cluster, and
+    // several sessions often test at once. Uncapped runs saturated it (load ~47) and starved
+    // the core-pipeline's health probes. VITEST_MAX_WORKERS overrides this for a quiet machine.
+    maxWorkers: process.env.VITEST_MAX_WORKERS ?? '25%',
     projects: [
       {
         test: { name: 'unit', environment: 'jsdom', setupFiles: ['./src/testSetup.ts'] },

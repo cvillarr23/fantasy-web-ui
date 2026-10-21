@@ -516,6 +516,8 @@ export interface TradeOffer {
   drafted_message?: string | null
   message_edited?: boolean
   edited_by?: string | null
+  related_transaction_id?: string | null
+  thread_root_id?: string | null
   approval?: { tracking_id?: string; approved_by?: string; approved_at?: string; publish_error?: string } | null
   /** Score evidence stored by the proposal generator. null means none was stored; absent means
    * the API didn't send the field, so whether evidence exists is unknown. Don't normalize one to the other. */
