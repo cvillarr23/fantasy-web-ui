@@ -31,7 +31,7 @@ export function ByeCrunchSummary({ outlook }: { outlook: TeamByeOutlook }) {
         <Button component={Link} to={`/waivers?week=${outlook.start_week}`} size="xs" variant="light">
           Find a fill-in
         </Button>
-        <Button component={Link} to="/trades" size="xs" variant="subtle">
+        <Button component={Link} to="/trades#finder" size="xs" variant="subtle">
           Look for a trade
         </Button>
       </Group>

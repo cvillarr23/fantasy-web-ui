@@ -20,6 +20,7 @@ interface Props {
   config: DraftConfig
   /** Counterparty and horizon shared with the league trade context panel. */
   controls?: TradeContextControls
+  hideWeekSelector?: boolean
 }
 
 interface Side {
@@ -60,7 +61,7 @@ function TradeSideColumn({ side }: { side: Side }) {
   )
 }
 
-export function TradeBuilder({ config, controls }: Props) {
+export function TradeBuilder({ config, controls, hideWeekSelector = false }: Props) {
   const [incoming, setIncoming] = useState<PlayerSearchResult[]>([])
   const [outgoing, setOutgoing] = useState<PlayerSearchResult[]>([])
   // number | string, same reasoning as LineupPage's week field - NumberInput passes
@@ -101,7 +102,7 @@ export function TradeBuilder({ config, controls }: Props) {
         <h2>Evaluate a trade</h2>
         <RosterQuickActions page="trades" week={week} />
       </Group>
-      <WeekSelector week={week} onChange={setWeek} />
+      {!hideWeekSelector && <WeekSelector week={week} onChange={setWeek} />}
 
       <div className="trade-columns">
         <TradeSideColumn

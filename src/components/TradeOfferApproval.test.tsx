@@ -1,10 +1,13 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
-import { ApiError } from '../api/client'
+import { queryClient } from '../api/queryClient'
+import { proposalEvaluation } from './tradeScore/fixtures'
+import { ApiError, scoreTrade } from '../api/client'
 import { approveTradeOffer, getTradeProposalStates } from '../api/tradeApproval'
 import type { DraftConfig, TradeOffer } from '../api/types'
 import { TradeOfferApproval, TradeApprovalStatus } from './TradeOfferApproval'
+vi.mock('../api/client', async importOriginal => ({ ...await importOriginal<typeof import('../api/client')>(), scoreTrade: vi.fn() }))
 vi.mock('../api/tradeApproval', async importOriginal => ({ ...await importOriginal<typeof import('../api/tradeApproval')>(), approveTradeOffer: vi.fn(), getTradeProposalStates: vi.fn() }))
 const config: DraftConfig = { league_id: '123', team_id: '7', season: 2026, mode: 'live' }
 const offer: TradeOffer = { id: 1, status: 'awaiting_approval', offer_key: 'a'.repeat(64), league_id: '123', season: 2026, source: 'proposal', from_team_id: '7', to_team_id: '8', incoming_player_ids: ['4046'], outgoing_player_ids: ['9999'], incoming_players: [{ espn_id: '4046', name: 'Some Back' }], outgoing_players: [{ espn_id: '9999', name: null }], executed_at: '2026-10-05T10:00:00Z', message: '  Exact pitch\n第二行  ' }
@@ -15,12 +18,12 @@ afterEach(() => { cleanup(); vi.resetAllMocks() })
 async function review() {
   await waitFor(() => expect((screen.getByRole('button', { name: 'Review approval' }) as HTMLButtonElement).disabled).toBe(false))
   fireEvent.click(screen.getByRole('button', { name: 'Review approval' }))
-  await screen.findByText('Approving queues this exact offer. The worker may propose a real trade to this manager in ESPN.')
+  await screen.findByText("Approving queues this exact offer for the browser worker to send on ESPN. You can't edit it after you approve. If either roster has changed by then, the worker re-checks and stops.")
   await waitFor(() => expect(screen.queryByText('Verifying current offer…')).toBeNull())
 }
 function confirm(label = 'Manager') {
-  fireEvent.change(screen.getByLabelText('Approver label'), { target: { value: label } })
-  fireEvent.click(screen.getByLabelText('I have reviewed these players, counterparty and pitch.'))
+  fireEvent.change(screen.getByLabelText('Approver name'), { target: { value: label } })
+  fireEvent.click(screen.getByLabelText("I've checked the players, the score and the message"))
   fireEvent.click(screen.getByRole('button', { name: 'Approve and queue offer' }))
 }
 it('requires exact review, a label and explicit confirmation; cancel sends nothing', async () => {
@@ -103,7 +106,7 @@ it('blocks approval when verification fails', async () => {
 it.each([{ team_id: '9' }, { league_id: '456' }, { season: 2025 }, { mode: 'practice' as const }])('closes confirmation on config change %j', async change => {
   const { rerender } = render(view()); await review()
   rerender(view({ ...config, ...change }))
-  await waitFor(() => expect(screen.queryByLabelText('Approver label')).toBeNull())
+  await waitFor(() => expect(screen.queryByLabelText('Approver name')).toBeNull())
   expect(approveTradeOffer).not.toHaveBeenCalled()
 })
 it.each([['approved', 'Queued — ESPN submission unconfirmed'], ['approval_pending', 'Approval pending / publication outcome unconfirmed'], ['submitting', 'Worker processing — ESPN submission unconfirmed'], ['submitted', 'Worker confirmed submission to ESPN'], ['submit_blocked', 'Worker blocked submission'], ['dry_run_filled', 'Dry run — no live submission recorded'], ['failure', 'Worker reported failure — inspect outcome before retrying']])('renders %s independently from queue acceptance', async (status, copy) => {
@@ -144,7 +147,7 @@ it('serializes duplicate controls for the same supplied key', async () => {
   render(<MantineProvider><TradeOfferApproval config={config} offer={offer} counterparty="Rival" disabled={false} /><TradeOfferApproval config={config} offer={{ ...offer, id: 2 }} counterparty="Rival" disabled={false} /><TradeApprovalStatus config={config} /></MantineProvider>)
   await waitFor(() => expect((screen.getAllByRole('button', { name: 'Review approval' })[0] as HTMLButtonElement).disabled).toBe(false))
   fireEvent.click(screen.getAllByRole('button', { name: 'Review approval' })[0])
-  await screen.findByLabelText('Approver label')
+  await screen.findByLabelText('Approver name')
   await waitFor(() => expect(screen.queryByText('Verifying current offer…')).toBeNull())
   confirm(); await screen.findByText('Offer queued. ESPN submission is not yet confirmed.')
   expect(screen.getAllByRole('button', { name: 'Review approval' }).every(button => (button as HTMLButtonElement).disabled)).toBe(true)
@@ -186,7 +189,7 @@ it('keeps a late approval response scoped to its original configuration', async 
   rerender(view({ ...config, team_id: '9' })); resolve(approved)
   await new Promise(resolve => setTimeout(resolve, 30))
   expect(screen.queryByText('Offer queued. ESPN submission is not yet confirmed.')).toBeNull()
-  expect(screen.queryByLabelText('Approver label')).toBeNull()
+  expect(screen.queryByLabelText('Approver name')).toBeNull()
   expect(approveTradeOffer).toHaveBeenCalledOnce()
 })
 it('retains the pre-request guard if storage fails while recording the response', async () => {
@@ -203,4 +206,43 @@ it('retains the pre-request guard if storage fails while recording the response'
   expect((screen.getByRole('button', { name: 'Review approval' }) as HTMLButtonElement).disabled).toBe(true)
   expect(sessionStorage.getItem(`fantasy-web-ui.trade-approval.${offer.offer_key}`)).toContain('Approval outcome is unknown')
   spy.mockRestore()
+})
+
+it('reviews the final edit, retains the draft, and follows the new key without reopening the original', async () => {
+  const newKey = 'b'.repeat(64)
+  vi.mocked(approveTradeOffer).mockResolvedValue({ ...approved, offer_key: newKey })
+  render(<MantineProvider><TradeOfferApproval config={config} offer={{ ...offer, drafted_message: offer.message, message_edited: false, edited_by: null }} finalMessage="Edited exactly" counterparty="Rival" disabled={false} /><TradeApprovalStatus config={config} /></MantineProvider>)
+  await review()
+  expect(screen.getByTestId('approval-pitch').textContent).toBe('Edited exactly')
+  expect(screen.getByText('Edited by you')).toBeTruthy()
+  confirm()
+  await screen.findByText('Offer queued. ESPN submission is not yet confirmed.')
+  expect(approveTradeOffer).toHaveBeenCalledWith(offer.offer_key, 'Manager', 'Edited exactly')
+  expect(JSON.parse(sessionStorage.getItem(`fantasy-web-ui.trade-approval.${newKey}`)! ).response.offer_key).toBe(newKey)
+  expect(sessionStorage.getItem(`fantasy-web-ui.trade-approval.${offer.offer_key}`)).toBeTruthy()
+  expect((screen.getByRole('button', { name: 'Review approval' }) as HTMLButtonElement).disabled).toBe(true)
+  expect(screen.getByText(`Offer key: ${newKey}`)).toBeTruthy()
+})
+
+it('re-scores a proposal at review and blocks queueing when live scoring fails', async () => {
+  vi.mocked(scoreTrade).mockRejectedValue(new Error('Roster changed'))
+  const scored = { ...offer, evaluation: proposalEvaluation() }
+  vi.mocked(getTradeProposalStates).mockResolvedValue([scored])
+  render(view(config, scored)); await review()
+  expect(await screen.findByText(/Roster changed/)).toBeTruthy()
+  confirm()
+  expect(approveTradeOffer).not.toHaveBeenCalled()
+  expect(scoreTrade).toHaveBeenCalledWith({ league_id: '123', season: 2026, week: 5, horizon: 4, our_team_id: '7', counterparty_team_id: '8', send_espn_ids: ['9999'], receive_espn_ids: ['4046'] })
+})
+
+it('explains when live scoring is unavailable on a legacy offer', async () => {
+  render(view()); await review()
+  expect(screen.getByText(/Live scoring is unavailable.*no supported score request/)).toBeTruthy()
+})
+it('blocks a changed message for an offer whose edit was already persisted', async () => {
+  const persisted = { ...offer, drafted_message: 'Original draft', message_edited: true }
+  vi.mocked(getTradeProposalStates).mockResolvedValue([persisted])
+  render(<MantineProvider><TradeOfferApproval config={config} offer={persisted} finalMessage="Original draft" counterparty="Rival" disabled={false} /></MantineProvider>)
+  await waitFor(() => expect(queryClient.getQueryState(['trade-approval-status', '123:7:2026:live'])?.status).toBe('success'))
+  expect((screen.getByRole('button', { name: 'Review approval' }) as HTMLButtonElement).disabled).toBe(true)
 })

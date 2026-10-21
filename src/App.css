@@ -1307,3 +1307,28 @@ a.lineup-open-spot:focus-visible {
   padding: 8px 12px;
   white-space: pre;
 }
+
+/* Trade proposals lead with the decision, with supporting evidence available on demand. */
+.trades-page, .trades-page section, .proposal-card, .trade-section { min-width: 0; }
+.proposal-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); gap: 16px; }
+.proposal-card { background: var(--surface); gap: 16px; overflow-wrap: anywhere; }
+.proposal-final { font-size: 40px; line-height: 1.1; }
+.proposal-verdict { max-width: 100%; }
+.proposal-message { margin: 0; padding: 12px 16px; border-radius: 10px; background: var(--bg); color: var(--text-h); white-space: pre-wrap; overflow-wrap: anywhere; }
+.proposal-player { background: var(--raised); border-radius: 10px; padding: 10px 12px; flex-wrap: wrap; }
+.proposal-player .player-card-row-name { flex: 1 1 120px; min-width: 0; overflow-wrap: anywhere; }
+.proposal-player .player-card-row-meta { white-space: normal; }
+.trade-section > summary { cursor: pointer; padding: 16px; font-size: 20px; font-weight: 700; color: var(--text-h); border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+.trade-section[open] > summary { margin-bottom: 12px; }
+.trades-page .mantine-Badge-label { white-space: normal; overflow-wrap: anywhere; }
+.trades-page .mantine-Badge-root { max-width: 100%; height: auto; min-height: 28px; }
+.trade-verdict-strip { padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--raised); }
+.trades-page h1 { margin: 0; font-size: 30px; line-height: 1.2; }
+.proposal-final[data-unavailable] { font-size: 20px; }
+.approval-players { min-width: 0; padding: 12px 14px; border-radius: 12px; background: var(--raised); overflow-wrap: anywhere; }
+.approval-players ul { margin-bottom: 0; padding-left: 18px; }
+.proposal-card-heading { align-items: flex-start; flex-wrap: nowrap; }
+.proposal-counterparty { flex: 1; min-width: 0; }
+.proposal-card-heading .proposal-verdict { flex-shrink: 0; max-width: 45%; }
+.proposal-card .mantine-Badge-label { white-space: normal; }
+.proposal-card .mantine-Badge-root { max-width: 100%; height: auto; min-height: 22px; }

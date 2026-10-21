@@ -142,8 +142,10 @@ it('integrates with proposals and the builder, following its week selector', asy
       <TradePage />
     </DraftConfigContext.Provider>
   </MemoryRouter></MantineProvider>)
+  fireEvent.click(screen.getByText('League context', { selector: 'summary' }))
   await selectRival()
-  expect(screen.getByRole('heading', { name: 'Outgoing trade proposals' })).toBeTruthy()
+  expect(screen.getByRole('heading', { name: 'Ready to approve' })).toBeTruthy()
+  fireEvent.click(screen.getByText('Build your own', { selector: 'summary' }))
   expect(screen.getByRole('heading', { name: 'Evaluate a trade' })).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Compare VORP' })).toBeTruthy()
   vi.mocked(getTradeContext).mockReturnValue(new Promise(() => {}))
