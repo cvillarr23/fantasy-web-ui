@@ -24,17 +24,22 @@ export function SentTradesReview({ trades, names, config, week, onRefresh, refre
   const shown = trades.filter(trade => filter === 'all' || trade.outcome === filter)
   const current = shown.find(trade => trade.key === selected) || shown[0]
   const team = (trade: SentTrade) => names?.[trade.offer.to_team_id || ''] || `Team ${trade.offer.to_team_id || 'unknown'}`
-  const filters = ['all', 'waiting', 'countered', 'accepted', 'declined', 'not_sent'] as const
+  const count = (value: SentOutcome) => trades.filter(trade => trade.outcome === value).length
+  // Core doesn't report the other manager's answer yet, so answered outcomes only get a filter
+  // once some trade actually has one; a permanent "0" would read as "none so far".
+  const answered: SentOutcome[] = ['countered', 'accepted', 'declined']
+  const filters = (['all', 'waiting', 'countered', 'accepted', 'declined', 'not_sent'] as const)
+    .filter(value => value === 'all' || !answered.includes(value) || count(value) > 0)
   return <div className="sent-trades">
     <Link to="/trades" className="sent-back">← Trades</Link>
     <PageHeader title="Sent trades" level={1} subtitle="Every offer you've approved, what happened to it, and how it looks now."
       actions={onRefresh && <Button variant="default" loading={refreshing} onClick={onRefresh}>Refresh offers</Button>} />
     <Group gap="xs" role="group" aria-label="Filter by outcome" className="sent-filters">
       {filters.map(value => <button key={value} type="button" aria-pressed={filter === value} onClick={() => { setFilter(value); setSelected(null) }}>
-        {value === 'all' ? 'All' : outcomeLabels[value]} <span>{value === 'all' ? trades.length : trades.filter(trade => trade.outcome === value).length}</span>
+        {value === 'all' ? 'All' : outcomeLabels[value]} <span>{value === 'all' ? trades.length : count(value)}</span>
       </button>)}
     </Group>
-    {!shown.length ? <EmptyState tone="alert">{trades.length ? `No ${filter === 'all' ? '' : outcomeLabels[filter].toLowerCase()} offers.` : 'No approved offers yet. Offers appear here after approval.'}</EmptyState> : <div className="sent-columns">
+    {!shown.length ? <EmptyState tone="alert">{trades.length ? `No ${filter === 'all' ? '' : filter === 'not_sent' ? 'unsent' : outcomeLabels[filter].toLowerCase()} offers.` : 'No approved offers yet. Offers appear here after approval.'}</EmptyState> : <div className="sent-columns">
       <div className="sent-list" role="group" aria-label="Approved offers">
         {shown.map(trade => <button key={trade.key} type="button" className="sent-row" aria-pressed={current?.key === trade.key} onClick={() => setSelected(trade.key)}>
           <span className="sent-row-title"><strong>{team(trade)}</strong><BadgeSlot label={outcomeLabels[trade.outcome]} color={outcomeColors[trade.outcome]} /></span>

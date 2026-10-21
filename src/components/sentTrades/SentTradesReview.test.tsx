@@ -30,9 +30,10 @@ it('filters with global counts, selects within the filter, and clears detail for
   expect(screen.getByRole('article').textContent).toContain('Hail Mary Club')
   cleanup()
   render(view([sentFixture()]))
-  fireEvent.click(screen.getByRole('button', { name: 'Accepted 0' }))
+  expect(screen.queryByRole('button', { name: /^(Accepted|Declined|Countered)/ })).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Not sent 0' }))
   expect(screen.queryByRole('article')).toBeNull()
-  expect(screen.getByText('No accepted offers.')).toBeTruthy()
+  expect(screen.getByText('No unsent offers.')).toBeTruthy()
 })
 it('shows the exact edited text, distinct editor and approver, and resets the draft on selection', async () => {
   scoring()
