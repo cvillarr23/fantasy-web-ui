@@ -1,10 +1,8 @@
-import { isProposable } from './tradeScoreFormat'
 import { Badge, Group, Stack, Text } from '@mantine/core'
 import type { TradeScore } from '../../api/types'
-import { signedScore } from './tradeScoreFormat'
+import { isProposable, scoreTone, signedScore, toneColor } from './tradeScoreFormat'
 import { InfoTip } from '../ui/InfoTip'
 import { tradeGlossaryForWeights } from './tradeGlossary'
-
 
 export function ScoreVerdict({ score, live = false }: { score: TradeScore; live?: boolean }) {
   const ready = isProposable(score)
@@ -17,7 +15,7 @@ export function ScoreVerdict({ score, live = false }: { score: TradeScore; live?
     </Stack>
     <Stack gap={2}>
       <Text size="xs">Final score <InfoTip label="the final score">{tradeGlossaryForWeights(score.weights).finalScore}</InfoTip></Text>
-      <Text size="xl" fw={800} c={score.score.final_score == null ? 'dimmed' : score.score.final_score >= 0 ? 'var(--incoming)' : 'var(--error)'}>{score.score.final_score == null ? 'Score unavailable' : signedScore(score.score.final_score)}</Text>
+      <Text size="xl" fw={800} c={toneColor[scoreTone(score.score.final_score)]}>{score.score.final_score == null ? 'Score unavailable' : signedScore(score.score.final_score)}</Text>
     </Stack>
   </Group>
 }

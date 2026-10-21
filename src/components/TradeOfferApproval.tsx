@@ -160,7 +160,7 @@ function OfferApprovalDialog({ config, offer, counterparty, disabled, finalMessa
           })}</ul>
         </div>)}</SimpleGrid>
         <Text size="xs" fw={700}>MESSAGE THAT WILL BE SENT</Text>
-        {edited && <Text>Edited by you</Text>}
+        {edited && <Text>{offer.message_edited && offer.edited_by ? `Edited by ${offer.edited_by}` : 'Edited by you'}</Text>}
         <Text component="blockquote" className="proposal-message" data-testid="approval-pitch">{finalMessage || 'No pitch provided.'}</Text>
         <Text size="xs" c="dimmed">Generated draft is kept with the offer.</Text>
         <Checkbox label="I've checked the players, the score and the message" checked={checked} onChange={event => setChecked(event.currentTarget.checked)} disabled={busy} />

@@ -89,6 +89,8 @@ function ProposalCard({ offer, config, teamNames, roster, week, cardRef, isLinke
 }) {
   const counterparty = (offer.to_team_id && teamNames?.[offer.to_team_id]) || `Team ${offer.to_team_id}`
   const evaluation = isProposalEvaluation(offer.evaluation) ? offer.evaluation : undefined
+  // VORP and byes for the week the pitch was scored on, not whichever week the page shows.
+  const scoredWeek = evaluation?.request.week ?? week
   const [message, setMessage] = useState(offer.message ?? '')
   const [editing, setEditing] = useState(false)
   return (
@@ -106,14 +108,14 @@ function ProposalCard({ offer, config, teamNames, roster, week, cardRef, isLinke
         <ProposalVerdict offer={offer} />
       </Group>
       <SimpleGrid cols={{ base: 1, sm: 2 }}>
-        <ProposalPlayers label="You get" players={offer.incoming_players} roster={roster} week={week} />
-        <ProposalPlayers label="You give" players={offer.outgoing_players} roster={roster} week={week} />
+        <ProposalPlayers label="You get" players={offer.incoming_players} roster={roster} week={scoredWeek} />
+        <ProposalPlayers label="You give" players={offer.outgoing_players} roster={roster} week={scoredWeek} />
       </SimpleGrid>
       <ProposalScoreSummary compact offer={offer} teamNames={teamNames} />
       <Text size="xs" c="dimmed" mt="sm">
         Generated <time dateTime={offer.executed_at}>{new Date(offer.executed_at).toLocaleString()}</time>
       </Text>
-      <ProposalMessage readOnly={offer.message_edited} value={message} draft={offer.drafted_message ?? offer.message ?? ''} counterparty={counterparty} onChange={setMessage} onEditingChange={setEditing} />
+      <ProposalMessage readOnly={offer.message_edited} editedBy={offer.edited_by} value={message} draft={offer.drafted_message ?? offer.message ?? ''} counterparty={counterparty} onChange={setMessage} onEditingChange={setEditing} />
       <TradeOfferApproval key={`${config.league_id}:${config.team_id}:${config.season}:${config.mode}:${offer.offer_key || offer.id}`}
         config={config} offer={offer} finalMessage={message} counterparty={counterparty}
         disabled={disabled || editing} />

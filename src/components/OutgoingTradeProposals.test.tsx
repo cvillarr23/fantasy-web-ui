@@ -302,7 +302,7 @@ it('keeps an already-persisted edit fixed so retry cannot reset the queued terms
   render(view())
   fireEvent.click(await screen.findByRole('button', { name: 'Read your edited message' }))
   expect(screen.getByText('Saved edited terms')).toBeTruthy()
-  expect(screen.getByText('Edited by you')).toBeTruthy()
+  expect(screen.getByText('Edited by Manager')).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Edit message' })).toBeNull()
   expect(screen.queryByRole('button', { name: 'Reset to generated draft' })).toBeNull()
   expect(screen.getByText(/already saved with this offer/)).toBeTruthy()
