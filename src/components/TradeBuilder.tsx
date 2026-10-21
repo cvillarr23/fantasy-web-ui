@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { WeekSelector } from './ui/WeekSelector'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { queryClient } from '../api/queryClient'
 import { Alert, Button, Group, Text } from '@mantine/core'
@@ -12,7 +12,7 @@ import { PlayerPicker } from './PlayerPicker'
 import { useToast } from '../hooks/useToast'
 import { OperationProgress } from './skeletons'
 import type { DraftConfig, PlayerSearchResult, TradeEvaluationResponse } from '../api/types'
-import type { TradeContextControls } from '../hooks/useTradeContextControls'
+import type { TradeBuilderDraft, TradeContextControls } from '../hooks/useTradeContextControls'
 import { TradeScorePanel } from './tradeScore/TradeScorePanel'
 import { ToastLine } from './ui/ToastLine'
 
@@ -60,16 +60,33 @@ function TradeSideColumn({ side }: { side: Side }) {
   )
 }
 
-export function TradeBuilder({ config, controls }: Props) {
-  const [incoming, setIncoming] = useState<PlayerSearchResult[]>([])
-  const [outgoing, setOutgoing] = useState<PlayerSearchResult[]>([])
+export function TradeBuilder(props: Props) {
+  const draft = props.controls?.builderDraft
+  return <TradeBuilderForm key={`${props.config.league_id}:${props.config.team_id}:${props.config.season}:${draft?.revision ?? 0}`} {...props} initialDraft={draft ?? undefined} />
+}
+
+function TradeBuilderForm({ config, controls, initialDraft }: Props & { initialDraft?: TradeBuilderDraft }) {
+  const [incoming, setIncoming] = useState<PlayerSearchResult[]>(initialDraft?.incoming ?? [])
+  const [outgoing, setOutgoing] = useState<PlayerSearchResult[]>(initialDraft?.outgoing ?? [])
   // number | string, same reasoning as LineupPage's week field - NumberInput passes
   // intermediate values that aren't a valid week yet.
   const [week, setWeek] = useSelectedWeek()
+  const initialWeek = useRef(initialDraft?.week)
+  useEffect(() => {
+    if (initialWeek.current != null) {
+      const draftWeek = initialWeek.current
+      initialWeek.current = undefined
+      setWeek(draftWeek)
+    }
+  }, [setWeek])
+  useEffect(() => {
+    if (!initialDraft) return
+    document.querySelector('.trade-builder')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [initialDraft])
   const { toast, showToast } = useToast()
   const weekValue = Number(week)
   const validWeek = Number.isFinite(weekValue) && weekValue > 0
-  const canEvaluate = validWeek && (incoming.length > 0 || outgoing.length > 0)
+  const canEvaluate = validWeek && (incoming.length > 0 || outgoing.length > 0) && [...incoming, ...outgoing].every((p) => p.player_id)
 
   const evaluation = useMutation({
     mutationFn: () =>
@@ -101,6 +118,7 @@ export function TradeBuilder({ config, controls }: Props) {
         <h2>Evaluate a trade</h2>
         <RosterQuickActions page="trades" week={week} />
       </Group>
+      {initialDraft && <Text size="sm">Prefilled from the trade finder: {initialDraft.teamName}.</Text>}
       <WeekSelector week={week} onChange={setWeek} />
 
       <div className="trade-columns">
@@ -155,7 +173,7 @@ export function TradeBuilder({ config, controls }: Props) {
         </div>
       )}
 
-      {controls && <TradeScorePanel config={config} week={week} incoming={incoming} outgoing={outgoing} controls={controls} />}
+      {controls && <TradeScorePanel config={config} week={week} incoming={incoming} outgoing={outgoing} controls={controls} autoScore={initialDraft && weekValue === initialDraft.week ? initialDraft.revision : undefined} />}
 
       <ToastLine toast={toast} />
     </section>

@@ -546,3 +546,13 @@ export function scoreTrade(
 ): Promise<import('./types').TradeScore> {
   return request('/v1/trade/score', { method: 'POST', body: JSON.stringify(body) })
 }
+
+export function getTradeCandidates(
+  filters: import('./tradeCandidateTypes').TradeCandidateParams, signal?: AbortSignal,
+): Promise<import('./tradeCandidateTypes').TradeCandidateList> {
+  const params = new URLSearchParams()
+  for (const [key, value] of Object.entries(filters)) {
+    if (value !== undefined && value !== '') params.set(key, String(value))
+  }
+  return request(`/v1/trade/candidates?${params}`, { signal })
+}
