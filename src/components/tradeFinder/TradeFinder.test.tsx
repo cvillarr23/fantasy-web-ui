@@ -73,8 +73,11 @@ it('keeps needs-drop and one-sided reason text distinct, with unknown reasons vi
 })
 it('explains a missing job separately from a completed empty run', async () => {
   failure = 404
-  const mounted = render(view())
+  const onCount = vi.fn()
+  const mounted = render(view({ onProposableCountChange: onCount }))
   expect(await screen.findByText(/has not run for week 5/)).toBeTruthy()
+  expect(onCount).toHaveBeenNthCalledWith(1, undefined)
+  expect(onCount).toHaveBeenLastCalledWith('not_run')
   expect(screen.queryByText(/No trades match/)).toBeNull()
   mounted.unmount(); queryClient.clear(); failure = 0; payload = candidates({ items: [], total: 0 })
   render(view())

@@ -18,11 +18,13 @@ import { TradeCandidateDetails } from './TradeCandidateDetails'
 import './tradeFinder.css'
 
 export const TRADE_CANDIDATE_PAGE_SIZE = 25
+/** undefined while loading, 'not_run' when the job has never run for the week, null on any other error. */
+export type ProposableCount = number | 'not_run' | null | undefined
 interface Props {
   config: DraftConfig
   week: number
   controls?: TradeContextControls
-  onProposableCountChange?: (count: number | null) => void
+  onProposableCountChange?: (count: ProposableCount) => void
 }
 type Filters = Pick<TradeCandidateParams, 'counterparty_team_id' | 'receive_position' | 'send_position' | 'shape' | 'status' | 'sort'>
 const defaultFilters: Filters = { counterparty_team_id: '', receive_position: '', send_position: '', shape: '', status: 'proposable', sort: 'final_score' }
@@ -57,14 +59,15 @@ function ScopedTradeFinder({ config, week, controls, onProposableCountChange }: 
   const deficits = useQuery({ queryKey: ['roster-deficits', config.league_id, config.team_id, config.season, week], queryFn: () => getRosterDeficits(config.season, week), enabled: valid }, queryClient)
   const busy = browse !== settled || query.isPlaceholderData
   const selected = !busy && !query.error ? data?.items.find((c) => c.candidate_key === selection) : undefined
-  const count = !query.error && data ? data.team_counts.reduce((n, team) => n + team.proposable, 0) : null
+  const missingRun = query.error instanceof ApiError && query.error.status === 404
+  const count: ProposableCount = !valid ? null : missingRun ? 'not_run' : query.error ? null
+    : data ? data.team_counts.reduce((n, team) => n + team.proposable, 0) : undefined
   useEffect(() => { onProposableCountChange?.(count) }, [count, onProposableCountChange])
   const change = (key: keyof Filters, value: string) => {
     setSelection(null)
     setBrowse((current) => ({ filters: { ...current.filters, [key]: value }, offset: 0 }))
   }
   const age = data && computedAge(data.computed_at, now)
-  const missingRun = query.error instanceof ApiError && query.error.status === 404
   const teamIds = new Map(data?.team_counts.map((t) => [t.team_id, t.name]))
   for (const team of Object.values(context.data?.teams ?? {})) if (team.team_id !== config.team_id) teamIds.set(team.team_id, team.name)
   return <section id="finder" aria-labelledby="trade-finder-heading" className="trade-finder">

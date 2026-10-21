@@ -9,8 +9,7 @@ import { ErrorAlert } from '../ui/ErrorAlert'
 import { signedScore } from '../tradeScore/tradeScoreFormat'
 import { tradeGlossary, tradeGlossaryForWeights } from '../tradeScore/tradeGlossary'
 import { TradeScoreBreakdown } from '../tradeScore/TradeScoreBreakdown'
-import { lineupChanges, scoreTone } from './tradeFinderFormat'
-import { headToHeadWeeks, teamNeeds } from './tradeFinderFormat'
+import { headToHeadWeeks, lineupChanges, scoreTone, teamNeeds } from './tradeFinderFormat'
 import { useCandidateScore, type CandidateEvidenceProps } from './useCandidateScore'
 
 function LineupWeek({ week, side }: { week: TradeScoreLineupWeek; side: string }) {
@@ -29,7 +28,7 @@ export function TradeCandidateDetails({ context, deficits, onOpenBuilder, ...pro
   context?: LeagueTradeContext; deficits?: RosterDeficitsResponse; onOpenBuilder?: () => void
 }) {
   const [fullLineup, setFullLineup] = useState(false)
-  const [lineupWeek, setLineupWeek] = useState(props.week)
+  const [lineupWeek, setLineupWeek] = useState(props.candidate.horizon_weeks.includes(props.week) ? props.week : props.candidate.horizon_weeks[0])
   const [breakdown, setBreakdown] = useState(false)
   const score = useCandidateScore(props, true)
   const { candidate: c } = props

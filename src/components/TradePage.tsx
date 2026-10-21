@@ -9,7 +9,7 @@ import { useSelectedWeek, validWeek } from '../hooks/useSelectedWeek'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { byeOutlookQuery } from '../api/weekReads'
 import { queryClient } from '../api/queryClient'
-import { TradeFinder } from './tradeFinder/TradeFinder'
+import { TradeFinder, type ProposableCount } from './tradeFinder/TradeFinder'
 import { TradeBuilder } from './TradeBuilder'
 import { TradeContextPanel } from './TradeContextPanel'
 import { OutgoingTradeProposals } from './OutgoingTradeProposals'
@@ -30,8 +30,8 @@ export function TradePage() {
   const offers = useOutgoingTradeOffers(config)
   const byes = useQuery(byeOutlookQuery(config, selectedWeek ?? 0), queryClient)
   const finderScope = `${config.league_id}:${config.team_id}:${config.season}:${selectedWeek}`
-  const [finderCount, setFinderCount] = useState<{ scope: string; count: number | null } | null>(null)
-  const reportFinderCount = useCallback((count: number | null) => setFinderCount({ scope: finderScope, count }), [finderScope])
+  const [finderCount, setFinderCount] = useState<{ scope: string; count: ProposableCount } | null>(null)
+  const reportFinderCount = useCallback((count: ProposableCount) => setFinderCount({ scope: finderScope, count }), [finderScope])
   const builderRef = useRef<HTMLDetailsElement>(null)
   useEffect(() => {
     if (!tradeContextControls.builderDraft || !builderRef.current) return
@@ -39,7 +39,7 @@ export function TradePage() {
     const frame = requestAnimationFrame(() => builderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
     return () => cancelAnimationFrame(frame)
   }, [tradeContextControls.builderDraft])
-  const proposableCount = finderCount?.scope === finderScope ? finderCount.count : null
+  const proposableCount = finderCount?.scope === finderScope ? finderCount.count : undefined
   const isConfigured = Boolean(config.league_id && config.team_id)
 
   if (!isConfigured) {
@@ -54,7 +54,7 @@ export function TradePage() {
           actions={<Group gap="sm"><Button component={Link} to="/trades/sent" variant="default">Sent trades</Button><WeekSelector week={week} onChange={setWeek} /></Group>} />
         <Group gap="sm" aria-label="Trade summary">
           <Badge component="a" href="#approve" size="lg" variant="light">{offers.isError ? 'Approval count unavailable' : `${offers.data?.length ?? '…'} proposals awaiting your approval`}</Badge>
-          <Badge component="a" href="#finder" size="lg" color="teal" variant="light">{proposableCount == null ? 'Proposable count unavailable' : `${proposableCount} proposable trades found`}</Badge>
+          <Badge component="a" href="#finder" size="lg" color="teal" variant="light">{proposableCount === undefined ? '… proposable trades found' : proposableCount === 'not_run' ? 'Trade candidates not computed yet' : proposableCount === null ? 'Proposable count unavailable' : `${proposableCount} proposable trades found`}</Badge>
           <Badge size="lg" color="yellow" variant="light">{byes.data?.schedule_known ? byes.data.crunch_weeks.length ? `Bye crunch: weeks ${byes.data.crunch_weeks.join(', ')}` : 'No bye crunch ahead' : 'Bye outlook unavailable'}</Badge>
           <InfoTip label="a bye crunch">{tradeGlossary.byeCrunch}</InfoTip>
         </Group>

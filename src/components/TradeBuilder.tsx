@@ -80,10 +80,6 @@ function TradeBuilderForm({ config, controls, initialDraft, hideWeekSelector = f
       setWeek(draftWeek)
     }
   }, [setWeek])
-  useEffect(() => {
-    if (!initialDraft) return
-    document.querySelector('.trade-builder')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [initialDraft])
   const { toast, showToast } = useToast()
   const weekValue = Number(week)
   const validWeek = Number.isFinite(weekValue) && weekValue > 0
