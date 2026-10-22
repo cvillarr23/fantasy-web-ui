@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Alert, Button, Group, NativeSelect, Stack, Text } from '@mantine/core'
 import { useMutation } from '@tanstack/react-query'
 import { ApiError, scoreTrade } from '../../api/client'
@@ -58,10 +58,13 @@ export function TradeScorePanel({ config, week, incoming, outgoing, controls, au
 
   const scoring = useMutation({ mutationFn: (body: TradeScoreRequest) => scoreTrade(body) }, queryClient)
   const autoScored = useRef<number | undefined>(undefined)
+  // Only the automatic score is "live just now"; a manual re-score replaces it.
+  const [scoredLive, setScoredLive] = useState(false)
   const mutate = scoring.mutate
   useEffect(() => {
     if (autoScore !== undefined && autoScored.current !== autoScore && request) {
       autoScored.current = autoScore
+      setScoredLive(true)
       mutate(request)
     }
   }, [autoScore, request, mutate])
@@ -83,7 +86,7 @@ export function TradeScorePanel({ config, week, incoming, outgoing, controls, au
           onChange={event => controls.onHorizonChange(Number(event.currentTarget.value))} />
       </Group>
       <Group>
-        <Button onClick={() => request && scoring.mutate(request)} disabled={!request} loading={scoring.isPending}>
+        <Button onClick={() => { if (request) { setScoredLive(false); scoring.mutate(request) } }} disabled={!request} loading={scoring.isPending}>
           Score trade
         </Button>
       </Group>
@@ -94,7 +97,7 @@ export function TradeScorePanel({ config, week, incoming, outgoing, controls, au
       )}
       {current && scoring.isError && <Alert color="red" role="alert">{errorMessage(scoring.error)}</Alert>}
       {current && scoring.data && <>
-        {autoScore !== undefined && <Text size="xs" c="dimmed">Scored live just now.</Text>}
+        {scoredLive && <Text size="xs" c="dimmed">Scored live just now.</Text>}
         <TradeScoreBreakdown score={scoring.data} teamNames={teamNames} builder />
         <Button disabled variant="default">Propose this trade (coming soon)</Button>
       </>}

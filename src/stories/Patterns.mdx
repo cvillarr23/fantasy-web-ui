@@ -1,0 +1,44 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks'
+import * as Patterns from './Patterns.stories'
+
+<Meta of={Patterns} name="Guide" />
+
+# Patterns
+
+The Trades redesign set the conventions other pages should follow. This page renders the real components next to the guidance; the full written guide is the <a href="/ui/design-system" target="_top">Design system</a> page on the docs site.
+
+## Page anatomy
+
+1. A `PageHeader` with summary pills that link to the sections they count.
+2. The "ready to act" section first.
+3. Then a browser: filter cards, filters, and a table on desktop that becomes cards on phones.
+4. Secondary sections in collapsed `<details className="trade-section">` panels.
+5. On desktop, a sticky right rail for the selected item. On phones, one column with no page overflow.
+
+<Canvas of={Patterns.PageHeaderWithPills} />
+
+Whole pages: [Trade finder](?path=/story/trade-finder-tradefinder--loaded), [with the details rail open](?path=/story/trade-finder-tradefinder--with-details), [candidate rows](?path=/story/trade-finder-tradecandidaterow--proposable).
+
+## Explaining numbers
+
+Every unfamiliar term gets an `InfoTip`, with copy from `tradeScore/tradeGlossary.ts` and never written inline. It opens on hover, focus and tap, and Escape closes only the tip.
+
+<Canvas of={Patterns.ExplainedTerm} />
+
+Signed values use teal for good for us and pink for bad. The color follows the rounded value shown, with a neutral zone around zero. Unknown values show a dash.
+
+<Canvas of={Patterns.SignedValues} />
+
+Any score shown as a total gets a week-by-week hover breakdown (`GainBreakdown`). It is a non-modal dialog, not a tooltip, because it can hold a Retry button.
+
+## Status and actions
+
+Status badges are shared: Proposable, Needs a drop, and one-sided with its reason.
+
+<Canvas of={Patterns.StatusBadges} />
+
+Generated messages can be edited before sending, and the generated draft is kept. Approval needs a confirmation checkbox, an approver name and a visible warning before the primary button turns on.
+
+## Definition of done for a component
+
+Stories for loading, error, empty, stale and phone width, `mockFetch` fixtures and `play` tests, with desktop and phone screenshots on the PR.
