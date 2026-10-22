@@ -56,7 +56,7 @@ Dropdowns (Select, Combobox, MultiSelect, Autocomplete, and Menu), popovers, and
 
 Rules from the Trades redesign review:
 
-- Muted text must be clearly different from body text. Use `.muted` or `c="dimmed"` for it, never reduced opacity.
+- Muted text must be clearly different from body text, and never uses reduced opacity. `.muted` (the muted token, `#9a8e80`) is for de-emphasised text on surfaces. `c="dimmed"` resolves to secondary text (`#c7bba9`) and is what goes on overlays: tooltips, InfoTips and popovers.
 - Inputs have their own `surface` background, separate from the open dropdown's `overlay`, and a filled input must not look like a disabled one.
 - Placeholder text, the Select chevron and hovered menu items must all meet AA.
 - Muted `#9a8e80` is only 4.09:1 on the overlay `#382f26`. Tooltip, InfoTip and popover bodies therefore use secondary text (`c="dimmed"` resolves to it), or the overlay would have to be darkened until muted passes.
@@ -131,7 +131,7 @@ The Trades page (`TradePage`, [Patterns story](pathname:///ui/components/?path=/
 ## Explaining numbers
 
 - **`InfoTip`** for every unfamiliar term. Copy comes from the shared glossary module `tradeScore/tradeGlossary.ts`, never inline. It works on hover, focus and tap. Escape closes only the tip and must not close other overlays such as a modal behind it.
-- **Signed values** (`StatTile`, `signedScore`): green means good for us and pink means bad. Color comes from the rounded value shown, with a neutral zone of ±0.05 around zero. Unknown shows a dash.
+- **Signed values** (`StatTile`, `signedScore`): teal means good for us and pink means bad. Color comes from the rounded value shown, with a neutral zone of ±0.05 around zero. Unknown shows a dash.
 - **`StrengthChip`** for z strength: arrow, two decimals and the labels strong, average or weak.
 - **Totals get a breakdown.** Any score shown as a total opens a week-by-week hover breakdown (`GainBreakdown`). It is a non-modal `role="dialog"` named for what it explains, not a tooltip, because it can contain a Retry button. Opening it fires a live solve, so hover opens after a short delay.
 

@@ -19,8 +19,8 @@ export const PageHeaderWithPills: Story = {
   render: () => <Stack gap="md">
     <PageHeader title="Trades" level={1} subtitle="Week 5 · scored over the next 4 weeks" />
     <Group gap="sm" aria-label="Trade summary">
-      <Badge size="lg" variant="light">2 proposals awaiting your approval</Badge>
-      <Badge size="lg" color="teal" variant="light">18 proposable trades found</Badge>
+      <Badge component="a" href="#approve" size="lg" variant="light">2 proposals awaiting your approval</Badge>
+      <Badge component="a" href="#finder" size="lg" color="teal" variant="light">18 proposable trades found</Badge>
       <Badge size="lg" color="yellow" variant="light">Bye crunch: weeks 9, 10</Badge>
       <InfoTip label="a bye crunch">{tradeGlossary.byeCrunch}</InfoTip>
     </Group>
@@ -28,6 +28,7 @@ export const PageHeaderWithPills: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('heading', { level: 1, name: 'Trades' })).toBeVisible()
     await expect(canvas.getByLabelText('Trade summary')).toBeVisible()
+    await expect(canvas.getByText('18 proposable trades found')).toHaveAttribute('href', '#finder')
   },
 }
 
