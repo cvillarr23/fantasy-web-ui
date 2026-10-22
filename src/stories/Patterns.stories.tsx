@@ -28,7 +28,7 @@ export const PageHeaderWithPills: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('heading', { level: 1, name: 'Trades' })).toBeVisible()
     await expect(canvas.getByLabelText('Trade summary')).toBeVisible()
-    await expect(canvas.getByText('18 proposable trades found')).toHaveAttribute('href', '#finder')
+    await expect(canvas.getByRole('link', { name: /18 proposable trades found/i })).toHaveAttribute('href', '#finder')
   },
 }
 
