@@ -320,6 +320,8 @@ export interface LineupRosterResponse {
 export interface WaiverPlayerSummary {
   espn_id: string | null
   name: string
+  // The player's own default position, distinct from the recommended roster slot.
+  position?: string | null
   pro_team: string
   injury_status: string | null
   // Per-week VORP averaged over the response's horizon_weeks (a bye week counts as replacement level).

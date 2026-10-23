@@ -128,7 +128,11 @@ export function WaiverRecommendationPanel({ recommendations, openIrSlots = 0, op
                     <h3>{isIrAndAdd ? 'Move to IR' : 'Drop from your roster'}</h3>
                     <Text fw={700}>{outgoingPlayer?.name ?? '—'}</Text>
                     <Text size="sm">
-                      {isIrAndAdd ? 'IR stash' : r.position} · {outgoingPlayer?.pro_team ?? '—'}
+                      {isIrAndAdd
+                        ? 'IR stash'
+                        : outgoingPlayer?.position
+                          ? `${outgoingPlayer.position} · ${outgoingPlayer.pro_team}`
+                          : outgoingPlayer?.pro_team ?? '—'}
                     </Text>
                     <ByeBadge byeWeek={outgoingPlayer?.bye_week} week={viewedWeek} />
                     <InjuryBadge status={outgoingPlayer?.injury_status ?? null} />

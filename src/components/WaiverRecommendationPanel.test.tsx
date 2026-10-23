@@ -42,9 +42,30 @@ it('labels add/drop explicitly and links to a review without submitting', () => 
   expect(
     within(screen.getByText('Drop from your roster').parentElement!).getByText('Bench Back'),
   ).toBeTruthy()
+  const dropped = screen.getByText('Drop from your roster').parentElement!
+  expect(within(dropped).getByText('NO')).toBeTruthy()
+  expect(within(dropped).queryByText('RB · NO')).toBeNull()
   const link = screen.getByRole('link', { name: 'Review move' })
   expect(link.getAttribute('href')).toBe('/moves/review?kind=waiver&week=7&add=4046&drop=9999')
   expect(screen.queryByRole('button', { name: 'Confirm claim' })).toBeNull()
+})
+
+it('shows the dropped player’s own position on a cross-position swap', () => {
+  const crossPositionSwap: WaiverRecommendation = {
+    ...recommendation,
+    position: 'D/ST',
+    bench_player: {
+      ...recommendation.bench_player!,
+      name: 'Chris Godwin',
+      pro_team: 'TB',
+      position: 'WR',
+    },
+  }
+  render(<MantineProvider><MemoryRouter>
+    <WaiverRecommendationPanel config={config} recommendations={[crossPositionSwap]} />
+  </MemoryRouter></MantineProvider>)
+  const dropped = screen.getByText('Drop from your roster').parentElement!
+  expect(within(dropped).getByText('WR · TB')).toBeTruthy()
 })
 
 it('renders IR-and-add with no drop or review action alongside ordinary swaps', () => {
