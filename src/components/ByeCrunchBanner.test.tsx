@@ -2,7 +2,9 @@ import { afterEach, expect, it } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
 import { MemoryRouter } from 'react-router-dom'
-import { ByeCrunchSummary } from './ByeCrunchBanner'
+import { ByeCrunchSummary, type ByeFixes } from './ByeCrunchBanner'
+import { byeFillIns, byeTradeFixes } from './byeFixes'
+import { lineupTradeCandidates, lineupWaivers } from './lineupFixtures'
 import type { TeamByeOutlook } from '../api/types'
 
 afterEach(cleanup)
@@ -26,8 +28,8 @@ it('names the crunch week, who is on bye and why, with links to fix it', () => {
   view(outlook([week(7), week(8, { on_bye: ['1', '2'], unfilled_slots: ['RB'], crunch: true })]))
   expect(screen.getByText('Bye-week crunch ahead')).toBeTruthy()
   expect(screen.getByText(/Back One, Back Two on bye leaves RB slot empty/)).toBeTruthy()
-  expect(screen.getByRole('link', { name: 'Find a fill-in' }).getAttribute('href')).toBe('/waivers?week=7')
-  expect(screen.getByRole('link', { name: 'Look for a trade' }).getAttribute('href')).toBe('/trades#finder')
+  expect(screen.getByRole('link', { name: 'See all fill-ins' }).getAttribute('href')).toBe('/waivers?week=7')
+  expect(screen.getByRole('link', { name: 'See all trades' }).getAttribute('href')).toBe('/trades?week=7#finder')
 })
 
 it('explains a crunch without an empty seat as a forced below-replacement starter', () => {
@@ -38,4 +40,34 @@ it('explains a crunch without an empty seat as a forced below-replacement starte
 it('renders nothing when byes are covered', () => {
   const { container } = view(outlook([week(8, { on_bye: ['1'] })]))
   expect(container.querySelector('.mantine-Alert-root')).toBeNull()
+})
+
+const crunchOutlook = () => outlook([week(8, { on_bye: ['1', '2'], unfilled_slots: ['RB'], crunch: true })])
+
+it('shows the best waiver fill-ins and trades inline, each linking to its full page', () => {
+  const fixes: ByeFixes = {
+    waivers: byeFillIns(lineupWaivers.recommendations, [9]),
+    trades: byeTradeFixes(lineupTradeCandidates, [9]),
+  }
+  render(<MantineProvider><MemoryRouter><ByeCrunchSummary outlook={crunchOutlook()} fixes={fixes} /></MemoryRouter></MantineProvider>)
+  expect(screen.getByRole('link', { name: /Sample Waiver Back/ }).getAttribute('href')).toBe('/waivers?week=7')
+  expect(screen.getByText('+4.8 VORP')).toBeTruthy()
+  expect(screen.getByRole('link', { name: /Gridiron Ghosts/ }).getAttribute('href')).toBe('/trades?week=7#finder')
+  expect(screen.getByText('✓ Proposable')).toBeTruthy()
+  expect(screen.getByText('Needs a drop')).toBeTruthy()
+  expect(screen.queryByText(/No Help Team/)).toBeNull()
+})
+
+it('hides only the panel whose read failed, and says when a list is empty or loading', () => {
+  render(<MantineProvider><MemoryRouter>
+    <ByeCrunchSummary outlook={crunchOutlook()} fixes={{ waivers: null, trades: [] }} />
+  </MemoryRouter></MantineProvider>)
+  expect(screen.queryByText('Waiver fill-ins')).toBeNull()
+  expect(screen.getByText('No proposable trades fix these weeks.')).toBeTruthy()
+  cleanup()
+  render(<MantineProvider><MemoryRouter>
+    <ByeCrunchSummary outlook={crunchOutlook()} fixes={{ waivers: undefined, trades: null }} />
+  </MemoryRouter></MantineProvider>)
+  expect(screen.getByText('Loading fill-ins…')).toBeTruthy()
+  expect(screen.queryByText('Trade targets')).toBeNull()
 })

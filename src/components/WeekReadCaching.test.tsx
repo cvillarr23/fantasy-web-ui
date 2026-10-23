@@ -30,7 +30,7 @@ vi.mock('../api/client', async (importOriginal) => {
     triggerLineupSwap: vi.fn(),
   }
 })
-vi.mock('./RosterDeficitsGrid', () => ({ RosterDeficitsGrid: () => <div>Roster deficits</div> }))
+vi.mock('./RosterDeficitsGrid', () => ({ RosterDeficitsGrid: () => <div>Deficits grid</div> }))
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn(() => ({
@@ -122,11 +122,11 @@ it('revisiting the scoreboard renders cached data without a request', async () =
 it('lineup and waivers share one roster-deficits read for the same week', async () => {
   vi.mocked(getLineupRoster).mockResolvedValue({ starters: [player('Starter', 'RB')], bench: [] })
   start('/lineup?week=5')
-  await screen.findByText('Roster deficits')
+  await screen.findByText('Deficits grid')
   cleanup()
 
   start('/waivers?week=5')
-  await screen.findByText('Roster deficits')
+  await screen.findByText('Deficits grid')
   expect(getRosterDeficits).toHaveBeenCalledTimes(1)
 })
 
