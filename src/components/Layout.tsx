@@ -91,7 +91,11 @@ export function Layout() {
           </Text>
         </Group>
       </AppShell.Header>
-      <AppShell.Navbar>{navigation}</AppShell.Navbar>
+      <AppShell.Navbar>
+        <AppShell.Section grow style={{ overflowY: 'auto' }}>
+          {navigation}
+        </AppShell.Section>
+      </AppShell.Navbar>
       <Drawer opened={opened} onClose={() => setOpened(false)} title="Fantasy manager" size="xs">
         {navigation}
       </Drawer>
