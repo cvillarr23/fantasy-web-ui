@@ -119,7 +119,7 @@ export function WaiverRecommendationPanel({ recommendations, openIrSlots = 0, op
                     <h3>Add to your roster</h3>
                     <Text fw={700}>{r.free_agent.name}</Text>
                     <Text size="sm">
-                      {r.position} · {r.free_agent.pro_team}
+                      {r.free_agent.position ?? r.position} · {r.free_agent.pro_team}
                     </Text>
                     <ByeBadge byeWeek={r.free_agent.bye_week} week={viewedWeek} />
                     <InjuryBadge status={r.free_agent.injury_status} />

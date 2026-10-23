@@ -60,12 +60,17 @@ it('shows the dropped player’s own position on a cross-position swap', () => {
       pro_team: 'TB',
       position: 'WR',
     },
+    // A flex-slot add: the player's own position differs from the slot's.
+    free_agent: { ...recommendation.free_agent, position: 'TE' },
   }
   render(<MantineProvider><MemoryRouter>
     <WaiverRecommendationPanel config={config} recommendations={[crossPositionSwap]} />
   </MemoryRouter></MantineProvider>)
   const dropped = screen.getByText('Drop from your roster').parentElement!
   expect(within(dropped).getByText('WR · TB')).toBeTruthy()
+  // The add side uses the free agent's own position too, not just the slot's.
+  const added = screen.getByText('Add to your roster').parentElement!
+  expect(within(added).getByText(`TE · ${recommendation.free_agent.pro_team}`)).toBeTruthy()
 })
 
 it('renders IR-and-add with no drop or review action alongside ordinary swaps', () => {
