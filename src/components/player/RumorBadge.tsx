@@ -1,4 +1,6 @@
 import { BadgeSlot } from '../ui/BadgeSlot'
+import { InfoTip } from '../ui/InfoTip'
+import { lineupGlossary } from '../lineupGlossary'
 
 // sentiment is a schema-free string on the backend (see fantasy-core-pipeline's README:
 // rumor_signals) - fall back to the raw string for anything unrecognized, same approach
@@ -20,5 +22,10 @@ export function RumorBadge({ sentiment, confidence, suggestedAction }: Props) {
   const confidenceLabel = confidence !== null ? `${Math.round(confidence * 100)}% confidence` : null
   const tooltip = [confidenceLabel, suggestedAction?.replaceAll('_', ' ')].filter(Boolean).join(' · ')
 
-  return <BadgeSlot label={badge.label} tooltip={tooltip || badge.label} color={badge.color} />
+  return (
+    <>
+      <BadgeSlot label={badge.label} tooltip={tooltip || badge.label} color={badge.color} />
+      <InfoTip label="trend">{lineupGlossary.trend}</InfoTip>
+    </>
+  )
 }

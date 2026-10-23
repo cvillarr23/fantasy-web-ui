@@ -1,9 +1,9 @@
 import { useCurrentWeek } from '../hooks/useCurrentWeek'
 import { Link } from 'react-router-dom'
-import { createContext, useContext, useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { DndContext, useDraggable, useDroppable, type DragEndEvent } from '@dnd-kit/core'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Alert, Badge, Button, Group, Modal, Stack, Text, Tooltip } from '@mantine/core'
+import { Alert, Badge, Button, Checkbox, Group, Modal, Stack, Text, Tooltip } from '@mantine/core'
 import { ApiError, getCurrentWeek, triggerLineupSwap } from '../api/client'
 import { queryClient } from '../api/queryClient'
 import { lineupRosterQuery } from '../api/weekReads'
@@ -16,11 +16,16 @@ import { PlayerCard } from './player/PlayerCard'
 import { PlayerRowSkeleton, SkeletonRegion } from './skeletons'
 import type { DraftConfig, LineupPlayerLine } from '../api/types'
 import { ToastLine } from './ui/ToastLine'
+import { InfoTip } from './ui/InfoTip'
+import { PageHeader } from './ui/PageHeader'
+import { lineupGlossary } from './lineupGlossary'
 import { PlayerStatusBadges } from './player/PlayerStatusBadges'
 
 interface Props {
   config: DraftConfig
   week?: number | string
+  /** Shown under the heading, such as the bye-week crunch alert. */
+  banner?: ReactNode
 }
 
 interface PendingSwap {
@@ -84,6 +89,18 @@ function IrMoveAction({ action }: { action: IrAction }) {
 // The week being viewed, so a player's bye in that week shows as BYE on his card.
 const ViewedWeekContext = createContext<number | null>(null)
 
+// The whole card is the drag handle, so controls inside it must not start a drag.
+function NoDrag({ children }: { children: ReactNode }) {
+  return (
+    <span
+      onPointerDown={(event) => event.stopPropagation()}
+      onKeyDown={(event) => { if (event.key === ' ' || event.key === 'Enter') event.stopPropagation() }}
+    >
+      {children}
+    </span>
+  )
+}
+
 function DraggablePlayerCard({ line, irAction }: { line: LineupPlayerLine; irAction?: IrAction | null }) {
   const viewedWeek = useContext(ViewedWeekContext)
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -113,17 +130,21 @@ function DraggablePlayerCard({ line, irAction }: { line: LineupPlayerLine; irAct
           headshotUrl: line.headshot_url,
         }}
         badges={
-          <PlayerStatusBadges
-            player={line}
-            week={viewedWeek}
-            extra={line.ir_suggestion && (
-              <Badge color="yellow" size="xs">
-                {line.ir_suggestion.action === 'move_to_ir' ? 'Move to IR' : 'Activate from IR'}
-              </Badge>
-            )}
-          />
+          <NoDrag>
+            <PlayerStatusBadges
+              player={line}
+              week={viewedWeek}
+              extra={line.ir_suggestion && (
+                <Badge color="yellow" size="xs">
+                  {line.ir_suggestion.action === 'move_to_ir' ? 'Move to IR' : 'Activate from IR'}
+                </Badge>
+              )}
+            />
+          </NoDrag>
         }
-        stats={line.net_vorp !== null ? `VORP ${line.net_vorp.toFixed(1)}` : null}
+        stats={line.net_vorp !== null ? (
+          <NoDrag>VORP {line.net_vorp.toFixed(1)} <InfoTip label="VORP">{lineupGlossary.vorp}</InfoTip></NoDrag>
+        ) : null}
       />
       {line.ir_suggestion && (
         <Text size="xs" c="dimmed" mt={4} mb="xs">{line.ir_suggestion.reason}</Text>
@@ -186,25 +207,22 @@ function OpenIrSpot() {
   return <div className="lineup-open-spot">Open IR spot</div>
 }
 
-function LineupIntro() {
+function LineupHelp() {
   return (
     <p className="muted">
-      This submits a real lineup change to ESPN via the browser worker — it isn't a dry
-      run. Drag a bench player onto a starting slot to stage a swap, review the list, then
-      submit them together.
+      Drag a bench player onto a starting slot to stage a swap, review the list, then submit
+      them together.
     </p>
   )
 }
 
 // Mirrors the editor's columns: a standard ESPN lineup has 9 starting slots and 6-7 bench spots.
-function LineupEditorSkeleton({ week }: { week: number | string }) {
+function LineupEditorSkeleton({ week, banner }: { week: number | string; banner?: ReactNode }) {
   return (
-    <section className="lineup-editor">
-      <Group justify="space-between" mb="md">
-        <h2>Set your lineup</h2>
-        <RosterQuickActions page="lineup" week={week} />
-      </Group>
-      <LineupIntro />
+    <section className="lineup-editor" id="set-lineup">
+      <PageHeader title="Set your lineup" actions={<RosterQuickActions page="lineup" week={week} />} />
+      {banner}
+      <LineupHelp />
       <SkeletonRegion label="Loading your roster">
         <LineupSuggestionPanelSkeleton />
         <div className="lineup-editor-columns">
@@ -233,7 +251,7 @@ function LineupEditorSkeleton({ week }: { week: number | string }) {
   )
 }
 
-export function LineupEditor({ config, week = '' }: Props) {
+export function LineupEditor({ config, week = '', banner }: Props) {
   const currentWeek = useCurrentWeek()
   const canSubmit = Number(week) === currentWeek
   const submissionAttempt = useRef<{ signature: string; key: string } | null>(null)
@@ -247,9 +265,14 @@ export function LineupEditor({ config, week = '' }: Props) {
   const draftKey = `fantasy.lineup-draft:${config.league_id}:${config.team_id}:${config.season}:${week}`
   const [pendingSwaps, setPendingSwaps] = useState<PendingSwap[]>([])
   const [draftNotice, setDraftNotice] = useState(false)
+  // The confirmation covers the swaps on screen when it was ticked, so any change to them
+  // (see saveSwaps) clears it.
+  const [liveChangeConfirmed, setLiveChangeConfirmed] = useState(false)
+  const confirmed = liveChangeConfirmed && pendingSwaps.length > 0
 
   function saveSwaps(swaps: PendingSwap[]) {
     setPendingSwaps(swaps)
+    setLiveChangeConfirmed(false)
     try {
       window.sessionStorage.setItem(draftKey, JSON.stringify(swaps.map((swap) => ({
         id: swap.id, dropId: swap.dropPlayer.player_id, addId: swap.addPlayer.player_id, slot: swap.slot,
@@ -396,9 +419,9 @@ export function LineupEditor({ config, week = '' }: Props) {
     }
   }
 
-  if (rosterQuery.isLoading) return <LineupEditorSkeleton week={week} />
+  if (rosterQuery.isLoading) return <LineupEditorSkeleton week={week} banner={banner} />
   // A failed background refresh keeps showing the cached roster.
-  if (!roster) return error ? <Alert color="red">{error}</Alert> : null
+  if (!roster) return error ? <>{banner}<Alert color="red">{error}</Alert></> : null
 
   const blocked = Boolean(roster.ir_blocking_transactions)
   const pendingActivations = blocked
@@ -442,11 +465,9 @@ export function LineupEditor({ config, week = '' }: Props) {
 
   return (
     <ViewedWeekContext.Provider value={Number(week) || currentWeek || null}>
-    <section className="lineup-editor" aria-busy={loading || undefined}>
-      <Group justify="space-between" mb="md">
-        <h2>Set your lineup</h2>
-        <RosterQuickActions page="lineup" week={week} />
-      </Group>
+    <section className="lineup-editor" id="set-lineup" aria-busy={loading || undefined}>
+      <PageHeader title="Set your lineup" actions={<RosterQuickActions page="lineup" week={week} />} />
+      {banner}
       {!canSubmit && <Alert color="yellow" mb="md">This week is for planning only. Return to the current week to submit lineup changes.</Alert>}
       {draftNotice && (
         <Alert color="yellow" mb="md">
@@ -475,7 +496,7 @@ export function LineupEditor({ config, week = '' }: Props) {
           )}
         </Alert>
       )}
-      <LineupIntro />
+      <LineupHelp />
       {[...roster.starters, ...roster.bench].some((line) => line.ir_suggestion) && (
         <Text size="sm" c="dimmed" mb="md">
           IR moves are sent to ESPN after you confirm. ESPN can still refuse one, so check your
@@ -534,15 +555,30 @@ export function LineupEditor({ config, week = '' }: Props) {
         </ul>
       )}
 
-      <Button onClick={submitSwaps} loading={submitMutation.isPending} disabled={pendingSwaps.length === 0 || !canSubmit || loading}>
-        Submit lineup changes
-      </Button>
-
-      {trackingId && (
-        <Button component={Link} to={`/activity/actions/${trackingId}`} variant="subtle">
-          Track lineup changes
-        </Button>
-      )}
+      <Stack gap="sm" className="lineup-submit">
+        {/* Not a live region: it is always on screen, so announcing it on load would be noise. */}
+        <Alert color="yellow" title="This changes your real ESPN lineup" role="group">
+          Submitting queues these swaps for the browser worker to send on ESPN. It isn't a dry
+          run, and ESPN can still refuse a move, so check your roster and Activity afterwards.
+        </Alert>
+        <Checkbox
+          label="I've checked the swaps and I'm ready to change my live ESPN lineup"
+          checked={confirmed}
+          disabled={pendingSwaps.length === 0 || submitMutation.isPending}
+          onChange={(event) => setLiveChangeConfirmed(event.currentTarget.checked)}
+        />
+        <Group gap="sm">
+          <Button onClick={submitSwaps} loading={submitMutation.isPending} disabled={!confirmed || !canSubmit || loading}>
+            Submit lineup changes
+          </Button>
+          {pendingSwaps.length === 0 && <Text size="sm" c="dimmed">Stage a swap to enable submitting.</Text>}
+          {trackingId && (
+            <Button component={Link} to={`/activity/actions/${trackingId}`} variant="subtle">
+              Track lineup changes
+            </Button>
+          )}
+        </Group>
+      </Stack>
       <ToastLine toast={toast} />
 
       <Modal

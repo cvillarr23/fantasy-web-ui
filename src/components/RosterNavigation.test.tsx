@@ -54,6 +54,8 @@ function start(url = '/lineup?week=7') {
   </Routes></MemoryRouter></MantineProvider>)
 }
 
+const confirmLiveChange = () => fireEvent.click(screen.getByRole('checkbox', { name: /live ESPN lineup/ }))
+
 it('keeps drafts week-scoped and prevents submitting a planning week', async () => {
   start('/lineup?week=5')
   fireEvent.click(await screen.findByRole('button', { name: 'Apply hint' }))
@@ -65,6 +67,7 @@ it('keeps drafts week-scoped and prevents submitting a planning week', async () 
   expect((screen.getByRole('button', {name: 'Submit lineup changes'}) as HTMLButtonElement).disabled).toBe(true)
   fireEvent.click(screen.getByRole('button', {name: 'Previous week'}))
   expect(await screen.findByText('Starter → bench, Backup → RB')).toBeTruthy()
+  confirmLiveChange()
   await waitFor(() => expect((screen.getByRole('button', {name: 'Submit lineup changes'}) as HTMLButtonElement).disabled).toBe(false))
   fireEvent.click(screen.getByRole('button', {name: 'Submit lineup changes'}))
   await waitFor(() => expect(triggerLineupSwap).toHaveBeenCalledWith('8', [{drop_player_id:'espn-Starter',add_player_id:'espn-Backup',slot:'RB'}], expect.any(String)))
@@ -111,6 +114,7 @@ it('retains the idempotency key when retrying an uncertain submission', async ()
   vi.mocked(triggerLineupSwap).mockRejectedValueOnce(new Error('Queue unavailable'))
   start('/lineup?week=5')
   fireEvent.click(await screen.findByRole('button', { name: 'Apply hint' }))
+  confirmLiveChange()
   fireEvent.click(screen.getByRole('button', { name: 'Submit lineup changes' }))
   await screen.findByText(/Failed to submit lineup swaps/)
   expect(screen.getByText('Starter → bench, Backup → RB')).toBeTruthy()
@@ -123,6 +127,7 @@ it('rejects a submission if the live week rolled over after staging', async () =
   start('/lineup?week=5')
   fireEvent.click(await screen.findByRole('button', {name: 'Apply hint'}))
   vi.mocked(getCurrentWeek).mockResolvedValue({week: 6})
+  confirmLiveChange()
   fireEvent.click(screen.getByRole('button', {name: 'Submit lineup changes'}))
   await screen.findByText(/Lineup changes can only be submitted for the current week/)
   expect(triggerLineupSwap).not.toHaveBeenCalled()
@@ -153,4 +158,20 @@ it('omits IR hints and warnings for older roster responses', async () => {
   expect(screen.queryByText('Move to IR')).toBeNull()
   expect(screen.queryByText('Activate from IR')).toBeNull()
   expect(screen.queryByText(/ESPN blocks lineup and waiver transactions/)).toBeNull()
+})
+
+it('keeps Submit off until the live ESPN change is confirmed, and clears the confirmation when the swaps change', async () => {
+  start('/lineup?week=5')
+  expect(screen.queryByRole('checkbox', { name: /live ESPN lineup/ })).toBeNull()
+  fireEvent.click(await screen.findByRole('button', { name: 'Apply hint' }))
+  const submit = () => screen.getByRole('button', { name: 'Submit lineup changes' }) as HTMLButtonElement
+  expect(screen.getByText('This changes your real ESPN lineup')).toBeTruthy()
+  expect(submit().disabled).toBe(true)
+  confirmLiveChange()
+  expect(submit().disabled).toBe(false)
+  fireEvent.click(screen.getByRole('button', { name: '✕' }))
+  expect(submit().disabled).toBe(true)
+  fireEvent.click(screen.getByRole('button', { name: 'Apply hint' }))
+  expect((screen.getByRole('checkbox', { name: /live ESPN lineup/ }) as HTMLInputElement).checked).toBe(false)
+  expect(submit().disabled).toBe(true)
 })

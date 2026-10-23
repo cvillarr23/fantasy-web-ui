@@ -1338,3 +1338,36 @@ a.lineup-open-spot:focus-visible {
 .proposal-card-heading .proposal-verdict { flex-shrink: 0; max-width: 45%; }
 .proposal-card .mantine-Badge-label { white-space: normal; }
 .proposal-card .mantine-Badge-root { max-width: 100%; height: auto; min-height: 22px; }
+
+/* Lineup: roster deficits panel */
+.roster-deficits-grid h3 { margin: 0 0 8px; font-size: 16px; color: var(--text-h); }
+.deficit-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.deficit-tile { display: grid; gap: 2px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--raised); }
+.deficit-tile-position { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; color: var(--muted); }
+.deficit-tile-count { font-size: 22px; font-weight: 700; color: var(--text-h); font-variant-numeric: tabular-nums; }
+.deficit-tile-status { font-size: 13px; color: var(--text); }
+.deficit-tile-short { border-color: var(--error); background: color-mix(in srgb, var(--error) 10%, transparent); }
+.deficit-tile-short .deficit-tile-status { color: var(--error); font-weight: 700; }
+.gap-cell-label { font-size: 11px; font-weight: 700; }
+@media (max-width: 760px) {
+  /* One card per team: the position columns become a labelled row instead of a sideways scroll. */
+  .deficit-league-table thead { display: none; }
+  .deficit-league-table tr { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px 8px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  .deficit-league-table th[scope='row'] { grid-column: 1 / -1; border: 0; padding: 0; }
+  .deficit-league-table td { border: 0; padding: 0; }
+  .deficit-league-table td::before { content: attr(data-position); display: block; font-size: 11px; color: var(--muted); }
+  .deficit-league-table td[data-position='Short at'] { grid-column: 1 / -1; }
+}
+
+/* Lineup: bye-crunch fixes and the ESPN confirmation */
+.bye-fixes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 12px; }
+.bye-fix { display: grid; gap: 6px; align-content: start; min-width: 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.bye-fix-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-width: 0; padding: 8px 10px; border-radius: 8px; background: var(--raised); color: var(--text); text-decoration: none; }
+.bye-fix-row:hover, .bye-fix-row:focus-visible { background: var(--overlay); }
+.bye-fix-row small { display: block; color: var(--muted); overflow-wrap: anywhere; }
+.bye-fix-value { color: var(--incoming); font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.bye-fix-links { display: flex; gap: 8px; flex-wrap: wrap; }
+/* Action links are squarer than the pill badges and end in an arrow, so they don't read as chips. */
+.action-link { border-radius: 6px; justify-self: start; }
+.action-link .mantine-Button-label::after { content: '\00a0→'; }
+.lineup-submit { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
