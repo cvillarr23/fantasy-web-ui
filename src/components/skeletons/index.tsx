@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Group, Progress, Skeleton, Stack, Table } from '@mantine/core'
+import { PageHeader } from '../ui/PageHeader'
 
 // Layout-matched loading placeholders. Each one reuses the CSS classes (or Mantine structure) of
 // the content it stands in for, so swapping skeleton -> data doesn't shift the page. Every root
@@ -254,11 +255,13 @@ export function MoveSidesSkeleton() {
 }
 
 // Generic route-level fallback: lazy chunk loads and pages still resolving their config.
-export function PageSkeleton({ label = 'Loading page' }: { label?: string }) {
+// A known `title` renders the real page heading, so it doesn't jump when the page loads.
+export function PageSkeleton({ label = 'Loading page', title }: { label?: string; title?: string }) {
   return (
     <div className="dashboard">
+      {title && <PageHeader title={title} level={1} />}
       <SkeletonRegion label={label}>
-        <PageHeaderSkeleton />
+        {!title && <PageHeaderSkeleton />}
         <TableSkeleton columns={4} rows={6} />
       </SkeletonRegion>
     </div>

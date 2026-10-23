@@ -166,8 +166,8 @@ export function MatchupPage() {
   const error = query.error ? String(query.error) : null
 
   if (!isConfigured) {
-    if (configLoading) return <><PageHeader title="Matchup" level={1} /><PageSkeleton /></>
-    return <><PageHeader title="Matchup" level={1} /><LeagueNotConfigured /></>
+    if (configLoading) return <PageSkeleton title="Matchup" />
+    return <LeagueNotConfigured title="Matchup" />
   }
 
   return (

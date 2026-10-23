@@ -130,21 +130,20 @@ export function MoveOverviewPage() {
   return (
     <div className="dashboard">
       <Stack>
-        <Group justify="space-between">
-          <div>
-            <PageHeader title="Move review" level={1} />
-            <Text c="dimmed" size="sm">
-              Current roster · before and after · fantasy points
-            </Text>
-          </div>
-          <Button
-            component={Link}
-            to={kind === 'waiver' ? `/waivers?week=${week}` : `/trades?week=${week}`}
-            variant="subtle"
-          >
-            Back to {kind === 'waiver' ? 'waivers' : 'trade builder'}
-          </Button>
-        </Group>
+        <PageHeader
+          title={kind === 'waiver' ? 'Review waiver move' : 'Review trade'}
+          level={1}
+          subtitle="Current roster · before and after · fantasy points"
+          actions={
+            <Button
+              component={Link}
+              to={kind === 'waiver' ? `/waivers?week=${week}` : `/trades?week=${week}`}
+              variant="subtle"
+            >
+              Back to {kind === 'waiver' ? 'waivers' : 'trade builder'}
+            </Button>
+          }
+        />
         <WeekSelector week={week} onChange={setWeek} />
         <Checkbox
           label="Show rest of season"

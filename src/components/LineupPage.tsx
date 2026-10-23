@@ -36,8 +36,8 @@ export function LineupPage() {
   const matchup = matchupQuery.data ?? null
 
   if (!isConfigured) {
-    if (configLoading) return <><PageHeader title="Lineup" level={1} /><PageSkeleton /></>
-    return <><PageHeader title="Lineup" level={1} /><LeagueNotConfigured /></>
+    if (configLoading) return <PageSkeleton title="Lineup" />
+    return <LeagueNotConfigured title="Lineup" />
   }
 
   return (

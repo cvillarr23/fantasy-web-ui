@@ -8,16 +8,17 @@ import { PageHeader } from './ui/PageHeader'
 // League/team settings, saved server-side so they follow the operator across browsers/devices.
 export function SettingsPage() {
   const { config, loading, saveConfig } = useDraftConfig()
-  if (loading) return <><PageHeader title="Settings" level={1} /><SettingsFormSkeleton /></>
+  if (loading) return <SettingsFormSkeleton />
   // Keyed on the config so the form re-seeds once the server copy arrives (it may differ from
   // this browser's cache) without a setState-in-effect.
-  return <><PageHeader title="Settings" level={1} /><SettingsForm key={JSON.stringify(config)} config={config} saveConfig={saveConfig} /></>
+  return <SettingsForm key={JSON.stringify(config)} config={config} saveConfig={saveConfig} />
 }
 
 // Same stack as the form: three labelled inputs and the save button.
 function SettingsFormSkeleton() {
   return (
     <div className="config-screen">
+      <PageHeader title="Settings" level={1} />
       <SkeletonRegion label="Loading settings">
         <Stack gap="sm" mt="md">
           {Array.from({ length: 3 }, (_, i) => (
@@ -67,6 +68,7 @@ function SettingsForm({ config, saveConfig }: {
 
   return (
     <div className="config-screen">
+      <PageHeader title="Settings" level={1} />
       <form onSubmit={handleSubmit}>
         <Stack gap="sm" mt="md">
           <TextInput label="League ID" value={leagueId} onChange={(e) => { setLeagueId(e.currentTarget.value); setSaved(false) }} required />

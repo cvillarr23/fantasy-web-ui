@@ -103,16 +103,17 @@ export function TradeInboxPage() {
     refresh()
   }
   if (!configured)
-    return <><PageHeader title="Inbox" level={1} />{loading ? (
-      <PageSkeleton />
+    return loading ? (
+      <PageSkeleton title="Inbox" />
     ) : (
       <Stack className="dashboard">
+        <PageHeader title="Inbox" level={1} />
         <Text>Configure your league and team to view incoming offers.</Text>
         <Button component={Link} to="/settings">
           Go to Settings
         </Button>
       </Stack>
-    )}</>
+    )
   const rows = query.data ?? []
   return (
     <div className="dashboard">

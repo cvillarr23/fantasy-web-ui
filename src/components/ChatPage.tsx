@@ -41,8 +41,8 @@ export function ChatPage() {
   }
 
   if (!isConfigured) {
-    if (configLoading) return <><PageHeader title="Assistant" level={1} /><PageSkeleton /></>
-    return <><PageHeader title="Assistant" level={1} /><LeagueNotConfigured /></>
+    if (configLoading) return <PageSkeleton title="Assistant" />
+    return <LeagueNotConfigured title="Assistant" />
   }
 
   const loadingHistory = Boolean(sessionId) && seededFor !== sessionId && !history.error

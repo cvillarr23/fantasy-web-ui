@@ -61,12 +61,15 @@ export function LeaguePage() {
   return (
     <div className="dashboard">
       <Stack>
-        <Group justify="space-between">
-          <PageHeader title="Standings & leaders" level={1} />
-          <Button variant="default" onClick={() => void query.refetch()}>
-            Refresh
-          </Button>
-        </Group>
+        <PageHeader
+          title="Standings & leaders"
+          level={1}
+          actions={
+            <Button variant="default" onClick={() => void query.refetch()}>
+              Refresh
+            </Button>
+          }
+        />
         <SegmentedControl
           value={view}
           onChange={(v) => {

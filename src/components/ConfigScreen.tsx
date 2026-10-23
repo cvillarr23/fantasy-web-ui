@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Alert, Button, NumberInput, Stack, TextInput } from '@mantine/core'
 import { setDraftConfig, startDraftSync } from '../api/client'
 import type { DraftConfig } from '../api/types'
+import { PageHeader } from './ui/PageHeader'
 
 interface Props {
   initial: DraftConfig
@@ -64,6 +65,7 @@ export function ConfigScreen({ initial, onConfigured }: Props) {
 
   return (
     <div className="config-screen">
+      <PageHeader title="Draft Day" level={1} subtitle="Set up the league to follow on draft day." />
       <form onSubmit={handleSubmit}>
         <Stack gap="sm" mb="md">
           <TextInput

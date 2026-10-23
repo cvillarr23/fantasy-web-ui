@@ -1,3 +1,10 @@
+/* Every page title is a PageHeader h1, sized to match across pages rather than the global h1. */
+.page-header h1 { margin: 0; font-size: 30px; line-height: 1.2; }
+/* Pages that don't wrap their content in a Stack need the gap a Stack would give. */
+.dashboard > .page-header,
+.config-screen > .page-header,
+.practice-draft-screen > .page-header { margin-bottom: 16px; }
+
 .dashboard {
   padding: 16px 24px 40px;
   text-align: left;
@@ -1323,7 +1330,6 @@ a.lineup-open-spot:focus-visible {
 .trades-page .mantine-Badge-label { white-space: normal; overflow-wrap: anywhere; }
 .trades-page .mantine-Badge-root { max-width: 100%; height: auto; min-height: 28px; }
 .trade-verdict-strip { padding: 14px 16px; border: 1px solid var(--border); border-radius: 12px; background: var(--raised); }
-.trades-page h1 { margin: 0; font-size: 30px; line-height: 1.2; }
 .proposal-final[data-unavailable] { font-size: 20px; }
 .approval-players { min-width: 0; padding: 12px 14px; border-radius: 12px; background: var(--raised); overflow-wrap: anywhere; }
 .approval-players ul { margin-bottom: 0; padding-left: 18px; }

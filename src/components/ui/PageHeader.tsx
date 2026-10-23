@@ -13,7 +13,7 @@ interface Props {
 export function PageHeader({ title, subtitle, actions, level = 2 }: Props) {
   const Heading = `h${level}` as const
   return (
-    <Group justify="space-between">
+    <Group justify="space-between" className="page-header">
       <div>
         <Heading>{title}</Heading>
         {subtitle != null && <Text c="dimmed" size="sm">{subtitle}</Text>}

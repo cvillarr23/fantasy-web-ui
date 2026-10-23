@@ -75,8 +75,8 @@ export function ScoreboardPage() {
   const error = query.error ? String(query.error) : null
 
   if (!isConfigured) {
-    if (configLoading) return <><PageHeader title="Scoreboard" level={1} /><PageSkeleton /></>
-    return <><PageHeader title="Scoreboard" level={1} /><LeagueNotConfigured /></>
+    if (configLoading) return <PageSkeleton title="Scoreboard" />
+    return <LeagueNotConfigured title="Scoreboard" />
   }
 
   return (

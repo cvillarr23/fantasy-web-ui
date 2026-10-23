@@ -102,7 +102,7 @@ const pageHeadings: [name: string, title: string, url: string, path: string, pag
   ['Session detail', 'Submissions & sessions', '/activity/sessions/1', '/activity/sessions/:id', () => <SessionDetailPage />],
   ['Run detail', 'Submissions & sessions', '/activity/runs/1', '/activity/runs/:id', () => <RunDetailPage />],
   ['Trace detail', 'Submissions & sessions', '/activity/trace/raw_signal/1', '/activity/trace/:type/:id', () => <TracePage />],
-  ['Move review', 'Move review', '/moves/review?kind=waiver&week=5&add=1', '/moves/review', () => <MoveOverviewPage />],
+  ['Move review', 'Review waiver move', '/moves/review?kind=waiver&week=5&add=1', '/moves/review', () => <MoveOverviewPage />],
   ['Analytics', 'Analytics', '/analytics?week=5', '/analytics', () => <AnalyticsPage />],
   ['Settings', 'Settings', '/settings', '/settings', () => <SettingsPage />],
 ]

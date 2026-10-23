@@ -58,8 +58,8 @@ export function WaiverPage() {
     : null
 
   if (!isConfigured) {
-    if (configLoading) return <><PageHeader title="Waivers" level={1} /><PageSkeleton /></>
-    return <><PageHeader title="Waivers" level={1} /><LeagueNotConfigured /></>
+    if (configLoading) return <PageSkeleton title="Waivers" />
+    return <LeagueNotConfigured title="Waivers" />
   }
 
   return (

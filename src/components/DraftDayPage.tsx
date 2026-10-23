@@ -41,6 +41,7 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
 
   return (
     <div className="dashboard">
+      <PageHeader title="Draft Day" level={1} />
       <div className="dashboard-toolbar">
         <Button variant="default" onClick={onReconfigure}>⚙ Reconfigure</Button>
       </div>
@@ -148,11 +149,11 @@ export function DraftDayPage() {
     setReconfiguring(false)
   }
 
-  if (!isConfigured && loading) return <><PageHeader title="Draft Day" level={1} /><PageSkeleton /></>
+  if (!isConfigured && loading) return <PageSkeleton title="Draft Day" />
 
   if (reconfiguring || !isConfigured) {
-    return <><PageHeader title="Draft Day" level={1} /><ConfigScreen initial={config} onConfigured={handleConfigured} /></>
+    return <ConfigScreen initial={config} onConfigured={handleConfigured} />
   }
 
-  return <><PageHeader title="Draft Day" level={1} /><Dashboard config={config} onReconfigure={() => setReconfiguring(true)} /></>
+  return <Dashboard config={config} onReconfigure={() => setReconfiguring(true)} />
 }
