@@ -23,6 +23,7 @@ import { palette } from '../theme'
 import { ChartSkeleton, MoveSidesSkeleton, OperationProgress, SkeletonRegion } from './skeletons'
 import { ErrorAlert } from './ui/ErrorAlert'
 import { formatNumber } from './ui/formatNumber'
+import { PageHeader } from './ui/PageHeader'
 export function MoveOverviewPage() {
   const { config } = useDraftConfig()
   const [params, setParams] = useSearchParams()
@@ -131,7 +132,7 @@ export function MoveOverviewPage() {
       <Stack>
         <Group justify="space-between">
           <div>
-            <h2>{kind === 'waiver' ? 'Review waiver move' : 'Review trade'}</h2>
+            <PageHeader title="Move review" level={1} />
             <Text c="dimmed" size="sm">
               Current roster · before and after · fantasy points
             </Text>

@@ -10,6 +10,7 @@ import { StatusHeader } from './StatusHeader'
 import { TeamComparisonPanel } from './TeamComparisonPanel'
 import { TeamPositionGrid } from './TeamPositionGrid'
 import { PageSkeleton } from './skeletons'
+import { PageHeader } from './ui/PageHeader'
 import { useDraftStream } from '../hooks/useDraftStream'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { triggerDraftPick } from '../api/client'
@@ -147,11 +148,11 @@ export function DraftDayPage() {
     setReconfiguring(false)
   }
 
-  if (!isConfigured && loading) return <PageSkeleton />
+  if (!isConfigured && loading) return <><PageHeader title="Draft Day" level={1} /><PageSkeleton /></>
 
   if (reconfiguring || !isConfigured) {
-    return <ConfigScreen initial={config} onConfigured={handleConfigured} />
+    return <><PageHeader title="Draft Day" level={1} /><ConfigScreen initial={config} onConfigured={handleConfigured} /></>
   }
 
-  return <Dashboard config={config} onReconfigure={() => setReconfiguring(true)} />
+  return <><PageHeader title="Draft Day" level={1} /><Dashboard config={config} onReconfigure={() => setReconfiguring(true)} /></>
 }

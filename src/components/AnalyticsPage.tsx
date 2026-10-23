@@ -2,12 +2,14 @@ import { Tabs } from '@mantine/core'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { BacktestResultsPanel } from './BacktestResultsPanel'
 import { VorpBrowserPanel } from './VorpBrowserPanel'
+import { PageHeader } from './ui/PageHeader'
 
 export function AnalyticsPage() {
   const { config } = useDraftConfig()
 
   return (
     <div className="dashboard">
+      <PageHeader title="Analytics" level={1} />
       <Tabs defaultValue="vorp">
         <Tabs.List>
           <Tabs.Tab value="vorp">VORP Browser</Tabs.Tab>

@@ -43,8 +43,8 @@ export function TradePage() {
   const isConfigured = Boolean(config.league_id && config.team_id)
 
   if (!isConfigured) {
-    if (configLoading) return <PageSkeleton />
-    return <LeagueNotConfigured />
+    if (configLoading) return <><PageHeader title="Trades" level={1} /><PageSkeleton /></>
+    return <><PageHeader title="Trades" level={1} /><LeagueNotConfigured /></>
   }
   const roster = Object.values(context.data?.teams ?? {}).flatMap(team => team.roster)
   return (

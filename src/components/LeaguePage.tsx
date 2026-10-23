@@ -21,6 +21,7 @@ import { WeekSelector } from './ui/WeekSelector'
 import { ScoreValue } from './ui/ScoreValue'
 import { SkeletonRegion, TableSkeleton } from './skeletons'
 import { Pager } from './ui/Pager'
+import { PageHeader } from './ui/PageHeader'
 export function LeaguePage() {
   const { config } = useDraftConfig()
   const [week, setWeek] = useSelectedWeek()
@@ -61,7 +62,7 @@ export function LeaguePage() {
     <div className="dashboard">
       <Stack>
         <Group justify="space-between">
-          <h2>Your league</h2>
+          <PageHeader title="Standings & leaders" level={1} />
           <Button variant="default" onClick={() => void query.refetch()}>
             Refresh
           </Button>

@@ -19,6 +19,7 @@ import { StatusHeader } from './StatusHeader'
 import { TeamComparisonPanel } from './TeamComparisonPanel'
 import { TeamPositionGrid } from './TeamPositionGrid'
 import { useDraftStream } from '../hooks/useDraftStream'
+import { PageHeader } from './ui/PageHeader'
 
 const ACTIVE_JOB_STORAGE_KEY = 'fantasy-web-ui.practice-sync-active'
 const PRACTICE_CONFIG_STORAGE_KEY = 'fantasy-web-ui.practice-config'
@@ -371,12 +372,8 @@ export function PracticeDraftScreen() {
 
   return (
     <div className={`practice-draft-screen ${tracking && practiceConfig ? 'with-dashboard' : ''}`}>
-      <h1>Practice draft</h1>
-      <p className="subtitle">
-        Join or create a mock draft room yourself at{' '}
-        <span className="mono">fantasy.espn.com/football/mockdraftlobby</span>, then paste that room's URL below to
-        start syncing its picks.
-      </p>
+      <PageHeader title="Practice Draft" level={1} subtitle={<>Join or create a mock draft room yourself at{' '}
+        <span className="mono">fantasy.espn.com/football/mockdraftlobby</span>, then paste that room's URL below to start syncing its picks.</>} />
 
       {checking && <p className="muted">Checking for an active practice run…</p>}
 

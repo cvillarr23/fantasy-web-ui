@@ -1,23 +1,23 @@
 import { useState } from 'react'
-import { Alert, Button, NumberInput, Skeleton, Stack, TextInput, Title } from '@mantine/core'
+import { Alert, Button, NumberInput, Skeleton, Stack, TextInput } from '@mantine/core'
 import { SkeletonRegion } from './skeletons'
 import type { DraftConfig } from '../api/types'
 import { useDraftConfig } from '../hooks/useDraftConfig'
+import { PageHeader } from './ui/PageHeader'
 
 // League/team settings, saved server-side so they follow the operator across browsers/devices.
 export function SettingsPage() {
   const { config, loading, saveConfig } = useDraftConfig()
-  if (loading) return <SettingsFormSkeleton />
+  if (loading) return <><PageHeader title="Settings" level={1} /><SettingsFormSkeleton /></>
   // Keyed on the config so the form re-seeds once the server copy arrives (it may differ from
   // this browser's cache) without a setState-in-effect.
-  return <SettingsForm key={JSON.stringify(config)} config={config} saveConfig={saveConfig} />
+  return <><PageHeader title="Settings" level={1} /><SettingsForm key={JSON.stringify(config)} config={config} saveConfig={saveConfig} /></>
 }
 
 // Same stack as the form: three labelled inputs and the save button.
 function SettingsFormSkeleton() {
   return (
     <div className="config-screen">
-      <Title order={1}>Settings</Title>
       <SkeletonRegion label="Loading settings">
         <Stack gap="sm" mt="md">
           {Array.from({ length: 3 }, (_, i) => (
@@ -67,7 +67,6 @@ function SettingsForm({ config, saveConfig }: {
 
   return (
     <div className="config-screen">
-      <Title order={1}>Settings</Title>
       <form onSubmit={handleSubmit}>
         <Stack gap="sm" mt="md">
           <TextInput label="League ID" value={leagueId} onChange={(e) => { setLeagueId(e.currentTarget.value); setSaved(false) }} required />

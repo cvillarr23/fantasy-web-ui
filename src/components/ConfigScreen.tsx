@@ -64,7 +64,6 @@ export function ConfigScreen({ initial, onConfigured }: Props) {
 
   return (
     <div className="config-screen">
-      <h1>Draft day setup</h1>
       <form onSubmit={handleSubmit}>
         <Stack gap="sm" mb="md">
           <TextInput

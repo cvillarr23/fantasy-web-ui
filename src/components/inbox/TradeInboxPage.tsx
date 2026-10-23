@@ -8,6 +8,7 @@ import { getIncomingTrades } from '../../api/tradeInbox'
 import { queryClient } from '../../api/queryClient'
 import { useDraftConfig } from '../../hooks/useDraftConfig'
 import { PageSkeleton } from '../skeletons'
+import { PageHeader } from '../ui/PageHeader'
 import { IncomingTradeScoreSummary } from './IncomingTradeScoreSummary'
 import { IncomingTradeActions } from './IncomingTradeActions'
 import { RetryResponseButton } from './RetryResponseButton'
@@ -102,7 +103,7 @@ export function TradeInboxPage() {
     refresh()
   }
   if (!configured)
-    return loading ? (
+    return <><PageHeader title="Inbox" level={1} />{loading ? (
       <PageSkeleton />
     ) : (
       <Stack className="dashboard">
@@ -111,17 +112,14 @@ export function TradeInboxPage() {
           Go to Settings
         </Button>
       </Stack>
-    )
+    )}</>
   const rows = query.data ?? []
   return (
     <div className="dashboard">
       <Stack gap="md">
-        <Group justify="space-between">
-          <h2>Inbox</h2>
-          <Button variant="default" loading={query.isFetching} onClick={refresh}>
+        <PageHeader title="Inbox" level={1} actions={<Button variant="default" loading={query.isFetching} onClick={refresh}>
             Refresh inbox
-          </Button>
-        </Group>
+          </Button>} />
         <Alert color="yellow">
           Responses are disabled in the supplied production configuration (TRADE_RESPONSE_ENABLED is
           off). Decisions are queued requests; ESPN acceptance or decline requires a confirmed

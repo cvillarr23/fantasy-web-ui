@@ -8,6 +8,7 @@ import { WeekSelector } from './ui/WeekSelector'
 import { PageSkeleton, SkeletonRegion } from './skeletons'
 import type { ScoreboardMatchup, ScoreboardTeamInfo } from '../api/types'
 import { LeagueNotConfigured } from './ui/LeagueNotConfigured'
+import { PageHeader } from './ui/PageHeader'
 
 function ScoreboardSide({ side, isMyTeam }: { side: ScoreboardTeamInfo | null; isMyTeam: boolean }) {
   if (!side) {
@@ -74,12 +75,13 @@ export function ScoreboardPage() {
   const error = query.error ? String(query.error) : null
 
   if (!isConfigured) {
-    if (configLoading) return <PageSkeleton />
-    return <LeagueNotConfigured />
+    if (configLoading) return <><PageHeader title="Scoreboard" level={1} /><PageSkeleton /></>
+    return <><PageHeader title="Scoreboard" level={1} /><LeagueNotConfigured /></>
   }
 
   return (
     <div className="dashboard">
+      <PageHeader title="Scoreboard" level={1} />
       <Group justify="space-between" align="center" mb="md">
         <WeekSelector week={week} onChange={setWeek} />
       </Group>
