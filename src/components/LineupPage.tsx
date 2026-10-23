@@ -11,6 +11,7 @@ import { RosterDeficitsGrid } from './RosterDeficitsGrid'
 import { WeekSelector } from './ui/WeekSelector'
 import { PageSkeleton } from './skeletons'
 import { LeagueNotConfigured } from './ui/LeagueNotConfigured'
+import { PageHeader } from './ui/PageHeader'
 
 export function LineupPage() {
   const { config, loading: configLoading } = useDraftConfig()
@@ -35,12 +36,13 @@ export function LineupPage() {
   const matchup = matchupQuery.data ?? null
 
   if (!isConfigured) {
-    if (configLoading) return <PageSkeleton />
-    return <LeagueNotConfigured />
+    if (configLoading) return <PageSkeleton title="Lineup" />
+    return <LeagueNotConfigured title="Lineup" />
   }
 
   return (
     <div className="dashboard">
+      <PageHeader title="Lineup" level={1} />
       <Group justify="space-between" align="center" mb="md">
         <WeekSelector week={week} onChange={setWeek} />
         {matchup && (

@@ -13,6 +13,7 @@ import {
 import { ErrorAlert } from './ui/ErrorAlert'
 import { EmptyState } from './ui/EmptyState'
 import { TextSkeleton, SkeletonRegion } from './skeletons'
+import { PageHeader } from './ui/PageHeader'
 import { StatusBadge, TriggerBadge } from './RunsPanel'
 import {
   duration,
@@ -166,6 +167,7 @@ export function RunDetailPage() {
   const hasLinks = Boolean(run?.links.input || run?.links.output)
   return (
     <div className="dashboard">
+      <PageHeader title="Submissions & sessions" level={1} />
       <Stack>
         <Button component={Link} to="/activity?tab=runs" variant="subtle">
           ← All runs
@@ -297,6 +299,7 @@ export function TracePage() {
   })
   return (
     <div className="dashboard">
+      <PageHeader title="Submissions & sessions" level={1} />
       <Stack>
         <Button component={Link} to="/activity?tab=runs" variant="subtle">
           ← All runs

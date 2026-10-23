@@ -16,6 +16,13 @@ import { MoveOverviewPage } from './MoveOverviewPage'
 import { ScoreboardPage } from './ScoreboardPage'
 import { SettingsPage } from './SettingsPage'
 import { WaiverPage } from './WaiverPage'
+import { ChatPage } from './ChatPage'
+import { DraftDayPage } from './DraftDayPage'
+import { PracticeDraftScreen } from './PracticeDraftScreen'
+import { TradePage } from './TradePage'
+import { TradeInboxPage } from './inbox/TradeInboxPage'
+import { SentTradesPage } from './sentTrades/SentTradesPage'
+import { RunDetailPage, TracePage } from './RunDetailPage'
 
 // Every API read and write hangs forever, so each page is frozen in its first-load state.
 const { neverResolving } = vi.hoisted(() => {
@@ -33,6 +40,9 @@ const { neverResolving } = vi.hoisted(() => {
 vi.mock('../api/client', async (importOriginal) => neverResolving(await importOriginal()))
 vi.mock('../api/dashboard', async (importOriginal) => neverResolving(await importOriginal()))
 vi.mock('@mantine/charts', () => ({ LineChart: () => null, BarChart: () => null }))
+vi.mock('../hooks/useDraftStream', () => ({
+  useDraftStream: () => ({ status: null, connected: false, connectionState: 'closed', reconnectCount: 0, lastHeartbeatAt: null, lastPickAt: null, stale: false, diagnostics: [] }),
+}))
 
 beforeEach(() => {
   localStorage.setItem(
@@ -74,6 +84,36 @@ const pages: [name: string, url: string, path: string, page: () => ReactElement]
   ['Analytics', '/analytics?week=5', '/analytics', () => <AnalyticsPage />],
   ['Settings', '/settings', '/settings', () => <SettingsPage />],
 ]
+
+const pageHeadings: [name: string, title: string, url: string, path: string, page: () => ReactElement][] = [
+  ['Draft Day', 'Draft Day', '/draft', '/draft', () => <DraftDayPage />],
+  ['Practice Draft', 'Practice Draft', '/practice', '/practice', () => <PracticeDraftScreen />],
+  ['League', 'Standings & leaders', '/league?week=5', '/league', () => <LeaguePage />],
+  ['Waivers', 'Waivers', '/waivers?week=5', '/waivers', () => <WaiverPage />],
+  ['Lineup', 'Lineup', '/lineup?week=5', '/lineup', () => <LineupPage />],
+  ['Matchup', 'Matchup', '/matchup?week=5', '/matchup', () => <MatchupPage />],
+  ['Scoreboard', 'Scoreboard', '/scoreboard?week=5', '/scoreboard', () => <ScoreboardPage />],
+  ['Inbox', 'Inbox', '/inbox', '/inbox', () => <TradeInboxPage />],
+  ['Trades', 'Trades', '/trades', '/trades', () => <TradePage />],
+  ['Sent trades', 'Sent trades', '/trades/sent', '/trades/sent', () => <SentTradesPage />],
+  ['Assistant', 'Assistant', '/chat', '/chat', () => <ChatPage />],
+  ['Activity', 'Submissions & sessions', '/activity', '/activity', () => <ActivityPage />],
+  ['Submission detail', 'Submissions & sessions', '/activity/actions/1', '/activity/actions/:id', () => <ActionDetailPage />],
+  ['Session detail', 'Submissions & sessions', '/activity/sessions/1', '/activity/sessions/:id', () => <SessionDetailPage />],
+  ['Run detail', 'Submissions & sessions', '/activity/runs/1', '/activity/runs/:id', () => <RunDetailPage />],
+  ['Trace detail', 'Submissions & sessions', '/activity/trace/raw_signal/1', '/activity/trace/:type/:id', () => <TracePage />],
+  ['Move review', 'Review waiver move', '/moves/review?kind=waiver&week=5&add=1', '/moves/review', () => <MoveOverviewPage />],
+  ['Analytics', 'Analytics', '/analytics?week=5', '/analytics', () => <AnalyticsPage />],
+  ['Settings', 'Settings', '/settings', '/settings', () => <SettingsPage />],
+]
+
+describe('page headings', () => {
+  it.each(pageHeadings)('%s has one h1 named "$title"', async (_, title, url, path, page) => {
+    const { container } = renderAt(url, path, page())
+    expect(await screen.findByRole('heading', { level: 1, name: title })).toBeTruthy()
+    expect(container.querySelectorAll('h1')).toHaveLength(1)
+  })
+})
 
 describe('first-load placeholders', () => {
   it.each(pages)('%s shows a busy skeleton region instead of loading text', async (_, url, path, page) => {

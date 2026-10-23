@@ -14,6 +14,7 @@ import { RosterQuickActions } from './RosterQuickActions'
 import { WeekSelector } from './ui/WeekSelector'
 import { PageSkeleton } from './skeletons'
 import { LeagueNotConfigured } from './ui/LeagueNotConfigured'
+import { PageHeader } from './ui/PageHeader'
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err)
@@ -57,12 +58,13 @@ export function WaiverPage() {
     : null
 
   if (!isConfigured) {
-    if (configLoading) return <PageSkeleton />
-    return <LeagueNotConfigured />
+    if (configLoading) return <PageSkeleton title="Waivers" />
+    return <LeagueNotConfigured title="Waivers" />
   }
 
   return (
     <div className="dashboard">
+      <PageHeader title="Waivers" level={1} />
       <Group justify="space-between" mb="md">
         <WeekSelector week={week} onChange={setWeek} />
         <RosterQuickActions page="waivers" week={week} />

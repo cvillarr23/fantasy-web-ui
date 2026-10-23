@@ -21,6 +21,7 @@ import { WeekSelector } from './ui/WeekSelector'
 import { ScoreValue } from './ui/ScoreValue'
 import { SkeletonRegion, TableSkeleton } from './skeletons'
 import { Pager } from './ui/Pager'
+import { PageHeader } from './ui/PageHeader'
 export function LeaguePage() {
   const { config } = useDraftConfig()
   const [week, setWeek] = useSelectedWeek()
@@ -60,12 +61,15 @@ export function LeaguePage() {
   return (
     <div className="dashboard">
       <Stack>
-        <Group justify="space-between">
-          <h2>Your league</h2>
-          <Button variant="default" onClick={() => void query.refetch()}>
-            Refresh
-          </Button>
-        </Group>
+        <PageHeader
+          title="Standings & leaders"
+          level={1}
+          actions={
+            <Button variant="default" onClick={() => void query.refetch()}>
+              Refresh
+            </Button>
+          }
+        />
         <SegmentedControl
           value={view}
           onChange={(v) => {

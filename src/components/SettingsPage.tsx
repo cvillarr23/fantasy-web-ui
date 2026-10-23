@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Alert, Button, NumberInput, Skeleton, Stack, TextInput, Title } from '@mantine/core'
+import { Alert, Button, NumberInput, Skeleton, Stack, TextInput } from '@mantine/core'
 import { SkeletonRegion } from './skeletons'
 import type { DraftConfig } from '../api/types'
 import { useDraftConfig } from '../hooks/useDraftConfig'
+import { PageHeader } from './ui/PageHeader'
 
 // League/team settings, saved server-side so they follow the operator across browsers/devices.
 export function SettingsPage() {
@@ -17,7 +18,7 @@ export function SettingsPage() {
 function SettingsFormSkeleton() {
   return (
     <div className="config-screen">
-      <Title order={1}>Settings</Title>
+      <PageHeader title="Settings" level={1} />
       <SkeletonRegion label="Loading settings">
         <Stack gap="sm" mt="md">
           {Array.from({ length: 3 }, (_, i) => (
@@ -67,7 +68,7 @@ function SettingsForm({ config, saveConfig }: {
 
   return (
     <div className="config-screen">
-      <Title order={1}>Settings</Title>
+      <PageHeader title="Settings" level={1} />
       <form onSubmit={handleSubmit}>
         <Stack gap="sm" mt="md">
           <TextInput label="League ID" value={leagueId} onChange={(e) => { setLeagueId(e.currentTarget.value); setSaved(false) }} required />

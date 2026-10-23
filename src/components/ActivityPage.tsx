@@ -146,7 +146,8 @@ export function ActivityPage() {
     <div className="dashboard">
       <Stack>
         <PageHeader
-          title="Activity"
+          title="Submissions & sessions"
+          level={1}
           subtitle="Follow background work from request to verified result."
           actions={
             <Button variant="default" onClick={() => void query.refetch()}>
@@ -310,6 +311,7 @@ export function ActionDetailPage() {
   }
   return (
     <div className="dashboard">
+      <PageHeader title="Submissions & sessions" level={1} />
       <Stack>
         <Button component={Link} to="/activity" variant="subtle">
           ← All activity
@@ -409,6 +411,7 @@ export function SessionDetailPage() {
   const session = query.data
   return (
     <div className="dashboard">
+      <PageHeader title="Submissions & sessions" level={1} />
       <Stack>
         <Button component={Link} to="/activity?tab=sessions" variant="subtle">
           ← LLM sessions

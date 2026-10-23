@@ -13,6 +13,7 @@ import { WeekSelector } from './ui/WeekSelector'
 import { PageSkeleton, SkeletonRegion, TableRowsSkeleton } from './skeletons'
 import type { MatchupTeamSide, PlayerLine } from '../api/types'
 import { LeagueNotConfigured } from './ui/LeagueNotConfigured'
+import { PageHeader } from './ui/PageHeader'
 
 function PlayerRow({ line }: { line: PlayerLine }) {
   return (
@@ -165,12 +166,13 @@ export function MatchupPage() {
   const error = query.error ? String(query.error) : null
 
   if (!isConfigured) {
-    if (configLoading) return <PageSkeleton />
-    return <LeagueNotConfigured />
+    if (configLoading) return <PageSkeleton title="Matchup" />
+    return <LeagueNotConfigured title="Matchup" />
   }
 
   return (
     <div className="dashboard">
+      <PageHeader title="Matchup" level={1} />
       <Group justify="space-between" align="center" mb="md">
         <WeekSelector week={week} onChange={setWeek} />
         <Button component={Link} to={`/lineup?week=${weekValue}`} variant="subtle" size="xs">

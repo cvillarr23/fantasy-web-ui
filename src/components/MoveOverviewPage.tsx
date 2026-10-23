@@ -23,6 +23,7 @@ import { palette } from '../theme'
 import { ChartSkeleton, MoveSidesSkeleton, OperationProgress, SkeletonRegion } from './skeletons'
 import { ErrorAlert } from './ui/ErrorAlert'
 import { formatNumber } from './ui/formatNumber'
+import { PageHeader } from './ui/PageHeader'
 export function MoveOverviewPage() {
   const { config } = useDraftConfig()
   const [params, setParams] = useSearchParams()
@@ -129,21 +130,20 @@ export function MoveOverviewPage() {
   return (
     <div className="dashboard">
       <Stack>
-        <Group justify="space-between">
-          <div>
-            <h2>{kind === 'waiver' ? 'Review waiver move' : 'Review trade'}</h2>
-            <Text c="dimmed" size="sm">
-              Current roster · before and after · fantasy points
-            </Text>
-          </div>
-          <Button
-            component={Link}
-            to={kind === 'waiver' ? `/waivers?week=${week}` : `/trades?week=${week}`}
-            variant="subtle"
-          >
-            Back to {kind === 'waiver' ? 'waivers' : 'trade builder'}
-          </Button>
-        </Group>
+        <PageHeader
+          title={kind === 'waiver' ? 'Review waiver move' : 'Review trade'}
+          level={1}
+          subtitle="Current roster · before and after · fantasy points"
+          actions={
+            <Button
+              component={Link}
+              to={kind === 'waiver' ? `/waivers?week=${week}` : `/trades?week=${week}`}
+              variant="subtle"
+            >
+              Back to {kind === 'waiver' ? 'waivers' : 'trade builder'}
+            </Button>
+          }
+        />
         <WeekSelector week={week} onChange={setWeek} />
         <Checkbox
           label="Show rest of season"

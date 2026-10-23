@@ -11,6 +11,7 @@ import { WeekSelector } from './ui/WeekSelector'
 import { ChatMarkdown } from './chat/ChatMarkdown'
 import { threadFromSession, type ChatTurn } from './chat/chatThread'
 import { LeagueNotConfigured } from './ui/LeagueNotConfigured'
+import { PageHeader } from './ui/PageHeader'
 
 export function ChatPage() {
   const { config, loading: configLoading } = useDraftConfig()
@@ -40,8 +41,8 @@ export function ChatPage() {
   }
 
   if (!isConfigured) {
-    if (configLoading) return <PageSkeleton />
-    return <LeagueNotConfigured />
+    if (configLoading) return <PageSkeleton title="Assistant" />
+    return <LeagueNotConfigured title="Assistant" />
   }
 
   const loadingHistory = Boolean(sessionId) && seededFor !== sessionId && !history.error
@@ -133,10 +134,7 @@ export function ChatPage() {
             </Group>
           )}
         </Group>
-        <Text size="sm" c="dimmed">
-          Ask about your roster or matchup. Conversations are saved; follow-ups use refreshed league
-          context.
-        </Text>
+        <PageHeader title="Assistant" level={1} subtitle="Ask about your roster or matchup. Conversations are saved; follow-ups use refreshed league context." />
 
         {history.error && (
           <Alert color="red" title="Couldn't load this conversation">

@@ -10,6 +10,7 @@ import { StatusHeader } from './StatusHeader'
 import { TeamComparisonPanel } from './TeamComparisonPanel'
 import { TeamPositionGrid } from './TeamPositionGrid'
 import { PageSkeleton } from './skeletons'
+import { PageHeader } from './ui/PageHeader'
 import { useDraftStream } from '../hooks/useDraftStream'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { triggerDraftPick } from '../api/client'
@@ -40,6 +41,7 @@ function Dashboard({ config, onReconfigure }: { config: DraftConfig; onReconfigu
 
   return (
     <div className="dashboard">
+      <PageHeader title="Draft Day" level={1} />
       <div className="dashboard-toolbar">
         <Button variant="default" onClick={onReconfigure}>⚙ Reconfigure</Button>
       </div>
@@ -147,7 +149,7 @@ export function DraftDayPage() {
     setReconfiguring(false)
   }
 
-  if (!isConfigured && loading) return <PageSkeleton />
+  if (!isConfigured && loading) return <PageSkeleton title="Draft Day" />
 
   if (reconfiguring || !isConfigured) {
     return <ConfigScreen initial={config} onConfigured={handleConfigured} />
