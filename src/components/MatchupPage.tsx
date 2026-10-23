@@ -1,151 +1,63 @@
-import { ScoreValue } from './ui/ScoreValue'
-import { useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { queryClient } from '../api/queryClient'
-import { Alert, Button, Group, Skeleton, Table, Text } from '@mantine/core'
+import { Badge, Button, Group, Skeleton, Table, Text } from '@mantine/core'
 import { Link } from 'react-router-dom'
 import { matchupQuery } from '../api/weekReads'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useDraftConfig } from '../hooks/useDraftConfig'
-import { DeficitBadge, SwapBadge } from './player/DeficitBadge'
-import { PlayerCard } from './player/PlayerCard'
 import { WeekSelector } from './ui/WeekSelector'
 import { PageSkeleton, SkeletonRegion, TableRowsSkeleton } from './skeletons'
-import type { MatchupTeamSide, PlayerLine } from '../api/types'
 import { LeagueNotConfigured } from './ui/LeagueNotConfigured'
 import { PageHeader } from './ui/PageHeader'
+import { EmptyState } from './ui/EmptyState'
+import { ErrorAlert } from './ui/ErrorAlert'
+import { formatNumber } from './ui/formatNumber'
+import { MatchupSummary } from './matchup/MatchupSummary'
+import { MatchupTeamCard } from './matchup/MatchupTeamCard'
+import { isZeroProjection, projectedMargin, winChance } from './matchup/matchupFormat'
+import { matchupGlossary } from './matchup/matchupGlossary'
 
-function PlayerRow({ line }: { line: PlayerLine }) {
+const MATCHUP_COLUMNS = ['Slot', 'Player', 'Pos', 'Actual', 'Projected']
+
+function MatchupSkeleton() {
   return (
-    <PlayerCard
-      variant="tableRow"
-      before={line.slot}
-      player={{
-        id: line.player_id,
-        name: line.name,
-        position: line.position,
-        headshotUrl: line.headshot_url,
-        jersey: line.jersey,
-      }}
-      badges={
-        <>
-          <DeficitBadge isDeficit={line.deficit_flag} />
-          <SwapBadge benchFor={line.suggested_swap?.bench_for} />
-        </>
-      }
-      stats={
-        <span className="score-pair">
-          <ScoreValue value={line.points} />
-          <ScoreValue value={line.projected_points} projected />
-        </span>
-      }
-    />
-  )
-}
-
-function MobilePlayer({ line }: { line: PlayerLine }) {
-  return (
-    <div className="matchup-mobile-player">
-      <div>
-        <Text size="xs" c="dimmed">
-          {line.slot} · {line.position}
-        </Text>
-        <Text fw={600}>{line.name}</Text>
-        <DeficitBadge isDeficit={line.deficit_flag} />
-      </div>
-      <span className="score-pair">
-        <ScoreValue value={line.points} />
-        <ScoreValue value={line.projected_points} projected />
-      </span>
-    </div>
-  )
-}
-
-const MATCHUP_COLUMNS = ['Slot', '', 'Player', 'Pos', '#', 'Fantasy points']
-
-function MatchupColumnsSkeleton() {
-  return (
-    <SkeletonRegion label="Loading matchup" className="matchup-columns">
-      {['Your team', 'Opponent'].map((label) => (
-        <section key={label} className="matchup-team-card">
-          <header className="matchup-team-header">
+    <SkeletonRegion label="Loading matchup">
+      <div className="matchup-summary">
+        {[0, 1].map((i) => (
+          <div key={i} className="matchup-summary-team">
             <Skeleton height={40} width={40} radius={6} />
             <div>
-              <div className="matchup-team-label">{label}</div>
-              <Skeleton height={20} width={140} mt={4} />
+              <Skeleton height={12} width={72} mb={6} />
+              <Skeleton height={20} width={140} mb={6} />
+              <Skeleton height={28} width={120} />
             </div>
-            <div className="matchup-team-score">
-              <Skeleton height={24} width={56} mb={4} />
-              <Skeleton height={12} width={56} />
-            </div>
-          </header>
-          <Table className="desktop-matchup-table">
-            <Table.Thead>
-              <Table.Tr>
-                {MATCHUP_COLUMNS.map((heading, i) => <Table.Th key={i}>{heading}</Table.Th>)}
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              <TableRowsSkeleton columns={MATCHUP_COLUMNS.length} rows={9} />
-            </Table.Tbody>
-          </Table>
-        </section>
-      ))}
-    </SkeletonRegion>
-  )
-}
-
-function TeamCard({ side, label }: { side: MatchupTeamSide; label: string }) {
-  const [benchOpen, setBenchOpen] = useState(false)
-
-  return (
-    <section className="matchup-team-card" aria-label={`${label}: ${side.team.name}`}>
-      <header className="matchup-team-header">
-        <img src={side.team.logo_url} alt="" width={40} height={40} className="matchup-team-logo" />
-        <div>
-          <div className="matchup-team-label">{label}</div>
-          <h3>{side.team.name}</h3>
-        </div>
-        <div className="matchup-team-score">
-          <div className="matchup-score-actual">{side.team.score.toFixed(1)}</div>
-          <div className="matchup-score-projected">proj {side.team.projected.toFixed(1)}</div>
-        </div>
-      </header>
-      <div className="matchup-player-cards">
-        {side.starters.map((line) => (
-          <MobilePlayer key={line.player_id} line={line} />
+          </div>
         ))}
       </div>
-      <Table className="desktop-matchup-table">
-        <Table.Thead>
-          <Table.Tr>
-            {MATCHUP_COLUMNS.map((heading, i) => <Table.Th key={i}>{heading}</Table.Th>)}
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {side.starters.map((line) => <PlayerRow key={line.player_id} line={line} />)}
-        </Table.Tbody>
-      </Table>
-      <Button variant="subtle" size="xs" mt="xs" onClick={() => setBenchOpen((open) => !open)}>
-        {benchOpen ? 'Hide' : 'Show'} bench ({side.bench.length})
-      </Button>
-      {benchOpen && (
-        <>
-          <div className="matchup-player-cards">
-            {side.bench.map((line) => (
-              <MobilePlayer key={line.player_id} line={line} />
-            ))}
-          </div>
-          <Table mt="xs" className="desktop-matchup-table">
-            <Table.Tbody>
-              {side.bench.map((line) => (
-                <PlayerRow key={line.player_id} line={line} />
-              ))}
-            </Table.Tbody>
-          </Table>
-        </>
-      )}
-    </section>
+      <div className="matchup-columns">
+        {['Your team', 'Opponent'].map((label) => (
+          <section key={label} className="matchup-team-card">
+            <header className="matchup-team-header">
+              <Skeleton height={40} width={40} radius={6} />
+              <div>
+                <div className="matchup-team-label">{label}</div>
+                <Skeleton height={20} width={140} mt={4} />
+              </div>
+            </header>
+            <Table className="desktop-matchup-table">
+              <Table.Thead>
+                <Table.Tr>
+                  {MATCHUP_COLUMNS.map((heading) => <Table.Th key={heading}>{heading}</Table.Th>)}
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                <TableRowsSkeleton columns={MATCHUP_COLUMNS.length} rows={9} />
+              </Table.Tbody>
+            </Table>
+          </section>
+        ))}
+      </div>
+    </SkeletonRegion>
   )
 }
 
@@ -164,30 +76,71 @@ export function MatchupPage() {
   // null is a cached bye week (or a week the season hasn't reached), not a failure.
   const notFound = query.data === null
   const error = query.error ? String(query.error) : null
+  // A failed refresh keeps the last matchup on screen, dimmed, under an error with Retry.
+  const stale = Boolean(error && matchup)
 
   if (!isConfigured) {
     if (configLoading) return <PageSkeleton title="Matchup" />
     return <LeagueNotConfigured title="Matchup" />
   }
 
+  const margin = matchup ? projectedMargin(matchup.our_team.team.projected, matchup.opponent.team.projected) : null
+  const chance = winChance(margin)
+  const zeroStarters = matchup
+    ? matchup.our_team.starters.filter((line) => isZeroProjection(line.projected_points)).length
+    : 0
+  // Counts that are still loading or failed say so, instead of reading as zero.
+  const pending = !matchup && query.isPending
+  const marginLabel = pending
+    ? 'Projected margin …'
+    : margin == null ? 'Projected margin unavailable' : `Projected margin ${formatNumber(margin, { signed: true })}`
+  const chanceLabel = pending
+    ? 'Win chance …'
+    : chance == null ? 'Win chance unavailable' : `Win chance ~${chance}% (estimate)`
+
   return (
     <div className="dashboard">
-      <PageHeader title="Matchup" level={1} />
+      <PageHeader
+        title="Matchup"
+        level={1}
+        subtitle={matchup ? `Week ${matchup.week} · ${matchup.our_team.team.name} vs ${matchup.opponent.team.name}` : validWeek ? `Week ${weekValue}` : undefined}
+      />
+      {(matchup || pending || error) && (
+        <Group gap="xs" my="md" className="matchup-pills">
+          <Badge component="a" href="#matchup-summary" size="lg" variant="light">{marginLabel}</Badge>
+          <Badge component="a" href="#matchup-summary" size="lg" color="teal" variant="light">{chanceLabel}</Badge>
+          {zeroStarters > 0 && (
+            <Badge component="a" href="#matchup-yours" size="lg" color="red" variant="light">
+              {zeroStarters} {zeroStarters === 1 ? 'starter' : 'starters'} projected 0.0
+            </Badge>
+          )}
+        </Group>
+      )}
       <Group justify="space-between" align="center" mb="md">
         <WeekSelector week={week} onChange={setWeek} />
-        <Button component={Link} to={`/lineup?week=${weekValue}`} variant="subtle" size="xs">
+        <Button component={Link} to={`/lineup?week=${weekValue}`}>
           Edit lineup for this week
         </Button>
       </Group>
-      {error && <Alert color="red" mb="md">{error}</Alert>}
-      {notFound && (
-        <Alert color="gray" mb="md">No matchup found for this week (bye week, or the season hasn't reached it yet).</Alert>
+      {error && (
+        <ErrorAlert mb="md" onRetry={() => void query.refetch()}>
+          {stale ? `Could not refresh this matchup. Showing the last data loaded. ${error}` : error}
+        </ErrorAlert>
       )}
-      {query.isPending && validWeek && <MatchupColumnsSkeleton />}
+      {notFound && (
+        <EmptyState tone="alert">No matchup found for this week (bye week, or the season hasn't reached it yet).</EmptyState>
+      )}
+      {query.isPending && validWeek && !matchup && <MatchupSkeleton />}
       {matchup && (
-        <div className="matchup-columns" aria-busy={query.isPlaceholderData || undefined}>
-          <TeamCard side={matchup.our_team} label="Your team" />
-          <TeamCard side={matchup.opponent} label="Opponent" />
+        <div className={stale ? 'matchup-stale' : undefined} aria-busy={query.isPlaceholderData || undefined}>
+          <MatchupSummary ours={matchup.our_team.team} opponent={matchup.opponent.team} />
+          <Text size="sm" c="dimmed" mb="md">
+            <strong>Actual</strong>: {matchupGlossary.actual} <strong>Projected</strong>: {matchupGlossary.projected}
+          </Text>
+          <div className="matchup-columns">
+            <MatchupTeamCard id="matchup-yours" side={matchup.our_team} label="Your team" />
+            <MatchupTeamCard id="matchup-theirs" side={matchup.opponent} label="Opponent" />
+          </div>
         </div>
       )}
     </div>

@@ -88,11 +88,11 @@ function start(url: string) {
 
 it('revisiting the matchup page renders cached data without a request', async () => {
   start('/matchup?week=5')
-  expect(await screen.findByText('Rivals')).toBeTruthy()
+  expect((await screen.findAllByText('Rivals')).length).toBeGreaterThan(0)
   cleanup()
 
   start('/matchup?week=5')
-  expect(screen.getByText('Rivals')).toBeTruthy()
+  expect(screen.getAllByText('Rivals').length).toBeGreaterThan(0)
   expect(screen.queryByRole('status', { name: 'Loading matchup' })).toBeNull()
   expect(getMatchup).toHaveBeenCalledTimes(1)
 })

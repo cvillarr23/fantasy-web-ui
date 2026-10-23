@@ -210,8 +210,9 @@ export interface PlayerLine {
   position: string
   jersey: string | null
   slot: string
-  points: number
-  projected_points: number
+  // Null when ESPN has no value yet; the UI shows a dash, never zero.
+  points: number | null
+  projected_points: number | null
   // NFL bye week; null when core couldn't read the NFL schedule.
   bye_week?: number | null
   headshot_url: string
@@ -223,7 +224,7 @@ export interface MatchupTeamInfo {
   name: string
   logo_url: string
   score: number
-  projected: number
+  projected: number | null
 }
 
 export interface MatchupTeamSide {
