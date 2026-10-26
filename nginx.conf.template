@@ -1,10 +1,28 @@
 # Same-origin, not CORS: proxies /v1/* to fantasy-core-pipeline's in-cluster Service so
 # the SPA never needs to know it's a different backend - mirrors vite.config.ts's dev
 # proxy, just at the production edge instead of Vite's dev server.
+map $status $loglevel {
+    ~^5 error;
+    ~^4 warn;
+    default info;
+}
+
+map $http_user_agent $loggable {
+    ~^kube-probe 0;
+    default 1;
+}
+
+log_format json escape=json
+    '{"msg":"$request","status":$status,"bytes":$body_bytes_sent,'
+    '"request_time":$request_time,"upstream":"$upstream_addr",'
+    '"user_agent":"$http_user_agent","remote_addr":"$remote_addr",'
+    '"level":"$loglevel"}';
+
 server {
     listen 80;
     root /usr/share/nginx/html;
     index index.html;
+    access_log /var/log/nginx/access.log json if=$loggable;
 
     # Points at this cluster's CoreDNS ClusterIP directly (confirmed via
     # `kubectl get svc -n kube-system coredns` - 10.152.183.152 on this cluster; re-check
