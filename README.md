@@ -32,7 +32,7 @@ is disabled once the thread reaches its limit.
 | [Design system](docs/design-system.md) | Palette, UI conventions and where shared components live |
 | [Component library](docs/developer/storybook.md) | Storybook stories for the shared components |
 
-These pages are also published on the project documentation site built from
+These pages are also published on the [project documentation site](https://fantasy-docs.roo-net.cc) built from
 [`fantasy-project`](https://github.com/cvillarr23/fantasy-project).
 
 - [Project architecture and rollout notes](https://github.com/cvillarr23/fantasy-project/blob/main/docs/season-management-ux.md)
