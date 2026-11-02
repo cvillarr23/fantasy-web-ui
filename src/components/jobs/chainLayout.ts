@@ -2,7 +2,7 @@ import dagre from '@dagrejs/dagre'
 import type { ChainInfo } from '../../api/jobs'
 
 export const NODE_WIDTH = 176
-// Tall enough for a step's badges, status and note above a Cancel button.
+// Tall enough for a two-line name, both badges, a note and the status row.
 export const NODE_HEIGHT = 160
 const RANK_GAP = 72
 const NODE_GAP = 24

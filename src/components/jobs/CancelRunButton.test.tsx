@@ -16,8 +16,10 @@ beforeEach(() => {
 })
 afterEach(cleanup)
 
+const RUNNING = { id: 'run-1', status: 'running' }
+
 const openDialog = (props: Partial<Parameters<typeof CancelRunButton>[0]> = {}) => {
-  renderForTest(<CancelRunButton runId="run-1" job="set-lineup" {...props} />)
+  renderForTest(<CancelRunButton run={RUNNING} job="set-lineup" {...props} />)
   fireEvent.click(screen.getByRole('button', { name: /^Cancel/ }))
   return screen.getByRole('dialog')
 }
@@ -51,5 +53,30 @@ describe('CancelRunButton', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancel run' }))
     expect((await screen.findByRole('alert')).textContent).toContain('Run not cancelled: success')
     expect(screen.getByRole('dialog')).toBeTruthy()
+  })
+
+  it('has no button for a run that has ended', () => {
+    renderForTest(<CancelRunButton run={{ id: 'run-1', status: 'succeeded' }} job="set-lineup" />)
+    expect(screen.queryByRole('button')).toBeNull()
+  })
+
+  it('keeps the refusal open when the refresh shows the run ended', async () => {
+    vi.mocked(cancelRun).mockRejectedValue(new ApiError(409, 'not cancellable'))
+    const { rerender } = renderForTest(<CancelRunButton run={RUNNING} job="set-lineup" />)
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel, set-lineup' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel run' }))
+    await screen.findByRole('alert')
+    rerender(<CancelRunButton run={{ id: 'run-1', status: 'cancelled' }} job="set-lineup" />)
+    expect(screen.getByRole('alert').textContent).toContain('Run not cancelled: not cancellable')
+    fireEvent.click(screen.getByRole('button', { name: 'Keep running' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('cancels the run it opened on, not a newer one that arrived meanwhile', async () => {
+    const { rerender } = renderForTest(<CancelRunButton run={RUNNING} job="set-lineup" />)
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel, set-lineup' }))
+    rerender(<CancelRunButton run={{ id: 'run-2', status: 'queued' }} job="set-lineup" />)
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel run' }))
+    await waitFor(() => expect(cancelRun).toHaveBeenCalledWith('run-1', expect.anything()))
   })
 })

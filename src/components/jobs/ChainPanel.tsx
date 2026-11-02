@@ -48,9 +48,7 @@ export function ChainPanel({ chain, jobs, root, selected, onSelect }: Props) {
         </div>
         <div className="chain-panel-status">
           <RunStatusText status={progressStatus(root)} label={chainProgress(chain, root)} />
-          {root && isActiveRun(root.status) && (
-            <CancelRunButton runId={root.id} job={chain.name} chainRoot label="Cancel chain run" />
-          )}
+          <CancelRunButton run={root} job={chain.name} chainRoot label="Cancel chain run" />
         </div>
       </div>
       <div className="chain-panel-controls">

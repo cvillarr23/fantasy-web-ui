@@ -1,5 +1,4 @@
 import type { ChainInfo, JobInfo } from '../../api/jobs'
-import { isActiveRun } from '../runFormat'
 import { AffectsTeamBadge } from './AffectsTeamBadge'
 import { CancelRunButton } from './CancelRunButton'
 import { stepStatusLabel, type ChainStepState } from './chainStatus'
@@ -22,11 +21,13 @@ function stepLine(chain: ChainInfo, state: ChainStepState) {
 }
 
 function StepBadges({ job }: { job: JobInfo | undefined }) {
-  if (!job?.acts && !pauseIsActive(job?.pause)) return null
+  const acts = Boolean(job?.acts)
+  const paused = pauseIsActive(job?.pause)
+  if (!acts && !paused) return null
   return (
     <span className="job-name">
-      {job?.acts && <AffectsTeamBadge />}
-      {pauseIsActive(job?.pause) && <PausedBadge />}
+      {acts && <AffectsTeamBadge />}
+      {paused && <PausedBadge />}
     </span>
   )
 }
@@ -43,7 +44,7 @@ export function ChainStepList({ chain, jobs, states, onSelect }: Props) {
           </div>
           <StepBadges job={jobs.find((job) => job.name === state.step)} />
           <span className="chain-node-note">{stepLine(chain, state)}</span>
-          {state.run && isActiveRun(state.run.status) && <CancelRunButton runId={state.run.id} job={state.step} />}
+          <CancelRunButton run={state.run} job={state.step} />
         </li>
       ))}
     </ol>

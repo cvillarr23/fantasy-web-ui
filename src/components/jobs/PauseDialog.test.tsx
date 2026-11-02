@@ -16,6 +16,8 @@ function renderDialog(props: Partial<Parameters<typeof PauseDialog>[0]> = {}) {
   return { onConfirm }
 }
 
+/** A time as a datetime-local input writes it, in this machine's zone. */
+const localInput = (at: Date) => new Date(at.getTime() - at.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
 const reason = (text: string) => fireEvent.change(screen.getByRole('textbox', { name: /Reason/ }), { target: { value: text } })
 const pauseButton = () => screen.getByRole('button', { name: 'Pause' }) as HTMLButtonElement
 
@@ -39,6 +41,35 @@ describe('PauseDialog', () => {
     reason(' Bye week ')
     fireEvent.click(pauseButton())
     expect(onConfirm).toHaveBeenCalledWith({ until, reason: 'Bye week' })
+  })
+
+  it('counts the time from the click, not from when the dialog opened', () => {
+    let now = NOW
+    const { onConfirm } = renderDialog({ now: () => now })
+    fireEvent.click(screen.getByRole('radio', { name: '1 hour' }))
+    reason('Bye week')
+    now = new Date(NOW.getTime() + 40 * 60_000)
+    fireEvent.click(pauseButton())
+    expect(onConfirm).toHaveBeenCalledWith({ until: '2026-11-04T00:02:00.000Z', reason: 'Bye week' })
+  })
+
+  it('flags a custom time that passed while the dialog was open, and does not pause', () => {
+    let now = NOW
+    const { onConfirm } = renderDialog({ now: () => now })
+    fireEvent.click(screen.getByRole('radio', { name: 'Until…' }))
+    reason('Bye week')
+    const at = new Date(NOW.getTime() + 10 * 60_000)
+    fireEvent.change(screen.getByLabelText('Resume at'), { target: { value: localInput(at) } })
+    now = new Date(NOW.getTime() + 20 * 60_000)
+    fireEvent.click(pauseButton())
+    expect(onConfirm).not.toHaveBeenCalled()
+    expect(screen.getByText('Pick a time in the future')).toBeTruthy()
+  })
+
+  it('locks the form while the pause is being saved', () => {
+    renderDialog({ pausing: true })
+    expect((screen.getByRole('textbox', { name: /Reason/ }) as HTMLTextAreaElement).disabled).toBe(true)
+    expect((screen.getByRole('radio', { name: '1 hour' }) as HTMLInputElement).disabled).toBe(true)
   })
 
   it('pauses until resumed with no end time', () => {

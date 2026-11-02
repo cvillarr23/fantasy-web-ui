@@ -64,3 +64,17 @@ export const Phone: Story = {
     await expect(canvas.getByRole('list')).toBeVisible()
   },
 }
+const LONG_STEP = 'score-sample-projections-weekly'
+/** The fixtures with the running step renamed, through the chain, catalog and run alike. */
+const renamed = <T,>(value: T): T => JSON.parse(JSON.stringify(value).replaceAll('"score-sample"', `"${LONG_STEP}"`))
+/** A running step with a long name and both badges keeps its note clear of Cancel. */
+export const LongRunningStep: Story = {
+  args: {
+    chain: renamed(chainFixture),
+    root: renamed(chainRootFixture),
+    jobs: renamed(catalogFixture.jobs).map((job) => (job.name === LONG_STEP ? { ...job, acts: true, pause: pauseFixture(LONG_STEP, null) } : job)),
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('button', { name: `Cancel, ${LONG_STEP}` })).toBeVisible()
+  },
+}

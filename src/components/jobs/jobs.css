@@ -61,11 +61,13 @@
 .chain-node-running { border: 2px solid var(--projected); }
 .chain-node-selected { border: 2px solid var(--accent); }
 .chain-node-title { width: 100%; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 2px 6px; }
-.chain-node-name { font-weight: 600; color: var(--text-h); overflow-wrap: anywhere; }
+.chain-node-name { font-weight: 600; color: var(--text-h); overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
 .chain-node-note { font-size: 12px; color: var(--muted); }
 .chain-node-box { position: relative; }
-.chain-node-cancellable { padding-bottom: 46px; }
-.chain-node-cancel { position: absolute; left: 12px; bottom: 10px; }
+/* A running step's Cancel sits beside its short status pill, so the note moves above them. */
+.chain-node-cancellable .chain-node-note { order: 1; }
+.chain-node-cancellable > .job-status { order: 2; }
+.chain-node-box .chain-node-cancel { position: absolute; right: 12px; bottom: 6px; padding-inline: 10px; }
 .chain-step-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
 .chain-step-list li { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 9px 0; border-top: 1px solid var(--border); }
 .chain-step-row { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; }

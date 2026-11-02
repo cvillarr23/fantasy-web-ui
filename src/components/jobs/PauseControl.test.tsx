@@ -57,4 +57,15 @@ describe('PauseControl', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Resume' }))
     expect((await screen.findByRole('alert')).textContent).toContain('Not resumed: sync-rumors')
   })
+
+  it('forgets a failed resume once the pause has gone', async () => {
+    vi.mocked(resumeJob).mockRejectedValue(new ApiError(404, 'sync-rumors'))
+    const paused = <PauseControl name="sync-rumors" pause={pauseFixture('sync-rumors', null)} target="job" now={NOW} />
+    const { rerender } = renderForTest(paused)
+    fireEvent.click(screen.getByRole('button', { name: 'Resume' }))
+    await screen.findByRole('alert')
+    rerender(<PauseControl name="sync-rumors" pause={null} target="job" now={NOW} />)
+    rerender(paused)
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
 })

@@ -37,6 +37,13 @@ afterEach(cleanup)
 
 const open = (route = '/jobs') => renderForTest(<JobsPage />, route)
 const row = async (name: string) => (await screen.findByRole('button', { name })).closest('tr')!
+const currentRow = (name: string) => screen.getByRole('button', { name }).closest('tr')!
+
+/** The catalog once score-sample's run has finished, as a refresh after a refused cancel finds it. */
+const withScoreSampleEnded = () => ({
+  ...catalogFixture,
+  jobs: catalogFixture.jobs.map((job) => (job.name === 'score-sample' ? { ...job, last_run: { ...job.last_run!, status: 'succeeded' } } : job)),
+})
 
 describe('JobsPage', () => {
   it('names the page and counts what needs attention', async () => {
@@ -142,6 +149,19 @@ describe('JobsPage', () => {
     fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel run' }))
     await waitFor(() => expect(cancelRun).toHaveBeenCalledWith('run-score-sample', expect.anything()))
     await waitFor(() => expect(vi.mocked(getJobCatalog).mock.calls.length).toBeGreaterThan(loads))
+  })
+
+  it.each([
+    ['its row', () => open(), async () => within(await row('score-sample')).getByRole('button', { name: 'Cancel, score-sample' })],
+    ['the rail', () => open('/jobs?job=score-sample'), () => screen.findByRole('button', { name: 'Cancel run, score-sample' })],
+  ])('keeps a refused cancel on screen from %s after the refresh shows the run ended', async (_, render, cancelButton) => {
+    render()
+    fireEvent.click(await cancelButton())
+    vi.mocked(cancelRun).mockRejectedValue(new ApiError(409, 'run-score-sample is not queued or running'))
+    vi.mocked(getJobCatalog).mockResolvedValue(withScoreSampleEnded())
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel run' }))
+    await waitFor(() => expect(within(currentRow('score-sample')).queryByRole('button', { name: 'Cancel, score-sample' })).toBeNull())
+    expect(within(screen.getByRole('dialog')).getByRole('alert').textContent).toContain('Run not cancelled: run-score-sample is not queued or running')
   })
 
   it('cancels a whole chain run from its panel', async () => {

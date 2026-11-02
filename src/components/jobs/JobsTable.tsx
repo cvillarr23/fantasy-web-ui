@@ -1,6 +1,5 @@
 import { Button, Table, Text } from '@mantine/core'
 import type { JobCatalog, JobInfo } from '../../api/jobs'
-import { isActiveRun } from '../runFormat'
 import { InfoTip } from '../ui/InfoTip'
 import { AffectsTeamBadge } from './AffectsTeamBadge'
 import { AFFECTS_TEAM_HELP } from './jobGlossary'
@@ -66,7 +65,7 @@ function JobRow({ job, catalog, selected, starting, now, onSelect, onRun }: RowP
           <Button variant="default" size="xs" disabled={run.disabled} onClick={() => onRun(job)}>
             {run.label}
           </Button>
-          {job.last_run && isActiveRun(job.last_run.status) && <CancelRunButton runId={job.last_run.id} job={job.name} />}
+          <CancelRunButton run={job.last_run} job={job.name} />
         </div>
       </Table.Td>
     </Table.Tr>

@@ -7,7 +7,7 @@ import { skipReason } from '../runFormat'
 import { InfoTip } from '../ui/InfoTip'
 import { EmptyState } from '../ui/EmptyState'
 import { AffectsTeamBadge } from './AffectsTeamBadge'
-import { CancelRunButton } from './CancelRunButton'
+import { CancelButton, CancelRunConfirm } from './CancelRunButton'
 import { AFFECTS_TEAM_HELP } from './jobGlossary'
 import {
   actingSteps,
@@ -114,6 +114,23 @@ function RecentRuns({ runs }: { runs: Run[] }) {
   )
 }
 
+/** Why Run is disabled, with a link to the run in the way and a Cancel for it. The cancel's
+ * dialog lives on the panel, because this note goes as soon as the run ends. */
+function RunningNote({ job, onCancel }: { job: JobInfo; onCancel: (runId: string) => void }) {
+  const run = job.last_run
+  return (
+    <p className="job-note job-note-running">
+      Already running. This job allows one run at a time.{' '}
+      {run && (
+        <>
+          <Anchor component={Link} to={`/activity/runs/${run.id}`} state={JOBS_LINK_STATE}>Open the run</Anchor>
+          <CancelButton job={job.name} label="Cancel run" className="job-note-action" onClick={() => onCancel(run.id)} />
+        </>
+      )}
+    </p>
+  )
+}
+
 function runLabel(blocked: boolean, starting: boolean, needsConfirm: boolean, downstream: boolean) {
   if (blocked) return 'Already running'
   if (starting) return 'Starting…'
@@ -126,6 +143,7 @@ export function JobRunPanel({ job, catalog, recentRuns, starting, error, started
   const [values, setValues] = useState<ParamValues>({})
   const [downstream, setDownstream] = useState(false)
   const [confirming, setConfirming] = useState(false)
+  const [cancelling, setCancelling] = useState<string | null>(null)
   const fields = paramFields(job.params)
   const params = buildRunParams(fields, values)
   const blocked = blockedByActiveRun(job)
@@ -152,17 +170,7 @@ export function JobRunPanel({ job, catalog, recentRuns, starting, error, started
       <PauseControl name={job.name} pause={job.pause} target="job" />
       <ParamsForm fields={fields} values={values} onChange={(name, value) => setValues({ ...values, [name]: value })} />
       <DownstreamOption job={job} catalog={catalog} checked={downstream} onChange={setDownstream} />
-      {blocked && (
-        <p className="job-note job-note-running">
-          Already running. This job allows one run at a time.{' '}
-          {job.last_run && (
-            <>
-              <Anchor component={Link} to={`/activity/runs/${job.last_run.id}`} state={JOBS_LINK_STATE}>Open the run</Anchor>
-              <CancelRunButton runId={job.last_run.id} job={job.name} label="Cancel run" className="job-note-action" />
-            </>
-          )}
-        </p>
-      )}
+      {blocked && <RunningNote job={job} onCancel={setCancelling} />}
       {error && <RunRefusal job={job} error={error} />}
       {started && (
         <p role="status" className="job-note job-note-queued">
@@ -187,6 +195,7 @@ export function JobRunPanel({ job, catalog, recentRuns, starting, error, started
         onConfirm={start}
         onCancel={() => setConfirming(false)}
       />
+      <CancelRunConfirm runId={cancelling} job={job.name} onClose={() => setCancelling(null)} />
     </>
   )
 }

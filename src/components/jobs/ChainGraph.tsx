@@ -60,6 +60,7 @@ function ChainStepNode({ data }: NodeProps<StepNode>) {
         type="button"
         className={classes.filter(Boolean).join(' ')}
         aria-label={stepLabel(data)}
+        title={state.step}
         onClick={() => onSelect(state.step)}
       >
         <span className="chain-node-title">
@@ -70,9 +71,7 @@ function ChainStepNode({ data }: NodeProps<StepNode>) {
         <RunStatusText status={state.status} label={stepStatusLabel(state.status)} />
         <span className="chain-node-note">{note}</span>
       </button>
-      {cancellable && state.run && (
-        <CancelRunButton runId={state.run.id} job={state.step} className="chain-node-cancel" />
-      )}
+      <CancelRunButton run={state.run} job={state.step} className="chain-node-cancel" />
       <Handle type="source" position={Position.Right} isConnectable={false} />
     </div>
   )
