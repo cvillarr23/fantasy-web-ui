@@ -1,7 +1,7 @@
 import { request } from './client'
 
-export type TriggerType = 'schedule' | 'queue' | 'http' | 'manual'
-export type RunStatus = 'running' | 'success' | 'failure'
+export type TriggerType = 'schedule' | 'queue' | 'http' | 'manual' | 'chain' | 'event' | 'cli' | 'mcp'
+export type RunStatus = 'queued' | 'running' | 'success' | 'failure' | 'timeout' | 'skipped' | 'cancelled'
 
 export interface RunSummary {
   id: string
@@ -10,6 +10,14 @@ export interface RunSummary {
   status: RunStatus
   started_at: string
   finished_at?: string | null
+  scheduled_for?: string | null
+  attempt?: number
+  requested_by?: string | null
+  chain_root_id?: string | null
+  end_reason?: string | null
+  executor?: string | null
+  k8s_job?: string | null
+  expires_at?: string | null
 }
 export interface Run extends RunSummary {
   trigger: Record<string, unknown>
@@ -19,6 +27,13 @@ export interface Run extends RunSummary {
   input_count: number
   output_count: number
   llm_count: number
+}
+export interface LlmSessionRef {
+  id: string
+  title: string
+}
+export interface ChildRun extends RunSummary {
+  llm_sessions?: LlmSessionRef[]
 }
 export interface JobHealth extends Run {
   recent_failures: number
@@ -38,7 +53,7 @@ export interface LinkedRow {
 export interface RunDetail extends Run {
   links: Partial<Record<'input' | 'output', Partial<Record<RefType, LinkedRow[]>>>>
   parent?: { id: string; job_name: string; status: RunStatus; started_at: string } | null
-  children: RunSummary[]
+  children: ChildRun[]
 }
 export interface TraceStage {
   key: 'ingest' | 'evaluation' | 'decision' | 'submission' | 'execution'

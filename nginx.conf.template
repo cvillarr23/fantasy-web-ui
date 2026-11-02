@@ -51,6 +51,28 @@ server {
         error_page 401 = @inbox_auth_error;
     }
 
+    location ~ ^/v1/jobs/[^/]+/runs$ {
+        limit_except POST { deny all; }
+        proxy_set_header X-API-Key "${TRIGGER_API_KEY}";
+        proxy_pass http://$backend$request_uri;
+        proxy_intercept_errors on;
+        error_page 401 = @jobs_auth_error;
+    }
+
+    # Deployment settings the SPA reads at runtime, so one image fits any deployment. The
+    # Dockerfile defaults GRAFANA_URL, because envsubst leaves an unset variable in place
+    # and nginx then refuses to start on the unknown ${GRAFANA_URL}.
+    location = /ui-config.json {
+        default_type application/json;
+        add_header Cache-Control "no-store";
+        return 200 '{"grafana_url":"${GRAFANA_URL}"}';
+    }
+
+    location @jobs_auth_error {
+        default_type application/json;
+        return 502 '{"detail":"Job service authentication failed. Contact an administrator."}';
+    }
+
     location @inbox_auth_error {
         default_type application/json;
         return 502 '{"detail":"Inbox service authentication failed. Contact an administrator."}';

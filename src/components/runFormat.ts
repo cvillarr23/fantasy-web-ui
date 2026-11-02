@@ -6,6 +6,14 @@ const SECONDS_PER_MINUTE = 60
 export const runLabel = (value: string) => value.replaceAll('_', ' ')
 export const runStamp = (value: string) => new Date(value).toLocaleString()
 
+/** A run the launcher hasn't finished with: waiting to start, or in progress. */
+export const isActiveRun = (status?: string | null) => status === 'queued' || status === 'running'
+
+/** "Success", "Cancelled". */
+export function statusLabel(status: string) {
+  return status.charAt(0).toUpperCase() + status.slice(1)
+}
+
 /** Wall-clock length of a finished run, or a dash while it runs. */
 export function duration(run: Pick<RunSummary, 'started_at' | 'finished_at'>) {
   if (!run.finished_at) return '—'

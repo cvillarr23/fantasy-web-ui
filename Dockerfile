@@ -8,5 +8,6 @@ RUN npm run build
 FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 ENV CORE_API_UPSTREAM=fantasy-core-pipeline.default.svc.cluster.local:8000
+ENV GRAFANA_URL=
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 EXPOSE 80

@@ -26,6 +26,7 @@ const GROUPS = [
     title: 'Activity',
     links: [
       ['/activity', 'Submissions & sessions'],
+      ['/jobs', 'Jobs'],
       ['/chat', 'Assistant'],
     ],
   },
