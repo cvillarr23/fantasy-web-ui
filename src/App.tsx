@@ -4,6 +4,7 @@ const MoveOverviewPage = lazy(() =>
 )
 import { ActivityPage, ActionDetailPage, SessionDetailPage } from './components/ActivityPage'
 import { RunDetailPage, TracePage } from './components/RunDetailPage'
+const JobsPage = lazy(() => import('./components/JobsPage').then((m) => ({ default: m.JobsPage })))
 const LeaguePage = lazy(() =>
   import('./components/LeaguePage').then((m) => ({ default: m.LeaguePage })),
 )
@@ -55,6 +56,7 @@ function App() {
               <Route path="chat" element={<ChatPage />} />
               <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="waivers" element={<WaiverPage />} />
+              <Route path="jobs" element={<JobsPage />} />
               <Route path="activity" element={<ActivityPage />} />
               <Route path="activity/actions/:id" element={<ActionDetailPage />} />
               <Route path="activity/sessions/:id" element={<SessionDetailPage />} />

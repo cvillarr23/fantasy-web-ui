@@ -1,11 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { Anchor, Badge, Button, Group, Stack, Table, Text } from '@mantine/core'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
+import { getJobCatalog, getUiConfig } from '../api/jobs'
 import {
   getRun,
+  type Run,
   getTrace,
   type LinkedRow,
   type RefType,
+  type RunDetail,
   type RunSummary,
   type TraceRoot,
   type TraceStage,
@@ -14,15 +17,22 @@ import { ErrorAlert } from './ui/ErrorAlert'
 import { EmptyState } from './ui/EmptyState'
 import { TextSkeleton, SkeletonRegion } from './skeletons'
 import { PageHeader } from './ui/PageHeader'
-import { StatusBadge, TriggerBadge } from './RunsPanel'
+import { ChildRunList } from './jobs/ChildRunList'
+import { GrafanaLogs } from './jobs/GrafanaLogs'
+import './jobs/jobs.css'
+import { RunTimeline } from './jobs/RunTimeline'
+import { JOB_CATALOG_KEY } from '../hooks/useStartJobRun'
+import { StatusBadge, TriggerBadge, triggerLabel } from './RunsPanel'
 import {
   duration,
+  isActiveRun,
   logIssues,
   plural,
   RESERVED_SUMMARY_KEYS,
   runLabel,
   runOutcome,
   runStamp,
+  statusLabel,
 } from './runFormat'
 
 const RUNNING_POLL_MS = 5000
@@ -142,6 +152,51 @@ function RunLinks({ runs }: { runs: RunSummary[] }) {
   )
 }
 
+/** A run's chain: its own name for a chain root, else its parent's. */
+function chainName(run: RunDetail) {
+  if (!run.chain_root_id) return null
+  return run.chain_root_id === run.id ? run.job_name : (run.parent?.job_name ?? null)
+}
+
+function attemptText(run: Run, maxAttempts?: number) {
+  if (!run.attempt) return ''
+  return maxAttempts ? `Attempt ${run.attempt} of ${maxAttempts}` : `Attempt ${run.attempt}`
+}
+
+function paramsText(run: Run) {
+  const params = run.trigger.params
+  const entries = params && typeof params === 'object' ? Object.entries(params) : []
+  return entries.map(([key, value]) => `${runLabel(key)}: ${text(value)}`).join(', ') || 'None'
+}
+
+/** Launcher rows nest params in `trigger`, which get their own fact, and carry a
+ * `downstream` flag that the run's chain link already says more clearly. */
+function triggerDetails(run: Run) {
+  return Object.entries(run.trigger)
+    .filter(([key, value]) => key !== 'downstream' && (typeof value !== 'object' || value === null))
+    .map(([key, value]) => `${runLabel(key)}: ${text(value)}`)
+    .join(' · ')
+}
+
+function RunFacts({ run }: { run: Run }) {
+  const facts = [
+    ['Trigger', triggerLabel(run.trigger_type)],
+    ['Requested by', run.requested_by || '—'],
+    ['Parameters', paramsText(run)],
+    ['Runs in', run.executor ? statusLabel(run.executor) : '—'],
+  ]
+  return (
+    <div className="run-facts">
+      {facts.map(([label, value]) => (
+        <div key={label}>
+          <span>{label}</span>
+          <strong>{value}</strong>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function DetailSkeleton({ label }: { label: string }) {
   return (
     <SkeletonRegion label={label}>
@@ -152,12 +207,18 @@ function DetailSkeleton({ label }: { label: string }) {
 
 export function RunDetailPage() {
   const { id = '' } = useParams()
+  const { state } = useLocation()
+  const fromJobs = state?.from === 'jobs'
   const query = useQuery({
     queryKey: ['run', id],
     queryFn: () => getRun(id),
-    refetchInterval: (q) => (q.state.data?.status === 'running' ? RUNNING_POLL_MS : false),
+    refetchInterval: (q) => (isActiveRun(q.state.data?.status) ? RUNNING_POLL_MS : false),
   })
+  const catalog = useQuery({ queryKey: JOB_CATALOG_KEY, queryFn: getJobCatalog })
+  const uiConfig = useQuery({ queryKey: ['ui-config'], queryFn: getUiConfig, staleTime: Infinity })
   const run = query.data
+  const job = catalog.data?.jobs.find((candidate) => candidate.name === run?.job_name)
+  const chain = run ? chainName(run) : null
   const counters = run
     ? Object.entries(run.summary).filter(([key]) => !RESERVED_SUMMARY_KEYS.has(key))
     : []
@@ -167,10 +228,10 @@ export function RunDetailPage() {
   const hasLinks = Boolean(run?.links.input || run?.links.output)
   return (
     <div className="dashboard">
-      <PageHeader title="Submissions & sessions" level={1} />
+      <PageHeader title={fromJobs ? 'Jobs' : 'Submissions & sessions'} level={1} />
       <Stack>
-        <Button component={Link} to="/activity?tab=runs" variant="subtle">
-          ← All runs
+        <Button component={Link} to={fromJobs ? '/jobs' : '/activity?tab=runs'} variant="subtle">
+          {fromJobs ? '← Jobs' : '← All runs'}
         </Button>
         {query.error && <ErrorAlert>{query.error.message}</ErrorAlert>}
         {!run && !query.error && <DetailSkeleton label="Loading run" />}
@@ -183,12 +244,16 @@ export function RunDetailPage() {
               <Text size="sm">
                 Started {runStamp(run.started_at)} · {duration(run)}
               </Text>
+              {attemptText(run, job?.max_attempts) && <Text size="sm">{attemptText(run, job?.max_attempts)}</Text>}
+              {chain && (
+                <Text size="sm">
+                  Part of <Anchor component={Link} to={`/jobs#chain-${chain}`}>{chain}</Anchor>
+                </Text>
+              )}
             </Group>
-            <Text size="sm" c="dimmed">
-              {Object.entries(run.trigger)
-                .map(([key, value]) => `${runLabel(key)}: ${text(value)}`)
-                .join(' · ')}
-            </Text>
+            <RunTimeline run={run} />
+            <RunFacts run={run} />
+            {triggerDetails(run) && <Text size="sm" c="dimmed">{triggerDetails(run)}</Text>}
             {run.error && <ErrorAlert title="Run failed">{run.error}</ErrorAlert>}
             {run.parent && (
               <Text size="sm">
@@ -200,9 +265,8 @@ export function RunDetailPage() {
             )}
             <section>
               <h3>Outcome</h3>
-              {outcome ? (
-                <Text>{outcome}</Text>
-              ) : (
+              {outcome && <Text>{outcome}</Text>}
+              {!outcome && !counters.length && run.summary.result == null && (
                 <EmptyState>This run recorded no outcome.</EmptyState>
               )}
               {issues.any && (
@@ -238,6 +302,7 @@ export function RunDetailPage() {
                 <pre className="payload">{JSON.stringify(run.summary.result, null, 2)}</pre>
               </details>
             )}
+            {logTail.length === 0 && <GrafanaLogs baseUrl={uiConfig.data?.grafana_url ?? ''} run={run} />}
             {logTail.length > 0 && (
               <details open={!hasLinks || issues.any}>
                 <summary>Log · last {logTail.length} lines</summary>
@@ -254,6 +319,7 @@ export function RunDetailPage() {
                     </span>
                   ))}
                 </pre>
+                <GrafanaLogs baseUrl={uiConfig.data?.grafana_url ?? ''} run={run} />
               </details>
             )}
             {(['input', 'output'] as const).map((role) => {
@@ -280,8 +346,8 @@ export function RunDetailPage() {
             )}
             {run.children.length > 0 && (
               <section>
-                <h3>Runs it led to</h3>
-                <RunLinks runs={run.children} />
+                <h3>Child runs</h3>
+                <ChildRunList runs={run.children} />
               </section>
             )}
           </>

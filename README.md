@@ -21,6 +21,9 @@ An offer that answers one of your counters, or that you countered, shows its
 negotiation history. That is every offer and counter in the thread in order,
 whose move it is, and how many of the thread's counters you have used. Counter
 is disabled once the thread reaches its limit.
+The Jobs page starts any catalog job, with parameters and optional downstream steps, and
+shows each run and a live graph of each chain. Jobs that can affect your team ask for
+confirmation first.
 
 ## Documentation
 
@@ -49,6 +52,7 @@ The dev server proxies `/v1/*` to a locally-running `fantasy-core-pipeline` API
 Set `TRIGGER_API_KEY` in the dev server environment to use protected move and inbox
 controls. It is injected by the server proxy and must never be put in a `VITE_*`
 variable or browser storage. Production nginx reads the same server-side variable.
+Set `GRAFANA_URL` on the production container to show Grafana links on run pages.
 
 To prefill the league and team on every reload, put them in a gitignored `.env.local`:
 

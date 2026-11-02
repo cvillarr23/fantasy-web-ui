@@ -22,6 +22,7 @@ Set your league and team in [Settings](./settings.md) first. Every other page as
 | League | [Scoreboard](./scoreboard.md) | See every matchup's score for a week |
 | | [Standings & leaders](./league.md) | See standings and player leaders |
 | Activity | [Submissions & sessions](./activity.md) | Track queued actions and LLM sessions |
+| | [Jobs](./jobs.md) | Start a job, follow its runs and watch a chain |
 | | [Assistant](./chat.md) | Ask questions about your league |
 | Draft | [Draft Day](./draft-day.md) | Follow a live draft and intervene |
 | | [Practice Draft](./draft-day.md#practice-draft) | Rehearse against a mock draft room |

@@ -12,7 +12,7 @@ import {
   type TriggerType,
 } from '../api/runs'
 import { EmptyState } from './ui/EmptyState'
-import { duration, logIssues, plural, runLabel, runOutcome, runStamp } from './runFormat'
+import { duration, isActiveRun, logIssues, plural, runLabel, runOutcome, runStamp } from './runFormat'
 import { ErrorAlert } from './ui/ErrorAlert'
 import { Pager } from './ui/Pager'
 import { CardListSkeleton } from './skeletons'
@@ -25,17 +25,29 @@ const TRIGGER_LABELS: Record<TriggerType, string> = {
   queue: 'Queue message',
   http: 'API request',
   manual: 'Manual',
+  chain: 'Chain',
+  event: 'Event',
+  cli: 'CLI',
+  mcp: 'MCP',
 }
+// The runs API rejects other trigger values in its filter, though it returns them on rows.
+const FILTERABLE_TRIGGERS: TriggerType[] = ['schedule', 'queue', 'http', 'manual']
 const STATUS_COLORS: Record<RunStatus, string> = {
+  queued: 'yellow',
   running: 'blue',
   success: 'teal',
   failure: 'red',
+  timeout: 'red',
+  skipped: 'gray',
+  cancelled: 'gray',
 }
+
+export const triggerLabel = (type: TriggerType) => TRIGGER_LABELS[type] ?? type
 
 export function TriggerBadge({ type }: { type: TriggerType }) {
   return (
     <Badge variant="light" color="gray">
-      {TRIGGER_LABELS[type] ?? type}
+      {triggerLabel(type)}
     </Badge>
   )
 }
@@ -121,7 +133,7 @@ export function RunsPanel() {
     queryFn: () => getRuns(offset, filters),
     placeholderData: keepPreviousData,
     refetchInterval: (q) =>
-      q.state.data?.items.some((r) => r.status === 'running') ? ACTIVE_POLL_MS : IDLE_POLL_MS,
+      q.state.data?.items.some((r) => isActiveRun(r.status)) ? ACTIVE_POLL_MS : IDLE_POLL_MS,
   })
   const jobs = useQuery({ queryKey: ['run-jobs'], queryFn: getJobs })
   const update = (next: RunFilters) => {
@@ -156,7 +168,7 @@ export function RunsPanel() {
           label="Trigger"
           placeholder="Any trigger"
           clearable
-          data={Object.entries(TRIGGER_LABELS).map(([value, label]) => ({ value, label }))}
+          data={FILTERABLE_TRIGGERS.map((value) => ({ value, label: TRIGGER_LABELS[value] }))}
           value={filters.trigger || null}
           onChange={(trigger) => update({ trigger: (trigger as TriggerType) ?? '' })}
         />
