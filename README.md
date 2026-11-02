@@ -52,7 +52,8 @@ The dev server proxies `/v1/*` to a locally-running `fantasy-core-pipeline` API
 Set `TRIGGER_API_KEY` in the dev server environment to use protected move and inbox
 controls. It is injected by the server proxy and must never be put in a `VITE_*`
 variable or browser storage. Production nginx reads the same server-side variable.
-Set `GRAFANA_URL` on the production container to show Grafana links on run pages.
+Set `GRAFANA_URL` on the production container to show Grafana links on run pages. Use a
+plain URL with no quotes or backslashes, because nginx writes it into a quoted JSON string.
 
 To prefill the league and team on every reload, put them in a gitignored `.env.local`:
 
