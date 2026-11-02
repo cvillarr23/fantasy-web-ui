@@ -21,7 +21,7 @@ import { ChildRunList } from './jobs/ChildRunList'
 import { GrafanaLogs } from './jobs/GrafanaLogs'
 import './jobs/jobs.css'
 import { RunTimeline } from './jobs/RunTimeline'
-import { JOB_CATALOG_KEY } from '../hooks/useStartJobRun'
+import { JOB_CATALOG_KEY } from '../hooks/jobQueries'
 import { StatusBadge, TriggerBadge, triggerLabel } from './RunsPanel'
 import {
   duration,

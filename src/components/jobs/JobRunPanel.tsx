@@ -3,9 +3,11 @@ import { Anchor, Button, Checkbox, NumberInput, Stack, Text, TextInput } from '@
 import { Link } from 'react-router-dom'
 import type { JobCatalog, JobInfo, StartRunRequest } from '../../api/jobs'
 import type { Run } from '../../api/runs'
+import { skipReason } from '../runFormat'
 import { InfoTip } from '../ui/InfoTip'
 import { EmptyState } from '../ui/EmptyState'
 import { AffectsTeamBadge } from './AffectsTeamBadge'
+import { CancelButton, CancelRunConfirm } from './CancelRunButton'
 import { AFFECTS_TEAM_HELP } from './jobGlossary'
 import {
   actingSteps,
@@ -21,6 +23,7 @@ import {
   type ParamField,
   type ParamValues,
 } from './jobsFormat'
+import { PauseControl } from './PauseControl'
 import { RunConfirmDialog } from './RunConfirmDialog'
 import { RunRefusal } from './RunRefusal'
 import { RunStatusText } from './RunStatusText'
@@ -90,6 +93,12 @@ function DownstreamOption({ job, catalog, checked, onChange }: { job: JobInfo; c
   )
 }
 
+/** When a run happened, and why it was skipped if it was. */
+function recentRunNote(run: Run) {
+  const reason = skipReason(run)
+  return `${runWhen(run.started_at)}${reason && ` · ${reason}`}`
+}
+
 function RecentRuns({ runs }: { runs: Run[] }) {
   return (
     <Stack gap={6}>
@@ -98,10 +107,27 @@ function RecentRuns({ runs }: { runs: Run[] }) {
       {runs.map((run) => (
         <Link key={run.id} className="job-recent-run" to={`/activity/runs/${run.id}`} state={JOBS_LINK_STATE}>
           <RunStatusText status={run.status} />
-          <span>{runWhen(run.started_at)}</span>
+          <span>{recentRunNote(run)}</span>
         </Link>
       ))}
     </Stack>
+  )
+}
+
+/** Why Run is disabled, with a link to the run in the way and a Cancel for it. The cancel's
+ * dialog lives on the panel, because this note goes as soon as the run ends. */
+function RunningNote({ job, onCancel }: { job: JobInfo; onCancel: (runId: string) => void }) {
+  const run = job.last_run
+  return (
+    <p className="job-note job-note-running">
+      Already running. This job allows one run at a time.{' '}
+      {run && (
+        <>
+          <Anchor component={Link} to={`/activity/runs/${run.id}`} state={JOBS_LINK_STATE}>Open the run</Anchor>
+          <CancelButton job={job.name} label="Cancel run" className="job-note-action" onClick={() => onCancel(run.id)} />
+        </>
+      )}
+    </p>
   )
 }
 
@@ -117,6 +143,7 @@ export function JobRunPanel({ job, catalog, recentRuns, starting, error, started
   const [values, setValues] = useState<ParamValues>({})
   const [downstream, setDownstream] = useState(false)
   const [confirming, setConfirming] = useState(false)
+  const [cancelling, setCancelling] = useState<string | null>(null)
   const fields = paramFields(job.params)
   const params = buildRunParams(fields, values)
   const blocked = blockedByActiveRun(job)
@@ -140,16 +167,10 @@ export function JobRunPanel({ job, catalog, recentRuns, starting, error, started
         </div>
         <Text size="xs">{jobFacts(job)}</Text>
       </Stack>
+      <PauseControl name={job.name} pause={job.pause} target="job" />
       <ParamsForm fields={fields} values={values} onChange={(name, value) => setValues({ ...values, [name]: value })} />
       <DownstreamOption job={job} catalog={catalog} checked={downstream} onChange={setDownstream} />
-      {blocked && (
-        <p className="job-note job-note-running">
-          Already running. This job allows one run at a time.{' '}
-          {job.last_run && (
-            <Anchor component={Link} to={`/activity/runs/${job.last_run.id}`} state={JOBS_LINK_STATE}>Open the run</Anchor>
-          )}
-        </p>
-      )}
+      {blocked && <RunningNote job={job} onCancel={setCancelling} />}
       {error && <RunRefusal job={job} error={error} />}
       {started && (
         <p role="status" className="job-note job-note-queued">
@@ -174,6 +195,7 @@ export function JobRunPanel({ job, catalog, recentRuns, starting, error, started
         onConfirm={start}
         onCancel={() => setConfirming(false)}
       />
+      <CancelRunConfirm runId={cancelling} job={job.name} onClose={() => setCancelling(null)} />
     </>
   )
 }

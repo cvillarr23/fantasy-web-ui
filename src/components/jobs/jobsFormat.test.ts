@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { catalogFixture, chainFixture, jobFixture } from './fixtures'
+import { catalogFixture, chainFixture, jobFixture, pauseFixture } from './fixtures'
+import { skipReason } from '../runFormat'
 import {
   actingSteps,
   buildRunParams,
@@ -14,6 +15,8 @@ import {
   opensRunForm,
   paramFields,
   pauseIsActive,
+  pauseText,
+  pauseUntil,
   runButtonState,
   runWhen,
   slotStamp,
@@ -290,5 +293,47 @@ describe('run button', () => {
   it('stays on when the job queues overlapping runs', () => {
     const queues = { ...job('score-sample'), overlap: 'queue' }
     expect(runButtonState(queues, chains, false).disabled).toBe(false)
+  })
+})
+
+describe('pauseText', () => {
+  const now = new Date('2026-11-03T22:22:00Z')
+
+  it('names the end, the reason and who set it', () => {
+    expect(pauseText(pauseFixture('x'), now)).toBe(`Paused until ${slotStamp('2026-11-03T23:22:00Z', now)} · Bye week · by sample-operator`)
+  })
+
+  it('says a pause with no end lasts until resumed, and leaves out what is missing', () => {
+    expect(pauseText({ name: 'x', paused_until: null, set_at: '' }, now)).toBe('Paused until resumed')
+  })
+})
+
+describe('pauseUntil', () => {
+  const now = new Date('2026-11-03T22:22:00Z')
+
+  it.each([
+    ['hour', '2026-11-03T23:22:00.000Z'],
+    ['day', '2026-11-04T22:22:00.000Z'],
+    ['week', '2026-11-10T22:22:00.000Z'],
+  ] as const)('ends a %s preset that long from now', (preset, until) => {
+    expect(pauseUntil(preset, '', now)).toBe(until)
+  })
+
+  it('has no end until resumed', () => {
+    expect(pauseUntil('indefinite', '', now)).toBeNull()
+  })
+
+  it('reads a custom time as local, and refuses a blank or past one', () => {
+    expect(pauseUntil('custom', '2026-11-20T09:00', now)).toBe(new Date('2026-11-20T09:00').toISOString())
+    expect(pauseUntil('custom', '', now)).toBeUndefined()
+    expect(pauseUntil('custom', '2026-11-01T09:00', now)).toBeUndefined()
+  })
+})
+
+describe('skipReason', () => {
+  it('gives the reason for a skipped run only', () => {
+    expect(skipReason({ status: 'skipped', end_reason: 'dependency_failed' })).toBe('dependency failed')
+    expect(skipReason({ status: 'skipped', end_reason: null })).toBe('')
+    expect(skipReason({ status: 'cancelled', end_reason: 'cancelled' })).toBe('')
   })
 })

@@ -173,6 +173,37 @@ function pausedSlot(pause: PauseInfo, now: Date) {
   return { label: until, note: pause.reason ?? '' }
 }
 
+/** A pause in one line: until when, why, and who set it. */
+export function pauseText(pause: PauseInfo, now = new Date()) {
+  const until = pause.paused_until ? `Paused until ${slotStamp(pause.paused_until, now)}` : 'Paused until resumed'
+  return [until, pause.reason, pause.set_by && `by ${pause.set_by}`].filter(Boolean).join(' · ')
+}
+
+export type PausePreset = 'hour' | 'day' | 'week' | 'custom' | 'indefinite'
+export const PAUSE_PRESETS: { value: PausePreset; label: string }[] = [
+  { value: 'hour', label: '1 hour' },
+  { value: 'day', label: '1 day' },
+  { value: 'week', label: '1 week' },
+  { value: 'custom', label: 'Until…' },
+  { value: 'indefinite', label: 'Until resumed' },
+]
+const MS_PER_HOUR = 3_600_000
+const PRESET_MS: Record<'hour' | 'day' | 'week', number> = {
+  hour: MS_PER_HOUR,
+  day: MS_PER_DAY,
+  week: WEEKDAY_WINDOW_DAYS * MS_PER_DAY,
+}
+
+/** When a pause ends, as an ISO time to send. Null pauses until resumed. Undefined means the
+ * custom time is blank or not in the future, which core would refuse.
+ * ``custom`` is a datetime-local value, which has no offset and so reads as the viewer's time. */
+export function pauseUntil(preset: PausePreset, custom: string, now = new Date()): string | null | undefined {
+  if (preset === 'indefinite') return null
+  if (preset !== 'custom') return new Date(now.getTime() + PRESET_MS[preset]).toISOString()
+  const at = new Date(custom)
+  return Number.isNaN(at.getTime()) || at <= now ? undefined : at.toISOString()
+}
+
 /** When a job next runs. An active pause replaces a slot that wouldn't fire. */
 export function jobNextSlot(job: JobInfo, chains: ChainInfo[], now = new Date()) {
   if (job.pause && pauseIsActive(job.pause, now)) return pausedSlot(job.pause, now)

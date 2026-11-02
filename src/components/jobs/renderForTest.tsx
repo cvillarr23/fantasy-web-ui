@@ -1,17 +1,18 @@
-import type { ReactElement } from 'react'
+import type { ReactElement, ReactNode } from 'react'
 import { render } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
 import { MemoryRouter } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '../../api/queryClient'
 
-/** Renders inside the providers every Jobs component expects. */
+/** Renders inside the providers every Jobs component expects. They wrap a rerender too. */
 export function renderForTest(ui: ReactElement, route = '/jobs') {
-  return render(
+  const wrapper = ({ children }: { children: ReactNode }) => (
     <MantineProvider>
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={[route]}>{ui}</MemoryRouter>
+        <MemoryRouter initialEntries={[route]}>{children}</MemoryRouter>
       </QueryClientProvider>
-    </MantineProvider>,
+    </MantineProvider>
   )
+  return render(ui, { wrapper })
 }

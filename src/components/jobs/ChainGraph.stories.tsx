@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn } from 'storybook/test'
 import type { RunDetail } from '../../api/runs'
 import { ChainPanel } from './ChainPanel'
-import { catalogFixture, chainFixture, chainRootFixture } from './fixtures'
+import { catalogFixture, chainFixture, chainRootFixture, pauseFixture } from './fixtures'
 
 const meta = {
   title: 'Jobs/Chain panel',
@@ -47,9 +47,34 @@ export const StartedPartWay: Story = {
   },
 }
 export const Selected: Story = { args: { selected: 'set-lineup' } }
+/** A paused chain shows its pause in place of Pause chain…, and a paused step says so. */
+export const Paused: Story = {
+  args: {
+    chain: { ...chainFixture, pause: pauseFixture('sample-weekly', null) },
+    jobs: catalogFixture.jobs.map((job) => (job.name === 'set-lineup' ? { ...job, pause: pauseFixture('set-lineup', null) } : job)),
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('button', { name: 'Resume chain' })).toBeVisible()
+    await expect(canvas.getByRole('button', { name: /^set-lineup, .*paused/ })).toBeVisible()
+  },
+}
 export const Phone: Story = {
   globals: { viewport: { value: 'mobile1' } },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('list')).toBeVisible()
+  },
+}
+const LONG_STEP = 'score-sample-projections-weekly'
+/** The fixtures with the running step renamed, through the chain, catalog and run alike. */
+const renamed = <T,>(value: T): T => JSON.parse(JSON.stringify(value).replaceAll('"score-sample"', `"${LONG_STEP}"`))
+/** A running step with a long name and both badges keeps its note clear of Cancel. */
+export const LongRunningStep: Story = {
+  args: {
+    chain: renamed(chainFixture),
+    root: renamed(chainRootFixture),
+    jobs: renamed(catalogFixture.jobs).map((job) => (job.name === LONG_STEP ? { ...job, acts: true, pause: pauseFixture(LONG_STEP, null) } : job)),
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('button', { name: `Cancel, ${LONG_STEP}` })).toBeVisible()
   },
 }

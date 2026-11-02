@@ -1,9 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { startJobRun, type StartRunRequest } from '../api/jobs'
-
-export const JOB_CATALOG_KEY = ['jobs-catalog']
-export const CHAIN_RUN_KEY = 'chain-run'
-export const JOB_RUNS_KEY = 'job-runs'
+import { refreshJobViews } from './jobQueries'
 
 interface Start {
   job: string
@@ -16,12 +13,7 @@ export function useStartJobRun() {
   const client = useQueryClient()
   const mutation = useMutation({
     mutationFn: ({ job, request }: Start) => startJobRun(job, request),
-    onSettled: () =>
-      Promise.all([
-        client.invalidateQueries({ queryKey: JOB_CATALOG_KEY }),
-        client.invalidateQueries({ queryKey: [JOB_RUNS_KEY] }),
-        client.invalidateQueries({ queryKey: [CHAIN_RUN_KEY] }),
-      ]),
+    onSettled: () => refreshJobViews(client),
   })
   const job = mutation.variables?.job ?? null
   return {

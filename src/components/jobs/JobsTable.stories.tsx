@@ -14,6 +14,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('button', { name: 'Already running' })).toBeDisabled()
+    await expect(canvas.getByRole('button', { name: 'Cancel, score-sample' })).toBeVisible()
   },
 }
 export const Selected: Story = { args: { selected: 'set-lineup' } }
@@ -40,7 +41,8 @@ export const UnknownAndPaused: Story = {
   },
   play: async ({ canvas }) => {
     await expect(canvas.getAllByText('Manual only')).toHaveLength(2)
-    await expect(canvas.getByText('Paused')).toBeVisible()
+    // The badge by the name, and the next slot it replaces.
+    await expect(canvas.getAllByText('Paused')).toHaveLength(2)
   },
 }
 export const Phone: Story = { globals: { viewport: { value: 'mobile1' } } }

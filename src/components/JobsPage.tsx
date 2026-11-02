@@ -11,7 +11,8 @@ import {
   type JobInfo,
 } from '../api/jobs'
 import { getRun } from '../api/runs'
-import { CHAIN_RUN_KEY, JOB_CATALOG_KEY, JOB_RUNS_KEY, useStartJobRun } from '../hooks/useStartJobRun'
+import { CHAIN_RUN_KEY, JOB_CATALOG_KEY, JOB_RUNS_KEY } from '../hooks/jobQueries'
+import { useStartJobRun } from '../hooks/useStartJobRun'
 import { ChainPanel } from './jobs/ChainPanel'
 import { JobRunPanel } from './jobs/JobRunPanel'
 import { JobsTable } from './jobs/JobsTable'

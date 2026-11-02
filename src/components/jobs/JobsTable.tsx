@@ -3,7 +3,9 @@ import type { JobCatalog, JobInfo } from '../../api/jobs'
 import { InfoTip } from '../ui/InfoTip'
 import { AffectsTeamBadge } from './AffectsTeamBadge'
 import { AFFECTS_TEAM_HELP } from './jobGlossary'
-import { jobNextSlot, jobTrigger, runButtonState, runWhen } from './jobsFormat'
+import { CancelRunButton } from './CancelRunButton'
+import { jobNextSlot, jobTrigger, pauseIsActive, runButtonState, runWhen } from './jobsFormat'
+import { PausedBadge } from './PausedBadge'
 import { RunStatusText } from './RunStatusText'
 
 interface Props {
@@ -52,15 +54,19 @@ function JobRow({ job, catalog, selected, starting, now, onSelect, onRun }: RowP
             {job.name}
           </button>
           {job.acts && <AffectsTeamBadge />}
+          {pauseIsActive(job.pause, now) && <PausedBadge />}
         </div>
       </Table.Td>
       <Table.Td data-label="Schedule / trigger"><TwoLines {...trigger} /></Table.Td>
       <Table.Td data-label="Last run"><LastRunCell job={job} now={now} /></Table.Td>
       <Table.Td data-label="Next slot"><TwoLines primary={slot.label} secondary={slot.note} nowrap /></Table.Td>
       <Table.Td data-label="Run" className="job-run-cell">
-        <Button variant="default" size="xs" disabled={run.disabled} onClick={() => onRun(job)}>
-          {run.label}
-        </Button>
+        <div className="job-run-actions">
+          <Button variant="default" size="xs" disabled={run.disabled} onClick={() => onRun(job)}>
+            {run.label}
+          </Button>
+          <CancelRunButton run={job.last_run} job={job.name} />
+        </div>
       </Table.Td>
     </Table.Tr>
   )

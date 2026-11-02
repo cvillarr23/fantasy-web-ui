@@ -48,5 +48,5 @@ Writes return `202` when the queue accepts a message. Types model that as an acc
 
 1. Add the response type to the matching `types` file.
 2. Add a function that calls `request<T>()`.
-3. If the browser sends a write to `/v1/trigger/*`, `/v1/trade/incoming/*` or `/v1/jobs/*/runs`, check the nginx and Vite proxy rules attach the API key. See [Authentication](../auth.md).
+3. If the browser sends a write to `/v1/trigger/*`, `/v1/trade/incoming/*`, `/v1/jobs/*/runs`, `/v1/jobs/*/pause` or `/v1/runs/*/cancel`, check the nginx and Vite proxy rules attach the API key. See [Authentication](../auth.md).
 4. Add a query definition or mutation in the page that uses it.

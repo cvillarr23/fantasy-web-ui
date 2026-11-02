@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
-import { catalogFixture, jobFixture } from './fixtures'
+import { catalogFixture, jobFixture, pauseFixture } from './fixtures'
 import { JobsTable } from './JobsTable'
 import { renderForTest } from './renderForTest'
 
@@ -105,5 +105,19 @@ describe('run button states', () => {
     })
     renderTable({ catalog: { jobs: [queueing], chains: [] } })
     expect(runButton('queues', 'Run').hasAttribute('disabled')).toBe(false)
+  })
+
+  it('offers Cancel only on a row whose last run is active', () => {
+    renderTable()
+    expect(within(row('score-sample')).getByRole('button', { name: 'Cancel, score-sample' })).toBeTruthy()
+    expect(within(row('sync-rumors')).queryByRole('button', { name: /^Cancel/ })).toBeNull()
+  })
+
+  it('marks a paused job by its name', () => {
+    const paused = { ...catalogFixture.jobs[0], pause: pauseFixture('sync-rumors') }
+    renderTable({ catalog: { ...catalogFixture, jobs: [paused, ...catalogFixture.jobs.slice(1)] } })
+    expect(within(row('sync-rumors')).getByText('Paused')).toBeTruthy()
+    expect(within(row('sync-rumors')).getByText(/^Paused until /)).toBeTruthy()
+    expect(within(row('check-session')).queryByText('Paused')).toBeNull()
   })
 })

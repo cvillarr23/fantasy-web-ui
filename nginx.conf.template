@@ -59,6 +59,22 @@ server {
         error_page 401 = @jobs_auth_error;
     }
 
+    location ~ ^/v1/runs/[^/]+/cancel$ {
+        limit_except POST { deny all; }
+        proxy_set_header X-API-Key "${TRIGGER_API_KEY}";
+        proxy_pass http://$backend$request_uri;
+        proxy_intercept_errors on;
+        error_page 401 = @jobs_auth_error;
+    }
+
+    location ~ ^/v1/jobs/[^/]+/pause$ {
+        limit_except PUT DELETE { deny all; }
+        proxy_set_header X-API-Key "${TRIGGER_API_KEY}";
+        proxy_pass http://$backend$request_uri;
+        proxy_intercept_errors on;
+        error_page 401 = @jobs_auth_error;
+    }
+
     # Deployment settings the SPA reads at runtime, so one image fits any deployment. The
     # Dockerfile defaults GRAFANA_URL, because envsubst leaves an unset variable in place
     # and nginx then refuses to start on the unknown ${GRAFANA_URL}.

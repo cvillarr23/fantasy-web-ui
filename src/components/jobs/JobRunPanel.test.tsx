@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { ApiError } from '../../api/client'
-import { catalogFixture } from './fixtures'
+import { catalogFixture, pausedSkipFixture, pauseFixture } from './fixtures'
 import { JobRunPanel } from './JobRunPanel'
 import { renderForTest } from './renderForTest'
 
@@ -113,5 +113,26 @@ describe('JobRunPanel', () => {
   it('says when a job has no runs', () => {
     renderPanel()
     expect(screen.getByText('No runs recorded yet.')).toBeTruthy()
+  })
+
+  it('says why a recent run was skipped', () => {
+    renderPanel({ job: job('sync-rumors'), recentRuns: [pausedSkipFixture] })
+    expect(screen.getByRole('link', { name: /Skipped/ }).textContent).toMatch(/ · paused$/)
+  })
+
+  it('offers Pause on a job that is not paused', () => {
+    renderPanel()
+    expect(screen.getByRole('button', { name: 'Pause…' })).toBeTruthy()
+  })
+
+  it('shows an active pause with Resume', () => {
+    renderPanel({ job: { ...job('sync-rumors'), pause: pauseFixture('sync-rumors', null) } })
+    expect(screen.getByText('Paused until resumed · Bye week · by sample-operator')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Resume' })).toBeTruthy()
+  })
+
+  it('lets a blocked job cancel the run holding it', () => {
+    renderPanel({ job: job('score-sample') })
+    expect(screen.getByRole('button', { name: 'Cancel run, score-sample' })).toBeTruthy()
   })
 })

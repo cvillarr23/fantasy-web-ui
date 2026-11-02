@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, within } from '@testing-library/react'
-import { catalogFixture, chainFixture, chainRootFixture } from './fixtures'
+import { catalogFixture, chainFixture, chainRootFixture, pauseFixture } from './fixtures'
 import { chainStepStates } from './chainStatus'
 import { ChainGraph } from './ChainGraph'
 import { ChainStepList } from './ChainStepList'
@@ -58,6 +58,22 @@ describe('ChainGraph', () => {
     renderForTest(<ChainGraph chain={chainFixture} jobs={catalogFixture.jobs} states={chainStepStates(chainFixture, null)} selected={null} onSelect={vi.fn()} />)
     expect(screen.getAllByText('No run yet')).toHaveLength(Object.keys(chainFixture.steps).length)
   })
+
+  it('offers Cancel on the running step only, and keeps the step selectable', () => {
+    const { onSelect } = renderGraph()
+    expect(screen.getByRole('button', { name: 'Cancel, score-sample' })).toBeTruthy()
+    expect(screen.getAllByRole('button', { name: /^Cancel,/ })).toHaveLength(1)
+    fireEvent.click(node('score-sample'))
+    expect(onSelect).toHaveBeenCalledWith('score-sample')
+  })
+
+  it('marks a paused step', () => {
+    const jobs = catalogFixture.jobs.map((job) => (job.name === 'set-lineup' ? { ...job, pause: pauseFixture('set-lineup', null) } : job))
+    renderForTest(<ChainGraph chain={chainFixture} jobs={jobs} states={chainStepStates(chainFixture, chainRootFixture)} selected={null} onSelect={vi.fn()} />)
+    expect(within(node('set-lineup')).getByText('Paused')).toBeTruthy()
+    expect(node('set-lineup').getAttribute('aria-label')).toContain('paused')
+    expect(within(node('sync-sample')).queryByText('Paused')).toBeNull()
+  })
 })
 
 describe('ChainStepList', () => {
@@ -68,5 +84,14 @@ describe('ChainStepList', () => {
     expect(within(items[1]).getByText('Running')).toBeTruthy()
     expect(within(items[1]).getByText(/^After sync-sample succeeds/)).toBeTruthy()
     expect(within(items[3]).getByText(/Starts by 7:15 PM/)).toBeTruthy()
+  })
+
+  it('offers Cancel on the running step and marks a paused one', () => {
+    const jobs = catalogFixture.jobs.map((job) => (job.name === 'set-lineup' ? { ...job, pause: pauseFixture('set-lineup', null) } : job))
+    renderForTest(<ChainStepList chain={chainFixture} jobs={jobs} states={chainStepStates(chainFixture, chainRootFixture)} onSelect={vi.fn()} />)
+    const items = screen.getAllByRole('listitem')
+    expect(within(items[1]).getByRole('button', { name: 'Cancel, score-sample' })).toBeTruthy()
+    expect(within(items[3]).getByText('Paused')).toBeTruthy()
+    expect(screen.getAllByRole('button', { name: /^Cancel,/ })).toHaveLength(1)
   })
 })

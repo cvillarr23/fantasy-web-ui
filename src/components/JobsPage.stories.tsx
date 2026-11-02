@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, within } from 'storybook/test'
 import { mockFetch, type MockRoute } from '../../.storybook/mockFetch'
 import { queryClient } from '../api/queryClient'
-import { JOB_CATALOG_KEY } from '../hooks/useStartJobRun'
+import { JOB_CATALOG_KEY } from '../hooks/jobQueries'
 import { JobsPage } from './JobsPage'
 import { catalogFixture, chainRootFixture, healthFixture } from './jobs/fixtures'
 

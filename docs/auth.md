@@ -43,6 +43,9 @@ nginx adds the `X-API-Key` header to the write endpoints below, using the server
 | `POST /v1/trade/incoming/<id>/decision/retry` | Inbox |
 | `POST /v1/trade/incoming/<id>/counter` | Inbox |
 | `POST /v1/jobs/<name>/runs` | Jobs |
+| `POST /v1/runs/<id>/cancel` | Jobs |
+| `PUT /v1/jobs/<name>/pause` | Jobs |
+| `DELETE /v1/jobs/<name>/pause` | Jobs |
 
 If the API rejects the key with `401`, nginx returns `502` with a message telling you to contact an administrator, instead of a `401` that would trigger a sign-in redirect.
 
