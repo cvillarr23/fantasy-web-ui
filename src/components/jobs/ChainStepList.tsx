@@ -1,7 +1,10 @@
 import type { ChainInfo, JobInfo } from '../../api/jobs'
+import { isActiveRun } from '../runFormat'
 import { AffectsTeamBadge } from './AffectsTeamBadge'
+import { CancelRunButton } from './CancelRunButton'
 import { stepStatusLabel, type ChainStepState } from './chainStatus'
-import { afterText } from './jobsFormat'
+import { afterText, pauseIsActive } from './jobsFormat'
+import { PausedBadge } from './PausedBadge'
 import { RunStatusText } from './RunStatusText'
 import { stepNote } from './stepNote'
 
@@ -18,6 +21,16 @@ function stepLine(chain: ChainInfo, state: ChainStepState) {
   return [after, stepNote(state, step)].filter(Boolean).join(' · ')
 }
 
+function StepBadges({ job }: { job: JobInfo | undefined }) {
+  if (!job?.acts && !pauseIsActive(job?.pause)) return null
+  return (
+    <span className="job-name">
+      {job?.acts && <AffectsTeamBadge />}
+      {pauseIsActive(job?.pause) && <PausedBadge />}
+    </span>
+  )
+}
+
 /** The chain as a list, where a phone has no room for the graph. */
 export function ChainStepList({ chain, jobs, states, onSelect }: Props) {
   return (
@@ -28,8 +41,9 @@ export function ChainStepList({ chain, jobs, states, onSelect }: Props) {
             <button type="button" className="job-name-button" onClick={() => onSelect(state.step)}>{state.step}</button>
             <RunStatusText status={state.status} label={stepStatusLabel(state.status)} />
           </div>
-          {jobs.find((job) => job.name === state.step)?.acts && <AffectsTeamBadge />}
+          <StepBadges job={jobs.find((job) => job.name === state.step)} />
           <span className="chain-node-note">{stepLine(chain, state)}</span>
+          {state.run && isActiveRun(state.run.status) && <CancelRunButton runId={state.run.id} job={state.step} />}
         </li>
       ))}
     </ol>

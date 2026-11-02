@@ -1,13 +1,13 @@
 import { Link, useLocation } from 'react-router-dom'
 import type { ChildRun, LlmSessionRef } from '../../api/runs'
-import { duration, isActiveRun, runLabel, runStamp } from '../runFormat'
+import { duration, isActiveRun, runLabel, runStamp, skipReason } from '../runFormat'
 import { RunStatusText } from './RunStatusText'
 
 function childMeta(run: ChildRun) {
   const when = runStamp(run.started_at)
   const length = isActiveRun(run.status) ? '' : ` · ${duration(run)}`
-  const reason = run.status === 'skipped' && run.end_reason ? ` · ${runLabel(run.end_reason)}` : ''
-  return `${when}${length}${reason}`
+  const reason = skipReason(run)
+  return `${when}${length}${reason && ` · ${reason}`}`
 }
 
 function SessionChip({ session }: { session: LlmSessionRef }) {

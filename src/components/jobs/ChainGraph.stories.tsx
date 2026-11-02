@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn } from 'storybook/test'
 import type { RunDetail } from '../../api/runs'
 import { ChainPanel } from './ChainPanel'
-import { catalogFixture, chainFixture, chainRootFixture } from './fixtures'
+import { catalogFixture, chainFixture, chainRootFixture, pauseFixture } from './fixtures'
 
 const meta = {
   title: 'Jobs/Chain panel',
@@ -47,6 +47,17 @@ export const StartedPartWay: Story = {
   },
 }
 export const Selected: Story = { args: { selected: 'set-lineup' } }
+/** A paused chain shows its pause in place of Pause chain…, and a paused step says so. */
+export const Paused: Story = {
+  args: {
+    chain: { ...chainFixture, pause: pauseFixture('sample-weekly', null) },
+    jobs: catalogFixture.jobs.map((job) => (job.name === 'set-lineup' ? { ...job, pause: pauseFixture('set-lineup', null) } : job)),
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('button', { name: 'Resume chain' })).toBeVisible()
+    await expect(canvas.getByRole('button', { name: /^set-lineup, .*paused/ })).toBeVisible()
+  },
+}
 export const Phone: Story = {
   globals: { viewport: { value: 'mobile1' } },
   play: async ({ canvas }) => {

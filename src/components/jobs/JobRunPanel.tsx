@@ -3,9 +3,11 @@ import { Anchor, Button, Checkbox, NumberInput, Stack, Text, TextInput } from '@
 import { Link } from 'react-router-dom'
 import type { JobCatalog, JobInfo, StartRunRequest } from '../../api/jobs'
 import type { Run } from '../../api/runs'
+import { skipReason } from '../runFormat'
 import { InfoTip } from '../ui/InfoTip'
 import { EmptyState } from '../ui/EmptyState'
 import { AffectsTeamBadge } from './AffectsTeamBadge'
+import { CancelRunButton } from './CancelRunButton'
 import { AFFECTS_TEAM_HELP } from './jobGlossary'
 import {
   actingSteps,
@@ -21,6 +23,7 @@ import {
   type ParamField,
   type ParamValues,
 } from './jobsFormat'
+import { PauseControl } from './PauseControl'
 import { RunConfirmDialog } from './RunConfirmDialog'
 import { RunRefusal } from './RunRefusal'
 import { RunStatusText } from './RunStatusText'
@@ -90,6 +93,12 @@ function DownstreamOption({ job, catalog, checked, onChange }: { job: JobInfo; c
   )
 }
 
+/** When a run happened, and why it was skipped if it was. */
+function recentRunNote(run: Run) {
+  const reason = skipReason(run)
+  return `${runWhen(run.started_at)}${reason && ` · ${reason}`}`
+}
+
 function RecentRuns({ runs }: { runs: Run[] }) {
   return (
     <Stack gap={6}>
@@ -98,7 +107,7 @@ function RecentRuns({ runs }: { runs: Run[] }) {
       {runs.map((run) => (
         <Link key={run.id} className="job-recent-run" to={`/activity/runs/${run.id}`} state={JOBS_LINK_STATE}>
           <RunStatusText status={run.status} />
-          <span>{runWhen(run.started_at)}</span>
+          <span>{recentRunNote(run)}</span>
         </Link>
       ))}
     </Stack>
@@ -140,13 +149,17 @@ export function JobRunPanel({ job, catalog, recentRuns, starting, error, started
         </div>
         <Text size="xs">{jobFacts(job)}</Text>
       </Stack>
+      <PauseControl name={job.name} pause={job.pause} target="job" />
       <ParamsForm fields={fields} values={values} onChange={(name, value) => setValues({ ...values, [name]: value })} />
       <DownstreamOption job={job} catalog={catalog} checked={downstream} onChange={setDownstream} />
       {blocked && (
         <p className="job-note job-note-running">
           Already running. This job allows one run at a time.{' '}
           {job.last_run && (
-            <Anchor component={Link} to={`/activity/runs/${job.last_run.id}`} state={JOBS_LINK_STATE}>Open the run</Anchor>
+            <>
+              <Anchor component={Link} to={`/activity/runs/${job.last_run.id}`} state={JOBS_LINK_STATE}>Open the run</Anchor>
+              <CancelRunButton runId={job.last_run.id} job={job.name} label="Cancel run" className="job-note-action" />
+            </>
           )}
         </p>
       )}

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { ApiError } from '../api/client'
-import { getJobCatalog, getLatestChainRun, getLauncherHealth, getRecentJobRuns, startJobRun } from '../api/jobs'
+import { cancelRun, getJobCatalog, getLatestChainRun, getLauncherHealth, getRecentJobRuns, pauseJob, startJobRun } from '../api/jobs'
 import { getRun } from '../api/runs'
 import { catalogFixture, chainRootFixture, healthFixture } from './jobs/fixtures'
 import { renderForTest } from './jobs/renderForTest'
@@ -14,6 +14,8 @@ vi.mock('../api/jobs', async (importOriginal) => ({
   getLatestChainRun: vi.fn(),
   getRecentJobRuns: vi.fn(),
   startJobRun: vi.fn(),
+  cancelRun: vi.fn(),
+  pauseJob: vi.fn(),
 }))
 vi.mock('../api/runs', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../api/runs')>()),
@@ -28,6 +30,8 @@ beforeEach(() => {
   vi.mocked(getRun).mockResolvedValue(chainRootFixture)
   vi.mocked(getRecentJobRuns).mockResolvedValue([])
   vi.mocked(startJobRun).mockResolvedValue({ run_id: 'run-9', status: 'queued' })
+  vi.mocked(cancelRun).mockResolvedValue({ run_id: 'run-score-sample', status: 'cancelled' })
+  vi.mocked(pauseJob).mockResolvedValue({ name: 'sample-weekly', paused_until: null, reason: 'Off-season' })
 })
 afterEach(cleanup)
 
@@ -129,5 +133,31 @@ describe('JobsPage', () => {
     open()
     expect(await screen.findByText(/Could not load the latest sample-weekly run/)).toBeTruthy()
     expect(screen.getByRole('button', { name: 'sync-rumors' })).toBeTruthy()
+  })
+
+  it('cancels a running job from its row and refreshes the catalog', async () => {
+    open()
+    fireEvent.click(within(await row('score-sample')).getByRole('button', { name: 'Cancel, score-sample' }))
+    const loads = vi.mocked(getJobCatalog).mock.calls.length
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel run' }))
+    await waitFor(() => expect(cancelRun).toHaveBeenCalledWith('run-score-sample', expect.anything()))
+    await waitFor(() => expect(vi.mocked(getJobCatalog).mock.calls.length).toBeGreaterThan(loads))
+  })
+
+  it('cancels a whole chain run from its panel', async () => {
+    open()
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancel chain run, sample-weekly' }))
+    expect(screen.getByRole('dialog').textContent).toContain('Cancel the sample-weekly run?')
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Cancel run' }))
+    await waitFor(() => expect(cancelRun).toHaveBeenCalledWith('root-1', expect.anything()))
+  })
+
+  it('pauses a chain by its name', async () => {
+    open()
+    fireEvent.click(await screen.findByRole('button', { name: 'Pause chain…' }))
+    fireEvent.click(screen.getByRole('radio', { name: 'Until resumed' }))
+    fireEvent.change(screen.getByRole('textbox', { name: /Reason/ }), { target: { value: 'Off-season' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }))
+    await waitFor(() => expect(pauseJob).toHaveBeenCalledWith('sample-weekly', { until: null, reason: 'Off-season' }))
   })
 })

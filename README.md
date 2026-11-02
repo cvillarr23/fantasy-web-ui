@@ -23,7 +23,8 @@ whose move it is, and how many of the thread's counters you have used. Counter
 is disabled once the thread reaches its limit.
 The Jobs page starts any catalog job, with parameters and optional downstream steps, and
 shows each run and a live graph of each chain. Jobs that can affect your team ask for
-confirmation first.
+confirmation first. Runs can be cancelled, and jobs and chains paused for a bye week or
+the off-season.
 
 ## Documentation
 

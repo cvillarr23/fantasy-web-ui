@@ -86,6 +86,24 @@ export interface StartRunResponse {
   status: string
   chain_root_id?: string | null
 }
+export interface CancelRunResponse {
+  run_id: string
+  status: string
+}
+export interface PauseRequest {
+  /** When the pause ends, with a timezone. Null pauses until someone resumes it. */
+  until: string | null
+  reason: string
+}
+export interface PauseResponse {
+  name: string
+  paused_until: string | null
+  reason: string
+}
+export interface ResumeResponse {
+  name: string
+  status: string
+}
 export interface UiConfig {
   grafana_url: string
 }
@@ -100,6 +118,20 @@ export const startJobRun = (name: string, body: StartRunRequest) =>
     method: 'POST',
     body: JSON.stringify(body),
   })
+
+/** Cancels a queued or running run. Cancelling a chain root also cancels its active steps. */
+export const cancelRun = (runId: string) =>
+  request<CancelRunResponse>(`/v1/runs/${encodeURIComponent(runId)}/cancel`, { method: 'POST' })
+
+/** Pauses a job or a chain: its scheduled slots are skipped until ``until`` or a resume. */
+export const pauseJob = (name: string, body: PauseRequest) =>
+  request<PauseResponse>(`/v1/jobs/${encodeURIComponent(name)}/pause`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  })
+
+export const resumeJob = (name: string) =>
+  request<ResumeResponse>(`/v1/jobs/${encodeURIComponent(name)}/pause`, { method: 'DELETE' })
 
 function runsOf(job: string, limit: number) {
   const params = new URLSearchParams({ job, limit: String(limit) })

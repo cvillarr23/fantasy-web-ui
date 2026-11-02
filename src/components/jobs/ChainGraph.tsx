@@ -14,9 +14,13 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/base.css'
 import type { ChainInfo, JobInfo } from '../../api/jobs'
+import { isActiveRun } from '../runFormat'
 import { AffectsTeamBadge } from './AffectsTeamBadge'
+import { CancelRunButton } from './CancelRunButton'
 import { chainLayout, NODE_HEIGHT, NODE_WIDTH, type ChainLayoutEdge, type ChainLayoutNode } from './chainLayout'
 import { stepStatusLabel, type ChainStepState } from './chainStatus'
+import { pauseIsActive } from './jobsFormat'
+import { PausedBadge } from './PausedBadge'
 import { RunStatusText } from './RunStatusText'
 import { stepNote } from './stepNote'
 
@@ -24,6 +28,7 @@ interface StepData extends Record<string, unknown> {
   state: ChainStepState
   note: string
   acts: boolean
+  paused: boolean
   selected: boolean
   onSelect: (job: string) => void
 }
@@ -38,26 +43,38 @@ interface Props {
   onSelect: (job: string) => void
 }
 
+function stepLabel({ state, note, acts, paused }: StepData) {
+  return [state.step, stepStatusLabel(state.status), acts && 'affects team', paused && 'paused', note].filter(Boolean).join(', ')
+}
+
+/** A step is a button that selects it. A Cancel button for its active run sits beside it in
+ * the same box, since one button can't hold another. */
 function ChainStepNode({ data }: NodeProps<StepNode>) {
-  const { state, note, acts, selected, onSelect } = data
+  const { state, note, acts, paused, selected, onSelect } = data
+  const cancellable = Boolean(state.run && isActiveRun(state.run.status))
+  const classes = ['chain-node', `chain-node-${state.status}`, selected && 'chain-node-selected', cancellable && 'chain-node-cancellable']
   return (
-    <>
+    <div className="chain-node-box">
       <Handle type="target" position={Position.Left} isConnectable={false} />
       <button
         type="button"
-        className={`chain-node chain-node-${state.status}${selected ? ' chain-node-selected' : ''}`}
-        aria-label={[state.step, stepStatusLabel(state.status), acts && 'affects team', note].filter(Boolean).join(', ')}
+        className={classes.filter(Boolean).join(' ')}
+        aria-label={stepLabel(data)}
         onClick={() => onSelect(state.step)}
       >
         <span className="chain-node-title">
           <span className="chain-node-name">{state.step}</span>
           {acts && <AffectsTeamBadge />}
+          {paused && <PausedBadge />}
         </span>
         <RunStatusText status={state.status} label={stepStatusLabel(state.status)} />
         <span className="chain-node-note">{note}</span>
       </button>
+      {cancellable && state.run && (
+        <CancelRunButton runId={state.run.id} job={state.step} className="chain-node-cancel" />
+      )}
       <Handle type="source" position={Position.Right} isConnectable={false} />
-    </>
+    </div>
   )
 }
 
@@ -89,6 +106,7 @@ const STEP_HANDLES = [
 
 function stepNode(node: ChainLayoutNode, props: Props): StepNode {
   const state = props.states.find((candidate) => candidate.step === node.id) ?? { step: node.id, status: 'no_run' as const }
+  const job = props.jobs.find((candidate) => candidate.name === node.id)
   return {
     id: node.id,
     type: 'step',
@@ -100,7 +118,8 @@ function stepNode(node: ChainLayoutNode, props: Props): StepNode {
     data: {
       state,
       note: stepNote(state, props.chain.steps[node.id]),
-      acts: Boolean(props.jobs.find((job) => job.name === node.id)?.acts),
+      acts: Boolean(job?.acts),
+      paused: pauseIsActive(job?.pause),
       selected: node.id === props.selected,
       onSelect: props.onSelect,
     },

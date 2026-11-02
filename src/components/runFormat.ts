@@ -9,6 +9,11 @@ export const runStamp = (value: string) => new Date(value).toLocaleString()
 /** A run the launcher hasn't finished with: waiting to start, or in progress. */
 export const isActiveRun = (status?: string | null) => status === 'queued' || status === 'running'
 
+/** Why a run was skipped, such as "paused"; empty for any other run. */
+export function skipReason(run: { status: string; end_reason?: string | null }) {
+  return run.status === 'skipped' && run.end_reason ? runLabel(run.end_reason) : ''
+}
+
 /** "Success", "Cancelled". */
 export function statusLabel(status: string) {
   return status.charAt(0).toUpperCase() + status.slice(1)

@@ -26,6 +26,16 @@ export default defineConfig({
         changeOrigin: true,
         headers: { 'X-API-Key': process.env.TRIGGER_API_KEY ?? '' },
       },
+      '^/v1/runs/[^/]+/cancel(?:\\?|$)': {
+        target: API_PROXY_TARGET,
+        changeOrigin: true,
+        headers: { 'X-API-Key': process.env.TRIGGER_API_KEY ?? '' },
+      },
+      '^/v1/jobs/[^/]+/pause(?:\\?|$)': {
+        target: API_PROXY_TARGET,
+        changeOrigin: true,
+        headers: { 'X-API-Key': process.env.TRIGGER_API_KEY ?? '' },
+      },
       '/v1': {
         target: API_PROXY_TARGET,
         changeOrigin: true,

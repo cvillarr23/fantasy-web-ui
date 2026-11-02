@@ -3,11 +3,13 @@ import { useMediaQuery } from '@mantine/hooks'
 import type { ChainInfo, JobInfo } from '../../api/jobs'
 import type { RunDetail } from '../../api/runs'
 import { isActiveRun } from '../runFormat'
+import { CancelRunButton } from './CancelRunButton'
 import { ChainGraph } from './ChainGraph'
 import { chainProgress, chainStepStates } from './chainStatus'
 import { ChainStepList } from './ChainStepList'
 import { CHAIN_EDGE_HELP } from './jobGlossary'
 import { limitText, runWhen, slotStamp } from './jobsFormat'
+import { PauseControl } from './PauseControl'
 import { RunStatusText } from './RunStatusText'
 
 const PHONE_QUERY = '(max-width: 899px)'
@@ -44,7 +46,15 @@ export function ChainPanel({ chain, jobs, root, selected, onSelect }: Props) {
           <h2 id={`chain-${chain.name}-heading`}>{chain.name}</h2>
           <Text size="xs">{chainSummary(chain, root)}</Text>
         </div>
-        <RunStatusText status={progressStatus(root)} label={chainProgress(chain, root)} />
+        <div className="chain-panel-status">
+          <RunStatusText status={progressStatus(root)} label={chainProgress(chain, root)} />
+          {root && isActiveRun(root.status) && (
+            <CancelRunButton runId={root.id} job={chain.name} chainRoot label="Cancel chain run" />
+          )}
+        </div>
+      </div>
+      <div className="chain-panel-controls">
+        <PauseControl name={chain.name} pause={chain.pause} target="chain" />
       </div>
       {phone ? (
         <ChainStepList chain={chain} jobs={jobs} states={states} onSelect={onSelect} />

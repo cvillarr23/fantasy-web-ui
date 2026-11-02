@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn } from 'storybook/test'
 import { ApiError } from '../../api/client'
-import { catalogFixture } from './fixtures'
+import { catalogFixture, pausedSkipFixture, pauseFixture } from './fixtures'
 import { JobRunPanel } from './JobRunPanel'
 import './jobs.css'
 
@@ -27,6 +27,15 @@ export const AlreadyRunning: Story = {
   args: { job: job('score-sample') },
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('button', { name: 'Already running' })).toBeDisabled()
+    await expect(canvas.getByRole('button', { name: 'Cancel run, score-sample' })).toBeVisible()
+  },
+}
+/** A paused job shows who paused it and why, and its skipped slots say so. */
+export const Paused: Story = {
+  args: { job: { ...job('sync-rumors'), pause: pauseFixture('sync-rumors', null) }, recentRuns: [pausedSkipFixture] },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('button', { name: 'Resume' })).toBeVisible()
+    await expect(canvas.getByText(/ · paused$/)).toBeVisible()
   },
 }
 export const Starting: Story = { args: { starting: true } }

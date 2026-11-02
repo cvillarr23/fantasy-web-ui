@@ -1,5 +1,5 @@
-import type { ChainInfo, JobCatalog, JobInfo, LauncherHealth, LastRun } from '../../api/jobs'
-import type { RunDetail } from '../../api/runs'
+import type { ChainInfo, JobCatalog, JobInfo, LauncherHealth, LastRun, PauseInfo } from '../../api/jobs'
+import type { Run, RunDetail } from '../../api/runs'
 
 // Synthetic catalog for tests and stories. The component library is published, so nothing
 // here comes from a real league or team.
@@ -28,6 +28,11 @@ export function jobFixture(overrides: Partial<JobInfo> & { name: string }): JobI
     pause: null,
     ...overrides,
   }
+}
+
+/** A pause set by a sample operator. ``paused_until`` null pauses until resumed. */
+export function pauseFixture(name: string, paused_until: string | null = '2026-11-03T23:22:00Z'): PauseInfo {
+  return { name, paused_until, reason: 'Bye week', set_by: 'sample-operator', set_at: '2026-11-03T22:22:00Z' }
 }
 
 export const chainFixture: ChainInfo = {
@@ -156,4 +161,20 @@ export const runDetailFixture: RunDetail = {
     },
     { ...childRun('waiver-worker-2', 'failure', '2026-11-04T02:16:00Z', '2026-11-04T02:16:18Z'), trigger_type: 'queue', llm_sessions: [] },
   ],
+}
+
+/** A slot the scheduler skipped because the job was paused. */
+export const pausedSkipFixture: Run = {
+  id: 'run-skipped',
+  job_name: 'sync-rumors',
+  trigger_type: 'schedule',
+  status: 'skipped',
+  started_at: '2026-11-03T22:30:00Z',
+  finished_at: '2026-11-03T22:30:00Z',
+  end_reason: 'paused',
+  trigger: {},
+  summary: {},
+  input_count: 0,
+  output_count: 0,
+  llm_count: 0,
 }
