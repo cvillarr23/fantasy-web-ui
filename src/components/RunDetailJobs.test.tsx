@@ -153,12 +153,13 @@ describe('runs tab with launcher values', () => {
     expect(within(row).getByText('cancelled')).toBeTruthy()
   })
 
-  it('offers only the trigger filters the API accepts', async () => {
+  it('offers every trigger type as a filter', async () => {
     openPanel()
     await screen.findByRole('link', { name: 'claim-waivers' })
     fireEvent.click(screen.getByPlaceholderText('Any trigger'))
     const options = (await screen.findAllByRole('option', { hidden: true })).map((option) => option.textContent)
-    expect(options).toEqual(expect.arrayContaining(['Scheduled', 'Manual']))
-    expect(options).toEqual(expect.not.arrayContaining(['Chain', 'Event', 'CLI', 'MCP']))
+    expect(options).toEqual(
+      expect.arrayContaining(['Scheduled', 'Queue message', 'API request', 'Manual', 'Chain', 'Event', 'CLI', 'MCP']),
+    )
   })
 })

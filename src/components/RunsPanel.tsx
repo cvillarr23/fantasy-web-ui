@@ -30,8 +30,7 @@ const TRIGGER_LABELS: Record<TriggerType, string> = {
   cli: 'CLI',
   mcp: 'MCP',
 }
-// The runs API rejects other trigger values in its filter, though it returns them on rows.
-const FILTERABLE_TRIGGERS: TriggerType[] = ['schedule', 'queue', 'http', 'manual']
+const FILTERABLE_TRIGGERS = Object.keys(TRIGGER_LABELS) as TriggerType[]
 const STATUS_COLORS: Record<RunStatus, string> = {
   queued: 'yellow',
   running: 'blue',
