@@ -6,6 +6,8 @@ import { Link } from 'react-router-dom'
 import { queryClient } from '../api/queryClient'
 import { getWaiverFreeAgents } from '../api/client'
 import type { DraftConfig, FreeAgentEntry, FreeAgentSort } from '../api/types'
+import { EspnCells, EspnHeaders } from './player/EspnColumns'
+import { ESPN_COLUMN_COUNT, useEspnSort } from './player/useEspnSort'
 import { InjuryBadge } from './player/InjuryBadge'
 import { TableRowsSkeleton } from './skeletons'
 import { Pager } from './ui/Pager'
@@ -15,6 +17,8 @@ import { formatNumber } from './ui/formatNumber'
 export const FREE_AGENT_PAGE_SIZE = 25
 const POSITIONS = ['', 'QB', 'RB', 'WR', 'TE', 'K', 'D/ST']
 const HEADERS = ['Player', 'Projected', 'VORP', 'Suggested drop', '']
+// The ESPN block sits between the suggested drop and the action buttons.
+const COLUMN_COUNT = HEADERS.length + ESPN_COLUMN_COUNT
 
 interface Props {
   config: DraftConfig
@@ -51,6 +55,7 @@ export function FreeAgentBrowser({ config, week, openRosterSlots }: Props) {
     queryClient,
   )
   const data = query.data
+  const espnSort = useEspnSort(data?.free_agents, (player) => player.espn)
   return (
     <Stack gap="sm">
       <Text size="sm" c="dimmed">
@@ -100,18 +105,20 @@ export function FreeAgentBrowser({ config, week, openRosterSlots }: Props) {
         <ErrorAlert onRetry={() => void query.refetch()}>{query.error.message}</ErrorAlert>
       ) : (
         <>
-          <Table.ScrollContainer minWidth={720}>
+          <Table.ScrollContainer minWidth={940}>
             <Table aria-label="Free agents" aria-busy={query.isPlaceholderData || query.isLoading || undefined}>
               <Table.Thead>
                 <Table.Tr>
-                  {HEADERS.map((heading, i) => <Table.Th key={i}>{heading}</Table.Th>)}
+                  {HEADERS.slice(0, -1).map((heading) => <Table.Th key={heading}>{heading}</Table.Th>)}
+                  <EspnHeaders sort={espnSort.sort} onSort={espnSort.toggle} />
+                  <Table.Th />
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
                 {query.isLoading ? (
-                  <TableRowsSkeleton columns={HEADERS.length} />
+                  <TableRowsSkeleton columns={COLUMN_COUNT} />
                 ) : (
-                  data?.free_agents.map((player) => (
+                  espnSort.sorted?.map((player) => (
                     <Table.Tr key={player.espn_id}>
                       <Table.Td>
                         <Text fw={700} size="sm">{player.name}</Text>
@@ -134,6 +141,7 @@ export function FreeAgentBrowser({ config, week, openRosterSlots }: Props) {
                           <Text size="sm" c="dimmed">—</Text>
                         )}
                       </Table.Td>
+                      <EspnCells position={player.position} espn={player.espn} />
                       <Table.Td>
                         <Group gap="xs" wrap="nowrap">
                           {openRosterSlots > 0 && (

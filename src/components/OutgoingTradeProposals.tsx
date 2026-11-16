@@ -25,7 +25,7 @@ function ProposalPlayers({ label, players, roster, week }: {
       const details = roster.find(candidate => candidate.espn_id === player.espn_id)
       const vorp = week == null ? null : details?.metrics[String(week)]?.vorp_score
       return <PlayerCard key={player.espn_id} variant="row" className="proposal-player"
-        player={{ id: player.espn_id, name: details?.name || player.name || `ESPN player ${player.espn_id}`, position: details?.position, team: details?.nfl_team }}
+        player={{ id: player.espn_id, name: details?.name || player.name || `ESPN player ${player.espn_id}`, position: details?.position, team: details?.nfl_team, espn: details?.espn }}
         stats={details && <Text size="sm" fw={700}>{vorp == null ? 'VORP unavailable' : `${vorp.toFixed(1)} VORP`}</Text>}
         badges={details && <ByeBadge byeWeek={details.nfl_bye_week} week={week} />} />
     })}

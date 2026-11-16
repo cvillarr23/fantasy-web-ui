@@ -1,4 +1,4 @@
-import { headshot } from '../stories/fixtures'
+import { espnCold, espnStarter, headshot } from '../stories/fixtures'
 import { candidate } from './tradeFinder/fixtures'
 import type { TradeCandidate } from '../api/tradeCandidateTypes'
 import type {
@@ -21,10 +21,10 @@ export function lineupPlayer(id: string, name: string, position: string, slot: s
 
 export const lineupRoster: LineupRosterResponse = {
   starters: [
-    lineupPlayer('qb', 'Sample Quarterback', 'QB', 'QB', { net_vorp: 12.4 }),
+    lineupPlayer('qb', 'Sample Quarterback', 'QB', 'QB', { net_vorp: 12.4, espn: espnStarter }),
     lineupPlayer('rb', 'Sample Runner', 'RB', 'RB', { net_vorp: 9.1, bye_week: 9 }),
     lineupPlayer('wr', 'Sample Receiver', 'WR', 'WR', {
-      net_vorp: 4.2, injury_status: 'QUESTIONABLE', rumor_sentiment: 'negative', rumor_confidence: 0.64,
+      net_vorp: 4.2, espn: espnCold, injury_status: 'QUESTIONABLE', rumor_sentiment: 'negative', rumor_confidence: 0.64,
       rumor_suggested_action: 'consider_benching',
       suggested_swap: { bench_for: 'WR', add_player_id: 'wr2', explanation: 'Questionable; the backup adds value.' },
     }),
@@ -70,7 +70,7 @@ export const lineupNoCrunchOutlook: TeamByeOutlook = {
 export function fillIn(name: string, gain: number | null, byeWeek = 9): WaiverRecommendation {
   return {
     kind: 'add', position: 'RB', vorp_delta: 3, rumor_sentiment: null, rumor_confidence: null, rumor_suggested_action: null,
-    free_agent: { espn_id: `fa-${name}`, name, position: 'RB', pro_team: 'LAC', injury_status: null, net_vorp: 2 },
+    free_agent: { espn_id: `fa-${name}`, name, position: 'RB', pro_team: 'LAC', injury_status: null, net_vorp: 2, espn: espnStarter },
     bye_fill: gain === null ? null : { week: byeWeek, lineup_gain: gain },
   }
 }

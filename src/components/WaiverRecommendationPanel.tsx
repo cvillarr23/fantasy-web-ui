@@ -2,6 +2,7 @@ import { Badge, Button, Group, Skeleton, Stack, Text } from '@mantine/core'
 import { MoveSidesSkeleton, SkeletonRegion } from './skeletons'
 import { Link } from 'react-router-dom'
 import { ByeBadge } from './player/ByeBadge'
+import { EspnMarketLine } from './player/EspnMarketLine'
 import { InjuryBadge } from './player/InjuryBadge'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import type { DraftConfig, WaiverIrMove, WaiverRecommendation } from '../api/types'
@@ -123,6 +124,7 @@ export function WaiverRecommendationPanel({ recommendations, openIrSlots = 0, op
                     </Text>
                     <ByeBadge byeWeek={r.free_agent.bye_week} week={viewedWeek} />
                     <InjuryBadge status={r.free_agent.injury_status} />
+                    <EspnMarketLine position={r.free_agent.position ?? r.position} espn={r.free_agent.espn} />
                   </div>
                   {!isAddOnly && <div className={`move-side ${isIrAndAdd ? 'ir' : 'outgoing'}`}>
                     <h3>{isIrAndAdd ? 'Move to IR' : 'Drop from your roster'}</h3>
@@ -136,6 +138,7 @@ export function WaiverRecommendationPanel({ recommendations, openIrSlots = 0, op
                     </Text>
                     <ByeBadge byeWeek={outgoingPlayer?.bye_week} week={viewedWeek} />
                     <InjuryBadge status={outgoingPlayer?.injury_status ?? null} />
+                    <EspnMarketLine position={outgoingPlayer?.position} espn={outgoingPlayer?.espn} />
                   </div>}
                 </div>
                 {r.bye_fill && (

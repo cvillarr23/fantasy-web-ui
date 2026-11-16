@@ -34,7 +34,7 @@ export function useTradeContextControls(config: DraftConfig): TradeContextContro
     const player = (p: TradeCandidate['receive'][number]): PlayerSearchResult => ({
       player_id: p.player_id ?? '', espn_id: p.espn_id, name: p.name || p.espn_id,
       position: p.position ?? '', team: p.nfl_team ?? '', injury_status: null,
-      vorp_score: p.vorp, projected_points: null,
+      vorp_score: p.vorp, projected_points: null, espn: p.espn,
     })
     setSelection({ scope, teamId: candidate.counterparty.team_id })
     setHorizon(horizon)

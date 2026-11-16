@@ -1,3 +1,4 @@
+import type { EspnOwnership } from './types'
 import type { TradeScore, TradeScoreTradedPlayer } from './tradeScoreTypes'
 
 export type TradeCandidateShape = '1for1' | '2for1' | '1for2'
@@ -7,6 +8,8 @@ export type TradeCandidateSort = 'final_score' | 'our_gain' | 'their_benefit'
 export interface TradeCandidatePlayer extends TradeScoreTradedPlayer {
   vorp: number | null
   nfl_bye_week: number | null
+  /** ESPN's league-wide market signal; carried into the builder when the finder prefills it. */
+  espn?: EspnOwnership | null
 }
 
 export interface TradeCandidate {

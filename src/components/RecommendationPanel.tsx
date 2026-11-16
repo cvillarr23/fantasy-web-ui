@@ -51,7 +51,7 @@ export function RecommendationPanel({ recommendation, pickNumber, isMyTurn, onDr
                 <li key={c.player_id} className="candidate-row">
                   <PlayerCard
                     variant="row"
-                    player={{ id: c.player_id, name: c.name, position: c.position }}
+                    player={{ id: c.player_id, name: c.name, position: c.position, espn: c.espn }}
                     stats={`VORP ${c.vorp_score.toFixed(1)}`}
                   />
                   {/* The click bot addresses ESPN's DOM by ESPN's own player id, so a player
@@ -107,6 +107,7 @@ export function RecommendationPanel({ recommendation, pickNumber, isMyTurn, onDr
                   name: suggestion.name ?? `ESPN id ${suggestion.espn_player_id}`,
                   position: suggestion.position,
                   team: suggestion.team,
+                  espn: suggestion.espn,
                 }}
                 stats={suggestion.vorp_score !== null ? `VORP ${suggestion.vorp_score.toFixed(1)}` : null}
               />

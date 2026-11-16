@@ -1,5 +1,5 @@
 import { palette } from '../theme'
-import type { PlayerSearchResult, PlayerSummary } from '../api/types'
+import type { EspnOwnership, PlayerSearchResult, PlayerSummary } from '../api/types'
 import type { PlayerCardData } from '../components/player/PlayerCard'
 
 // Synthetic players for stories. Names and IDs are made up; never use real league,
@@ -14,6 +14,24 @@ export const headshot =
 
 export const brokenHeadshot = '/story-missing-headshot.png'
 
+/** A starter ESPN managers trust: high start%, rising. */
+export const espnStarter: EspnOwnership = {
+  pos_rank: 12,
+  percent_owned: 92,
+  percent_started: 78,
+  percent_bench: 14,
+  percent_change: 3,
+}
+
+/** Under the 25% start threshold, so the line takes the cold style. */
+export const espnCold: EspnOwnership = {
+  pos_rank: 41,
+  percent_owned: 24,
+  percent_started: 6,
+  percent_bench: 18,
+  percent_change: -4,
+}
+
 export const samplePlayer: PlayerCardData = {
   id: '9001',
   name: 'Sample Quarterback',
@@ -21,11 +39,12 @@ export const samplePlayer: PlayerCardData = {
   team: 'KC',
   headshotUrl: headshot,
   jersey: 12,
+  espn: espnStarter,
 }
 
 export const searchResults: PlayerSearchResult[] = [
-  { player_id: 'p9001', espn_id: '9001', name: 'Sample Quarterback', position: 'QB', team: 'KC', injury_status: null, vorp_score: 8.4, projected_points: 21.2 },
-  { player_id: 'p9002', espn_id: '9002', name: 'Sample Runner', position: 'RB', team: 'SF', injury_status: 'QUESTIONABLE', vorp_score: 5.1, projected_points: 14.9 },
+  { player_id: 'p9001', espn_id: '9001', name: 'Sample Quarterback', position: 'QB', team: 'KC', injury_status: null, vorp_score: 8.4, projected_points: 21.2, espn: espnStarter },
+  { player_id: 'p9002', espn_id: '9002', name: 'Sample Runner', position: 'RB', team: 'SF', injury_status: 'QUESTIONABLE', vorp_score: 5.1, projected_points: 14.9, espn: espnCold },
   { player_id: 'p9003', espn_id: null, name: 'Sample Receiver', position: 'WR', team: 'BUF', injury_status: null, vorp_score: null, projected_points: null },
 ]
 

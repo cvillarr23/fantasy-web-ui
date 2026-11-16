@@ -24,7 +24,7 @@ function PlayerRow({ line, starter }: { line: PlayerLine; starter: boolean }) {
     <PlayerCard
       variant="tableRow"
       before={line.slot}
-      player={{ id: line.player_id, name: line.name, position: line.position }}
+      player={{ id: line.player_id, name: line.name, position: line.position, espn: line.espn }}
       badges={
         <>
           <DeficitBadge isDeficit={line.deficit_flag} />

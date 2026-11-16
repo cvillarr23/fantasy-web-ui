@@ -3,8 +3,11 @@ import type { TradeContextTeam } from '../api/types'
 
 import { contextNumber } from './tradeContextFormat'
 import { ByeBadge } from './player/ByeBadge'
+import { EspnCells, EspnHeaders } from './player/EspnColumns'
+import { useEspnSort } from './player/useEspnSort'
 
 export function TradeContextRoster({ team, week }: { team: TradeContextTeam; week: number }) {
+  const espnSort = useEspnSort(team.roster, (player) => player.espn)
   return (
     <section aria-label="Counterparty roster">
       <h3>{team.name}: current roster</h3>
@@ -15,12 +18,13 @@ export function TradeContextRoster({ team, week }: { team: TradeContextTeam; wee
         </Text>
       )}
       {!team.roster.length ? <Text>No players in the current roster snapshot.</Text> : (
-        <Table.ScrollContainer minWidth={620}>
+        <Table.ScrollContainer minWidth={900}>
           <Table>
             <Table.Thead><Table.Tr>
               {['Player', 'Position / NFL team', 'Slot / eligible', 'Injury', 'VORP', 'Projected points'].map((label) => <Table.Th key={label}>{label}</Table.Th>)}
+              <EspnHeaders sort={espnSort.sort} onSort={espnSort.toggle} />
             </Table.Tr></Table.Thead>
-            <Table.Tbody>{team.roster.map((player) => (
+            <Table.Tbody>{espnSort.sorted?.map((player) => (
               <Table.Tr key={player.espn_id}>
                 <Table.Td>
                   <Text>{player.name || `ESPN player ${player.espn_id}`}</Text>
@@ -34,6 +38,7 @@ export function TradeContextRoster({ team, week }: { team: TradeContextTeam; wee
                 <Table.Td>{player.injury_status ?? 'Not reported'}</Table.Td>
                 <Table.Td>{contextNumber(player.metrics[String(week)]?.vorp_score)}</Table.Td>
                 <Table.Td>{contextNumber(player.metrics[String(week)]?.projected_points)}</Table.Td>
+                <EspnCells position={player.position} espn={player.espn} />
               </Table.Tr>
             ))}</Table.Tbody>
           </Table>

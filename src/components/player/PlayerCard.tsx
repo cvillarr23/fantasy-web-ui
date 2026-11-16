@@ -1,5 +1,7 @@
 import type { CSSProperties, ReactNode, Ref } from 'react'
 import { Table, UnstyledButton } from '@mantine/core'
+import type { EspnOwnership } from '../../api/types'
+import { EspnMarketLine } from './EspnMarketLine'
 import { PlayerAvatar } from './PlayerAvatar'
 
 export interface PlayerCardData {
@@ -9,6 +11,7 @@ export interface PlayerCardData {
   team?: string | null
   headshotUrl?: string | null
   jersey?: string | number | null
+  espn?: EspnOwnership | null
 }
 
 type PlayerCardVariant = 'row' | 'tableRow' | 'card' | 'listItem'
@@ -60,6 +63,7 @@ export function PlayerCard({
   className,
 }: Props) {
   const metaContent = meta ?? defaultMeta(player)
+  const espnLine = <EspnMarketLine position={player.position} espn={player.espn} />
   const avatar = player.headshotUrl ? <PlayerAvatar name={player.name} headshotUrl={player.headshotUrl} /> : null
 
   if (variant === 'tableRow') {
@@ -70,6 +74,7 @@ export function PlayerCard({
         <Table.Td>
           {player.name}
           {badgeGroup(badges)}
+          {espnLine}
         </Table.Td>
         <Table.Td>{player.position}</Table.Td>
         {columns
@@ -123,6 +128,7 @@ export function PlayerCard({
             {metaContent}
             {stats !== undefined && stats !== null && <> · {stats}</>}
           </span>
+          {espnLine}
         </div>
       </div>
     )
@@ -136,6 +142,7 @@ export function PlayerCard({
       {metaContent && <span className="player-card-row-meta">{metaContent}</span>}
       {stats}
       {badges}
+      {espnLine}
     </div>
   )
 }

@@ -115,3 +115,43 @@ it('notes when metrics come from prior weeks', async () => {
   renderBrowser()
   expect(await screen.findByText(/prior-week averages \(weeks 3, 4\)/)).toBeTruthy()
 })
+
+function espn(rank: number, started: number, change = 0) {
+  return { pos_rank: rank, percent_owned: 60, percent_started: started, percent_bench: 10, percent_change: change }
+}
+
+it('shows ESPN rank, start%, bench% and change, with cold start% flagged', async () => {
+  vi.mocked(getWaiverFreeAgents).mockResolvedValue(response({
+    free_agents: [{ ...agent, espn: espn(41, 6, -4) }, { ...agent, espn_id: '2', name: 'No Data Back' }],
+    total: 2,
+  }))
+  renderBrowser()
+  const row = (await screen.findByText('Some Back')).closest('tr')!
+  expect(within(row).getByText('RB41')).toBeTruthy()
+  expect(within(row).getByText('6%').className).toContain('espn-cell-cold')
+  expect(within(row).getByText('10%')).toBeTruthy()
+  expect(within(row).getByText('▼4')).toBeTruthy()
+  const empty = screen.getByText('No Data Back').closest('tr')!
+  expect(within(empty).getAllByText('—').length).toBeGreaterThanOrEqual(4)
+})
+
+it('sorts the loaded rows by a clicked ESPN column without re-querying', async () => {
+  vi.mocked(getWaiverFreeAgents).mockResolvedValue(response({
+    free_agents: [
+      { ...agent, espn_id: '1', name: 'Low Starter', espn: espn(30, 20) },
+      { ...agent, espn_id: '2', name: 'Unranked' },
+      { ...agent, espn_id: '3', name: 'High Starter', espn: espn(5, 80) },
+    ],
+    total: 3,
+  }))
+  renderBrowser()
+  await screen.findByText('Low Starter')
+  const names = () => screen.getAllByRole('row').slice(1).map((r) => within(r).getAllByRole('cell')[0].textContent)
+  fireEvent.click(screen.getByRole('button', { name: 'Start%' }))
+  expect(names()[0]).toContain('High Starter')
+  expect(names()[2]).toContain('Unranked')
+  fireEvent.click(screen.getByRole('button', { name: /Start%/ }))
+  expect(names()[0]).toContain('Low Starter')
+  expect(names()[2]).toContain('Unranked')
+  expect(getWaiverFreeAgents).toHaveBeenCalledTimes(1)
+})
