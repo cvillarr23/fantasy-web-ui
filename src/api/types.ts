@@ -2,6 +2,16 @@
 // src/api/players.py. Keep these in sync by hand - there's no shared schema generation
 // between the two repos yet.
 
+export type EspnOwnership = {
+  /** Positional rank among ESPN players at the player's position (1 = best). */
+  pos_rank: number | null
+  percent_owned: number | null
+  percent_started: number | null
+  percent_bench: number | null
+  /** 7-day change in percent_owned, in points. */
+  percent_change: number | null
+}
+
 export interface DraftPickSummary {
   pick_number: number
   round: number | null
@@ -26,6 +36,8 @@ export interface DraftPickSummary {
    * attempted pick was never confirmed/matched and ESPN autodrafted for us instead; false
    * means our attempted pick landed as intended. */
   was_autodrafted: boolean | null
+  /** ESPN's league-wide market signal; absent until core serves it. */
+  espn?: EspnOwnership | null
 }
 
 export interface TeamAggregate {
@@ -55,6 +67,8 @@ export interface RankedCandidate {
   position: string
   vorp_score: number
   team: string
+  /** ESPN's league-wide market signal; absent until core serves it. */
+  espn?: EspnOwnership | null
 }
 
 export interface DraftRecommendation {
@@ -88,6 +102,8 @@ export interface EspnSuggestion {
   vorp_score: number | null
   /** ISO 8601 timestamp. */
   suggested_at: string | null
+  /** ESPN's league-wide market signal; absent until core serves it. */
+  espn?: EspnOwnership | null
 }
 
 export interface DraftStatusError {
@@ -167,6 +183,8 @@ export interface PlayerSearchResult {
   injury_status: string | null
   vorp_score: number | null
   projected_points: number | null
+  /** ESPN's league-wide market signal; absent until core serves it. */
+  espn?: EspnOwnership | null
 }
 
 export interface DraftConfig {
@@ -218,6 +236,8 @@ export interface PlayerLine {
   headshot_url: string
   deficit_flag: boolean
   suggested_swap: { bench_for: string } | null
+  /** ESPN's league-wide market signal; absent until core serves it. */
+  espn?: EspnOwnership | null
 }
 
 export interface MatchupTeamInfo {
@@ -305,6 +325,8 @@ export interface LineupPlayerLine {
   rumor_confidence: number | null
   rumor_suggested_action: string | null
   ir_suggestion?: IrSuggestion | null
+  /** ESPN's league-wide market signal; absent until core serves it. */
+  espn?: EspnOwnership | null
 }
 
 export interface LineupRosterResponse {
@@ -329,6 +351,8 @@ export interface WaiverPlayerSummary {
   net_vorp: number
   // NFL bye week; null when core couldn't read the NFL schedule.
   bye_week?: number | null
+  /** ESPN's league-wide market signal; absent until core serves it. */
+  espn?: EspnOwnership | null
 }
 
 export interface WaiverLineupGain {
@@ -386,6 +410,8 @@ export interface FreeAgentPlayer {
   vorp_score: number | null
   // NFL bye week; null when core couldn't read the NFL schedule.
   bye_week?: number | null
+  /** ESPN's league-wide market signal; absent until core serves it. */
+  espn?: EspnOwnership | null
 }
 
 export interface FreeAgentEntry extends FreeAgentPlayer {
@@ -469,6 +495,8 @@ export interface VorpStat {
   scarcity_multiplier: number | null
   defense_matchup_multiplier: number | null
   vorp_score: number | null
+  /** ESPN's league-wide market signal; absent until core serves it. */
+  espn?: EspnOwnership | null
 }
 
 // Mirrors fantasy-core-pipeline's backtest_results table, exposed via src/api/backtest.py

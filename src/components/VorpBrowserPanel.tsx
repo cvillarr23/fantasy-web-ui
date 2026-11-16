@@ -168,7 +168,7 @@ export function VorpBrowserPanel({ season }: Props) {
               <PlayerCard
                 key={`${row.player_id}-${row.week}`}
                 variant="tableRow"
-                player={{ id: row.player_id, name: row.name, position: row.position }}
+                player={{ id: row.player_id, name: row.name, position: row.position, espn: row.espn }}
                 columns={[
                   row.team ?? '—',
                   formatNumber(row.projected_points),

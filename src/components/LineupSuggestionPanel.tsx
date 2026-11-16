@@ -25,7 +25,7 @@ export function LineupSuggestionPanel({ roster, onApply }: Props) {
               <span className="lineup-suggestion-players">
                 <PlayerCard
                   variant="row"
-                  player={{ id: starter.player_id, name: starter.name }}
+                  player={{ id: starter.player_id, name: starter.name, position: starter.position, espn: starter.espn }}
                   meta={`(${starter.slot})`}
                   badges={
                     <PlayerStatusBadges player={starter} />
@@ -34,7 +34,7 @@ export function LineupSuggestionPanel({ roster, onApply }: Props) {
                 <span aria-hidden="true"> → </span>
                 <PlayerCard
                   variant="row"
-                  player={{ id: benchPlayer.player_id, name: benchPlayer.name }}
+                  player={{ id: benchPlayer.player_id, name: benchPlayer.name, position: benchPlayer.position, espn: benchPlayer.espn }}
                   badges={
                     <PlayerStatusBadges player={benchPlayer} />
                   }

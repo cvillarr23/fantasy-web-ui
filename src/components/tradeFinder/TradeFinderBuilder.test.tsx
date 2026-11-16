@@ -81,3 +81,46 @@ it('removes unmapped players individually using their ESPN identities', async ()
   expect(screen.queryByText('First Unmapped')).toBeNull()
   expect(screen.getByText('Second Unmapped')).toBeTruthy()
 })
+
+function espnStart(started: number) {
+  return { pos_rank: 20, percent_owned: 50, percent_started: started, percent_bench: 10, percent_change: 0 }
+}
+
+async function prefillAndRender(base = candidate()) {
+  vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL) => {
+    const path = new URL(input instanceof Request ? input.url : input, 'http://localhost').pathname
+    if (path === '/v1/trade/score') return new Response(JSON.stringify(completeScore()))
+    if (path === '/v1/trade/context') return new Response(JSON.stringify(finderContext))
+    if (path === '/v1/league/current-week') return new Response(JSON.stringify({ week: 5 }))
+    return new Response('{}')
+  })
+  function Harness() {
+    const controls = useTradeContextControls(finderConfig)
+    return <><button onClick={() => controls.prefillTrade!({ candidate: base, week: 6, horizon: 3 })}>Prefill</button><TradeBuilder config={finderConfig} controls={controls} /></>
+  }
+  render(<MantineProvider><MemoryRouter initialEntries={['/trades?week=5']}><Harness /></MemoryRouter></MantineProvider>)
+  fireEvent.click(screen.getByText('Prefill'))
+  await screen.findByText('Received Wideout')
+}
+
+it('warns when you send a widely started player for one ESPN managers bench', async () => {
+  const base = candidate()
+  await prefillAndRender({
+    ...base,
+    send: [{ ...base.send[0], espn: espnStart(78) }],
+    receive: [{ ...base.receive[0], espn: espnStart(22) }],
+  })
+  const alert = await screen.findByText('Heads up')
+  expect(alert.closest('[role="alert"]')!.textContent).toContain('(78%)')
+  expect(alert.closest('[role="alert"]')!.textContent).toContain('mostly benched (22% start)')
+})
+
+it('stays quiet when ESPN data is missing or the sides are close', async () => {
+  const base = candidate()
+  await prefillAndRender({
+    ...base,
+    send: [{ ...base.send[0], espn: espnStart(40) }],
+    receive: [{ ...base.receive[0], espn: espnStart(22) }],
+  })
+  expect(screen.queryByText('Heads up')).toBeNull()
+})

@@ -1,3 +1,5 @@
+import type { EspnOwnership } from './types'
+
 export interface TradeContextPlayer {
   espn_id: string
   player_id: string | null
@@ -10,6 +12,8 @@ export interface TradeContextPlayer {
   metrics: Record<string, { vorp_score: number | null; projected_points: number | null }>
   // NFL bye week; null when core couldn't read the NFL schedule.
   nfl_bye_week?: number | null
+  /** ESPN's league-wide market signal; absent until core serves it. */
+  espn?: EspnOwnership | null
 }
 
 /** One week of a team's NFL bye outlook (core's bye_outlook / GET /v1/roster/bye-outlook). */

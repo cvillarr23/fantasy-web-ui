@@ -128,6 +128,7 @@ function DraggablePlayerCard({ line, irAction }: { line: LineupPlayerLine; irAct
           position: line.position,
           team: line.pro_team,
           headshotUrl: line.headshot_url,
+          espn: line.espn,
         }}
         badges={
           <NoDrag>

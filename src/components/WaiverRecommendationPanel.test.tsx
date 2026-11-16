@@ -155,3 +155,40 @@ it('marks a bye fill-in, shows byes and the horizon lineup effect', () => {
   expect(within(screen.getByText('Drop from your roster').parentElement!).getByText('BYE')).toBeTruthy()
   expect(within(screen.getByText('Add to your roster').parentElement!).getByText('Bye Wk 12')).toBeTruthy()
 })
+
+it('shows the ESPN market line under the add and the drop, cold on the drop', () => {
+  const espn = (started: number, rank: number) => ({
+    pos_rank: rank, percent_owned: 50, percent_started: started, percent_bench: 20, percent_change: 5,
+  })
+  render(
+    <MantineProvider>
+      <MemoryRouter initialEntries={['/waivers?week=7']}>
+        <WaiverRecommendationPanel
+          recommendations={[{
+            ...recommendation,
+            free_agent: { ...recommendation.free_agent, position: 'RB', espn: espn(60, 24) },
+            bench_player: { ...recommendation.bench_player!, position: 'RB', espn: espn(6, 41) },
+          }]}
+          config={config}
+        />
+      </MemoryRouter>
+    </MantineProvider>,
+  )
+  const add = screen.getByText('Add to your roster').parentElement!
+  const drop = screen.getByText('Drop from your roster').parentElement!
+  expect(within(add).getByText('RB24')).toBeTruthy()
+  expect(add.querySelector('.espn-cold')).toBeNull()
+  expect(within(drop).getByText('RB41')).toBeTruthy()
+  expect(drop.querySelector('.espn-cold')).not.toBeNull()
+})
+
+it('leaves both sides without a market line when ESPN has no data', () => {
+  render(
+    <MantineProvider>
+      <MemoryRouter initialEntries={['/waivers?week=7']}>
+        <WaiverRecommendationPanel recommendations={[recommendation]} config={config} />
+      </MemoryRouter>
+    </MantineProvider>,
+  )
+  expect(screen.queryByText('ESPN')).toBeNull()
+})

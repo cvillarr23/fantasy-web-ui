@@ -1061,10 +1061,12 @@ a.lineup-open-spot:focus-visible {
 }
 .player-card-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   font-size: 13px;
 }
+.player-card-row > .espn-line { flex: 0 0 100%; }
 .player-card-row-name {
   font-weight: 600;
 }
@@ -1501,3 +1503,29 @@ a.lineup-open-spot:focus-visible {
 .action-link { border-radius: 6px; justify-self: start; }
 .action-link .mantine-Button-label::after { content: '\00a0→'; }
 .lineup-submit { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+
+/* ESPN market line: league-wide rank, start%, bench% and 7-day change under a player. */
+.espn-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  margin-top: 2px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.espn-tag {
+  cursor: help;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+}
+.espn-part { display: inline-flex; gap: 6px; }
+.espn-sep { color: var(--border); }
+.espn-change-up { color: var(--incoming); }
+.espn-change-down { color: var(--outgoing); }
+.espn-cold .espn-start,
+.espn-cell-cold { color: var(--outgoing); font-weight: 600; }

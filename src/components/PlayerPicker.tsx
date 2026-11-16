@@ -55,7 +55,7 @@ export function PlayerPicker({ onSelect, selected, onClear }: Props) {
       <div className="player-picker-selected">
         <PlayerCard
           variant="row"
-          player={{ id: selected.player_id, name: selected.name, position: selected.position, team: selected.team }}
+          player={{ id: selected.player_id, name: selected.name, position: selected.position, team: selected.team, espn: selected.espn }}
           stats={<PlayerStats player={selected} />}
         />
         <Button variant="subtle" size="xs" onClick={onClear}>Change</Button>
@@ -89,7 +89,7 @@ export function PlayerPicker({ onSelect, selected, onClear }: Props) {
             >
               <PlayerCard
                 variant="row"
-                player={{ id: p.player_id, name: p.name, position: p.position, team: p.team }}
+                player={{ id: p.player_id, name: p.name, position: p.position, team: p.team, espn: p.espn }}
                 stats={<PlayerStats player={p} />}
               />
             </li>

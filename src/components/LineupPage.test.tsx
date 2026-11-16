@@ -81,3 +81,14 @@ it('still shows the lineup when the bye outlook, waivers and trades all fail', a
   expect(await screen.findByText('Bye outlook unavailable')).toBeTruthy()
   expect(screen.queryByRole('alert', { name: 'Bye-week crunch ahead' })).toBeNull()
 })
+
+it('shows the ESPN market line on lineup cards, cold for a rarely started player', async () => {
+  const { container } = start()
+  await screen.findAllByText('Sample Quarterback')
+  const cards = container.querySelectorAll('.player-card')
+  const card = (name: string) => Array.from(cards).find((c) => c.textContent?.includes(name))!
+  expect(card('Sample Quarterback').textContent).toContain('QB12')
+  expect(card('Sample Quarterback').querySelector('.espn-cold')).toBeNull()
+  expect(card('Sample Receiver').querySelector('.espn-cold')).not.toBeNull()
+  expect(card('Sample Tight End').querySelector('.espn-line')).toBeNull()
+})

@@ -8,6 +8,7 @@ import { Alert, Button, Group, Text } from '@mantine/core'
 import { RosterQuickActions } from './RosterQuickActions'
 import { evaluateTrade } from '../api/client'
 import { PlayerCard } from './player/PlayerCard'
+import { tradeHeadsUp } from './player/espnMarket'
 import { PlayerPicker } from './PlayerPicker'
 import { useToast } from '../hooks/useToast'
 import { OperationProgress } from './skeletons'
@@ -51,7 +52,7 @@ function TradeSideColumn({ side }: { side: Side }) {
         <ul className="trade-side-list">
           {side.players.map((p) => (
             <li key={p.espn_id ?? p.player_id}>
-              <PlayerCard variant="row" player={{ id: p.player_id, name: p.name, position: p.position, team: p.team }} />
+              <PlayerCard variant="row" player={{ id: p.player_id, name: p.name, position: p.position, team: p.team, espn: p.espn }} />
               <Button variant="subtle" size="xs" onClick={() => side.remove(p.espn_id ?? p.player_id)}>✕</Button>
             </li>
           ))}
@@ -109,6 +110,8 @@ function TradeBuilderForm({ config, controls, initialDraft, hideWeekSelector = f
     evaluation.mutate()
   }
 
+  const headsUp = tradeHeadsUp(outgoing, incoming)
+
   return (
     <section className="trade-builder">
       <Group justify="space-between" mb="md">
@@ -117,6 +120,10 @@ function TradeBuilderForm({ config, controls, initialDraft, hideWeekSelector = f
       </Group>
       {initialDraft && <Text size="sm">Prefilled from the trade finder: {initialDraft.teamName}.</Text>}
       {!hideWeekSelector && <WeekSelector week={week} onChange={setWeek} />}
+
+      {headsUp && (
+        <Alert color="orange" title="Heads up" mb="sm">{headsUp.message}</Alert>
+      )}
 
       <div className="trade-columns">
         <TradeSideColumn
