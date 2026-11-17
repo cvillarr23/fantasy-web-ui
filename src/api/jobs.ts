@@ -104,6 +104,37 @@ export interface ResumeResponse {
   name: string
   status: string
 }
+export interface ResourceQuantities {
+  cpu: string
+  memory: string
+}
+export interface JobResources {
+  requests: ResourceQuantities
+  limits: ResourceQuantities
+}
+export interface UsageStats {
+  p50: number
+  p95: number
+  max: number
+}
+export interface JobResourceSuggestion {
+  name: string
+  runs: number
+  current: JobResources
+  usage: {
+    cpu_seconds: UsageStats | null
+    avg_cpu_cores: UsageStats | null
+    peak_memory_bytes: UsageStats | null
+    throttled_fraction: UsageStats | null
+  } | null
+  suggested: (JobResources & { cpu_throttled: boolean }) | null
+  reason: 'no_measured_runs' | 'insufficient_runs' | null
+}
+export interface ResourceSuggestions {
+  days: number
+  min_runs: number
+  jobs: JobResourceSuggestion[]
+}
 export interface UiConfig {
   grafana_url: string
 }
@@ -112,6 +143,8 @@ export const RECENT_RUNS_LIMIT = 5
 
 export const getJobCatalog = () => request<JobCatalog>('/v1/jobs')
 export const getLauncherHealth = () => request<LauncherHealth>('/v1/launcher/health')
+/** Each job's measured usage over its recent successful runs and the catalog resources it suggests. */
+export const getResourceSuggestions = () => request<ResourceSuggestions>('/v1/jobs/resource-suggestions')
 
 export const startJobRun = (name: string, body: StartRunRequest) =>
   request<StartRunResponse>(`/v1/jobs/${encodeURIComponent(name)}/runs`, {

@@ -6,16 +6,18 @@ import {
   getLatestChainRun,
   getLauncherHealth,
   getRecentJobRuns,
+  getResourceSuggestions,
   type ChainInfo,
   type JobCatalog,
   type JobInfo,
 } from '../api/jobs'
 import { getRun } from '../api/runs'
-import { CHAIN_RUN_KEY, JOB_CATALOG_KEY, JOB_RUNS_KEY } from '../hooks/jobQueries'
+import { CHAIN_RUN_KEY, JOB_CATALOG_KEY, JOB_RUNS_KEY, RESOURCE_SUGGESTIONS_KEY } from '../hooks/jobQueries'
 import { useStartJobRun } from '../hooks/useStartJobRun'
 import { ChainPanel } from './jobs/ChainPanel'
 import { JobRunPanel } from './jobs/JobRunPanel'
 import { JobsTable } from './jobs/JobsTable'
+import { ResourceSuggestions } from './jobs/ResourceSuggestions'
 import { launcherPill, opensRunForm, type LauncherTone } from './jobs/jobsFormat'
 import './jobs/jobs.css'
 import { isActiveRun } from './runFormat'
@@ -82,6 +84,21 @@ function ChainSection({ chain, jobs, selected, onSelect }: ChainSectionProps) {
     )
   }
   return <ChainPanel chain={chain} jobs={jobs} root={root.data ?? null} selected={selected} onSelect={onSelect} />
+}
+
+/** Suggested catalog resources from measured runs. Loaded once a visit: it changes per run, not per poll. */
+function ResourcesSection() {
+  const report = useQuery({ queryKey: RESOURCE_SUGGESTIONS_KEY, queryFn: getResourceSuggestions })
+  return (
+    <section id="resources" aria-labelledby="resources-heading" className="jobs-chain jobs-main job-panel">
+      <h2 id="resources-heading">Resource sizing</h2>
+      {report.isPending && <TableSkeleton columns={5} label="Loading resource suggestions" />}
+      {report.isError && (
+        <ErrorAlert onRetry={() => void report.refetch()}>Could not load resource suggestions: {report.error.message}</ErrorAlert>
+      )}
+      {report.data && <ResourceSuggestions report={report.data} />}
+    </section>
+  )
 }
 
 interface RailProps {
@@ -164,6 +181,7 @@ export function JobsPage() {
               <ChainSection chain={chain} jobs={data.jobs} selected={selected} onSelect={select} />
             </div>
           ))}
+          <ResourcesSection />
         </div>
       )}
     </div>

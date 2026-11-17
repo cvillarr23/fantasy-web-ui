@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { ApiError } from '../api/client'
-import { cancelRun, getJobCatalog, getLatestChainRun, getLauncherHealth, getRecentJobRuns, pauseJob, startJobRun } from '../api/jobs'
+import { cancelRun, getJobCatalog, getLatestChainRun, getLauncherHealth, getRecentJobRuns, getResourceSuggestions, pauseJob, startJobRun } from '../api/jobs'
 import { getRun } from '../api/runs'
 import { catalogFixture, chainRootFixture, healthFixture } from './jobs/fixtures'
 import { renderForTest } from './jobs/renderForTest'
@@ -13,6 +13,7 @@ vi.mock('../api/jobs', async (importOriginal) => ({
   getLauncherHealth: vi.fn(),
   getLatestChainRun: vi.fn(),
   getRecentJobRuns: vi.fn(),
+  getResourceSuggestions: vi.fn(),
   startJobRun: vi.fn(),
   cancelRun: vi.fn(),
   pauseJob: vi.fn(),
@@ -29,6 +30,7 @@ beforeEach(() => {
   vi.mocked(getLatestChainRun).mockResolvedValue(chainRootFixture)
   vi.mocked(getRun).mockResolvedValue(chainRootFixture)
   vi.mocked(getRecentJobRuns).mockResolvedValue([])
+  vi.mocked(getResourceSuggestions).mockResolvedValue({ days: 30, min_runs: 5, jobs: [] })
   vi.mocked(startJobRun).mockResolvedValue({ run_id: 'run-9', status: 'queued' })
   vi.mocked(cancelRun).mockResolvedValue({ run_id: 'run-score-sample', status: 'cancelled' })
   vi.mocked(pauseJob).mockResolvedValue({ name: 'sample-weekly', paused_until: null, reason: 'Off-season' })
@@ -104,6 +106,13 @@ describe('JobsPage', () => {
     fireEvent.click(within(await row('sync-rumors')).getByRole('button', { name: 'Run' }))
     await waitFor(() => expect(startJobRun).toHaveBeenCalledWith('sync-rumors', { params: {}, downstream: false }))
     expect((await screen.findByRole('status', { name: '' })).textContent).toContain('Queued')
+  })
+
+  it('shows resource sizing below the jobs, and its own error', async () => {
+    vi.mocked(getResourceSuggestions).mockRejectedValue(new ApiError(503, 'catalog is not mounted'))
+    open()
+    expect(await screen.findByRole('heading', { name: 'Resource sizing' })).toBeTruthy()
+    expect(await screen.findByText(/Could not load resource suggestions: catalog is not mounted/)).toBeTruthy()
   })
 
   it('shows a clear error when core refuses with a 409', async () => {

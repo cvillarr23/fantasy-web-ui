@@ -27,6 +27,7 @@ import { PauseControl } from './PauseControl'
 import { RunConfirmDialog } from './RunConfirmDialog'
 import { RunRefusal } from './RunRefusal'
 import { RunStatusText } from './RunStatusText'
+import { runResources, usageNote } from './usageFormat'
 
 export interface StartedRun {
   job: string
@@ -96,7 +97,8 @@ function DownstreamOption({ job, catalog, checked, onChange }: { job: JobInfo; c
 /** When a run happened, and why it was skipped if it was. */
 function recentRunNote(run: Run) {
   const reason = skipReason(run)
-  return `${runWhen(run.started_at)}${reason && ` · ${reason}`}`
+  const resources = runResources(run.summary)
+  return `${runWhen(run.started_at)}${reason && ` · ${reason}`}${resources ? ` · ${usageNote(resources)}` : ''}`
 }
 
 function RecentRuns({ runs }: { runs: Run[] }) {

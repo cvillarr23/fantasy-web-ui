@@ -39,6 +39,7 @@ export const RESERVED_SUMMARY_KEYS = new Set([
   'warnings',
   'errors',
   'result',
+  'resources',
 ])
 
 /** One line saying what a run did: the job's own headline, else its last log message,
