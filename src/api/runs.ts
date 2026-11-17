@@ -19,6 +19,18 @@ export interface RunSummary {
   k8s_job?: string | null
   expires_at?: string | null
 }
+/** What a launcher run recorded about its own CPU and memory as it finished
+ * (`summary.resources`). A pod reads its container's cgroup; an inline run, or a pod
+ * without cgroup v2, reports its own process (`rusage`: no throttling or limits). */
+export interface RunResources {
+  source: 'cgroup' | 'rusage'
+  cpu_seconds: number
+  cpu_throttled_seconds?: number
+  peak_memory_bytes: number
+  wall_seconds: number
+  attempt: number
+  limits?: { cpu_cores: number | null; memory_bytes: number | null }
+}
 export interface Run extends RunSummary {
   trigger: Record<string, unknown>
   parent_run_id?: string | null

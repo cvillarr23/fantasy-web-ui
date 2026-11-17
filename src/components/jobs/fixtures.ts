@@ -1,5 +1,5 @@
-import type { ChainInfo, JobCatalog, JobInfo, LauncherHealth, LastRun, PauseInfo } from '../../api/jobs'
-import type { Run, RunDetail } from '../../api/runs'
+import type { ChainInfo, JobCatalog, JobInfo, LauncherHealth, LastRun, PauseInfo, ResourceSuggestions } from '../../api/jobs'
+import type { Run, RunDetail, RunResources } from '../../api/runs'
 
 // Synthetic catalog for tests and stories. The component library is published, so nothing
 // here comes from a real league or team.
@@ -177,4 +177,40 @@ export const pausedSkipFixture: Run = {
   input_count: 0,
   output_count: 0,
   llm_count: 0,
+}
+
+const MIB = 1024 * 1024
+const usageStats = (value: number) => ({ p50: value, p95: value, max: value })
+const catalogResources = { requests: { cpu: '100m', memory: '256Mi' }, limits: { cpu: '500m', memory: '512Mi' } }
+
+export const resourceSuggestionsFixture: ResourceSuggestions = {
+  days: 30,
+  min_runs: 5,
+  jobs: [
+    {
+      name: 'sync-rumors',
+      runs: 12,
+      current: catalogResources,
+      usage: {
+        cpu_seconds: usageStats(1),
+        avg_cpu_cores: usageStats(0.12),
+        peak_memory_bytes: usageStats(98 * MIB),
+        throttled_fraction: usageStats(0),
+      },
+      suggested: { requests: { cpu: '120m', memory: '128Mi' }, limits: { cpu: '400m', memory: '160Mi' }, cpu_throttled: false },
+      reason: null,
+    },
+    { name: 'set-lineup', runs: 2, current: catalogResources, usage: null, suggested: null, reason: 'insufficient_runs' },
+  ],
+}
+
+/** A finished pod run's recorded usage, against its container limits. */
+export const runResourcesFixture: RunResources = {
+  source: 'cgroup',
+  cpu_seconds: 2.5,
+  cpu_throttled_seconds: 0.25,
+  peak_memory_bytes: 128 * MIB,
+  wall_seconds: 10,
+  attempt: 1,
+  limits: { cpu_cores: 0.5, memory_bytes: 256 * MIB },
 }
