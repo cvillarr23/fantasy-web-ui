@@ -3,13 +3,13 @@ import { Link } from 'react-router-dom'
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { DndContext, useDraggable, useDroppable, type DragEndEvent } from '@dnd-kit/core'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Alert, Badge, Button, Checkbox, Group, Modal, Stack, Text, Tooltip } from '@mantine/core'
+import { Alert, Badge, Button, Checkbox, Group, Modal, Radio, Stack, Text, Tooltip } from '@mantine/core'
 import { ApiError, getCurrentWeek, triggerLineupSwap } from '../api/client'
 import { queryClient } from '../api/queryClient'
 import { lineupRosterQuery } from '../api/weekReads'
 import { useToast } from '../hooks/useToast'
 import { RosterQuickActions } from './RosterQuickActions'
-import { irMoveIdempotencyKey, irMoveInstruction } from './irMoves'
+import { irMoveIdempotencyKey, irMoveInstruction, irSwapCandidates, irSwapIdempotencyKey, irSwapInstructions } from './irMoves'
 import { lineupSections } from './lineupSections'
 import { LineupSuggestionPanel, LineupSuggestionPanelSkeleton } from './LineupSuggestionPanel'
 import { PlayerCard } from './player/PlayerCard'
@@ -49,6 +49,26 @@ interface IrAction {
 
 /** A failure before anything was sent, so its message can be shown as-is. */
 class IrMoveNotSentError extends Error {}
+
+interface IrMoveRequest {
+  line: LineupPlayerLine
+  /** The injured bench player who takes the IR spot when an activation needs bench room. */
+  toIr: LineupPlayerLine | null
+}
+
+/** What to send for an IR move, and the key its card looks up to show it queued. A paired
+ * swap sends under its own key, so it can't be answered as a duplicate of a lone activation. */
+function irMovePlan(config: DraftConfig, week: number | string, { line, toIr }: IrMoveRequest) {
+  const instruction = irMoveInstruction(line)
+  if (!instruction) return null
+  const cardKey = irMoveIdempotencyKey(config, week, instruction.player_id, instruction.kind)
+  if (!toIr) return { instructions: [instruction], sendKey: cardKey, cardKey }
+  return {
+    instructions: irSwapInstructions(line, toIr),
+    sendKey: irSwapIdempotencyKey(config, week, line.espn_id, toIr.espn_id),
+    cardKey,
+  }
+}
 
 // Only a 4xx proves the gateway refused the move. A timeout, a 5xx or a network failure may
 // have happened after the message was queued, so the wording stays uncertain and the retry
@@ -360,34 +380,35 @@ export function LineupEditor({ config, week = '', banner }: Props) {
 
   const [irTarget, setIrTarget] = useState<LineupPlayerLine | null>(null)
   const [irError, setIrError] = useState<string | null>(null)
+  const [irSwapPartnerId, setIrSwapPartnerId] = useState<string | null>(null)
   const [queuedIr, setQueuedIr] = useState<Record<string, QueuedIrMove>>({})
   // Mutation state reaches the render a tick late, so a fast second click would otherwise
   // start a second send before the Confirm button shows it is busy.
   const irInFlight = useRef(false)
   const irMutation = useMutation({
-    mutationFn: async (line: LineupPlayerLine) => {
-      const instruction = irMoveInstruction(line)
-      if (!instruction) throw new IrMoveNotSentError('This player has no ESPN id in our crosswalk. Make this move in ESPN.')
+    mutationFn: async (request: IrMoveRequest) => {
+      const plan = irMovePlan(config, week, request)
+      if (!plan) throw new IrMoveNotSentError('This player has no ESPN id in our crosswalk. Make this move in ESPN.')
       const live = await getCurrentWeek(config.season)
       if (!canSubmit || live.week !== Number(week)) {
         throw new IrMoveNotSentError('IR moves can only be submitted for the current week. Return to the current week and review your roster.')
       }
-      const key = irMoveIdempotencyKey(config, week, instruction.player_id, instruction.kind)
-      return { key, accepted: await triggerLineupSwap(config.team_id, [instruction], key) }
+      return { key: plan.cardKey, accepted: await triggerLineupSwap(config.team_id, plan.instructions, plan.sendKey) }
     },
   }, queryClient)
 
   function openIrMove(line: LineupPlayerLine) {
     setIrError(null)
+    setIrSwapPartnerId(null)
     setIrTarget(line)
   }
 
-  async function confirmIrMove() {
+  async function confirmIrMove(toIr: LineupPlayerLine | null) {
     if (!irTarget || irInFlight.current) return
     irInFlight.current = true
     setIrError(null)
     try {
-      const { key, accepted } = await irMutation.mutateAsync(irTarget)
+      const { key, accepted } = await irMutation.mutateAsync({ line: irTarget, toIr })
       setQueuedIr((prev) => ({
         ...prev,
         [key]: { trackingId: accepted.tracking_id, duplicate: accepted.status === 'duplicate' },
@@ -459,6 +480,11 @@ export function LineupEditor({ config, week = '', banner }: Props) {
 
   const irMoving = irTarget?.ir_suggestion?.action === 'move_to_ir'
   const sections = lineupSections(roster)
+  // Unsynced slot counts leave capacity unknown, so the activation goes alone as before.
+  const activationNeedsSwap = !irMoving && sections.benchCapacity !== null && sections.openBench === 0
+  const irSwapOptions = activationNeedsSwap ? irSwapCandidates(sections.bench) : []
+  const irSwapPartner = irSwapOptions.find((line) => line.player_id === irSwapPartnerId) ?? null
+  const irConfirmBlocked = activationNeedsSwap && !irSwapPartner
   const benchTitle = sectionTitle('Bench', sections.bench.length, sections.benchCapacity)
   const irTitle = sectionTitle('IR', sections.ir.length, sections.irCapacity)
   // A league with no IR slots has nothing to show unless ESPN still has someone there.
@@ -598,15 +624,36 @@ export function LineupEditor({ config, week = '', banner }: Props) {
               This is a real change to your ESPN roster, not a dry run.
             </Text>
             {irTarget.ir_suggestion && <Text size="sm" c="dimmed">{irTarget.ir_suggestion.reason}</Text>}
-            {/* The worker moves only this one player, so it neither fills the slot a starter
-                leaves nor makes bench room for a returning player. */}
+            {/* A lone move doesn't fill the slot a starter leaves. A full bench needs an
+                injured bench player to take the IR spot, which is the one paired move sent. */}
             <Text size="sm">
               {irMoving
                 ? irTarget.slot === 'BE' || irTarget.slot === 'BENCH'
                   ? 'This frees a bench spot.'
                   : `This leaves the ${irTarget.slot} slot empty until you start someone there.`
-                : 'ESPN needs an open bench spot for this, or it refuses the move.'}
+                : activationNeedsSwap
+                  ? 'Your bench is full, so an injured bench player has to take the IR spot in the same move.'
+                  : 'ESPN needs an open bench spot for this, or it refuses the move.'}
             </Text>
+            {activationNeedsSwap && (irSwapOptions.length > 0 ? (
+              <Radio.Group label="Move to IR in their place" value={irSwapPartnerId} onChange={setIrSwapPartnerId}>
+                <Stack gap="xs" mt="xs">
+                  {irSwapOptions.map((line) => (
+                    <Radio
+                      key={line.player_id}
+                      value={line.player_id}
+                      label={`${line.name} (${line.position}, ${line.injury_status})`}
+                      disabled={irMutation.isPending}
+                    />
+                  ))}
+                </Stack>
+              </Radio.Group>
+            ) : (
+              <Alert color="yellow">
+                No bench player is listed OUT or on injured reserve, so nobody can take the IR spot.
+                Drop a bench player in ESPN to make room.
+              </Alert>
+            ))}
             <Text size="sm">
               ESPN can still refuse it. For example, it only allows IR for players listed OUT or
               on injured reserve, and only with a free IR slot. This page can't see that answer,
@@ -617,7 +664,7 @@ export function LineupEditor({ config, week = '', banner }: Props) {
               <Button variant="default" onClick={() => setIrTarget(null)} disabled={irMutation.isPending}>
                 Cancel
               </Button>
-              <Button onClick={() => void confirmIrMove()} loading={irMutation.isPending}>
+              <Button onClick={() => void confirmIrMove(irSwapPartner)} loading={irMutation.isPending} disabled={irConfirmBlocked}>
                 {irMoving ? 'Confirm IR move' : 'Confirm activation'}
               </Button>
             </Group>

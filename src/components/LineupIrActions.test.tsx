@@ -187,3 +187,41 @@ it('sends nothing if the live week rolled over before confirming', async () => {
   expect(await within(dialog).findByText(/can only be submitted for the current week/)).toBeTruthy()
   expect(triggerLineupSwap).not.toHaveBeenCalled()
 })
+
+const fullBench = (bench: LineupPlayerLine[]): LineupRosterResponse => ({
+  starters: [player('Starter', 'RB')],
+  bench: [healed, ...bench],
+  lineup_slot_counts: { RB: 1, BE: bench.length, IR: 1 },
+})
+
+it('pairs an activation with an injured bench player when the bench is full', async () => {
+  vi.mocked(getLineupRoster).mockResolvedValue(fullBench([
+    player('Backup', 'BE'),
+    player('Broken', 'BE', { injury_status: 'OUT' }),
+  ]))
+  start()
+  fireEvent.click(await enabledButton('Activate Healed from IR'))
+  const dialog = await screen.findByRole('dialog')
+  expect(within(dialog).getByText(/bench is full/)).toBeTruthy()
+  const confirm = within(dialog).getByRole('button', { name: 'Confirm activation' }) as HTMLButtonElement
+  expect(confirm.disabled).toBe(true)
+  expect(within(dialog).queryByLabelText(/Backup/)).toBeNull()
+  fireEvent.click(within(dialog).getByLabelText('Broken (RB, OUT)'))
+  await waitFor(() => expect(confirm.disabled).toBe(false))
+  fireEvent.click(confirm)
+  await waitFor(() => expect(triggerLineupSwap).toHaveBeenCalledWith('8', [
+    { kind: 'activate_ir', player_id: 'espn-Healed', player_name: 'Healed', slot: 'BENCH' },
+    { kind: 'ir', player_id: 'espn-Broken', player_name: 'Broken', slot: 'IR' },
+  ], 'lineup-ir:123:8:2026:5:espn-Healed:activate_ir:swap:espn-Broken'))
+  expect(await screen.findByText('Queued for ESPN, not confirmed yet.')).toBeTruthy()
+})
+
+it('blocks an activation into a full bench with nobody injured to swap', async () => {
+  vi.mocked(getLineupRoster).mockResolvedValue(fullBench([player('Backup', 'BE')]))
+  start()
+  fireEvent.click(await enabledButton('Activate Healed from IR'))
+  const dialog = await screen.findByRole('dialog')
+  expect(within(dialog).getByText(/nobody can take the IR spot/)).toBeTruthy()
+  expect((within(dialog).getByRole('button', { name: 'Confirm activation' }) as HTMLButtonElement).disabled).toBe(true)
+  expect(triggerLineupSwap).not.toHaveBeenCalled()
+})
