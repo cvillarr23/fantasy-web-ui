@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, userEvent } from 'storybook/test'
+import { expect, userEvent, within } from 'storybook/test'
 import { mockFetch } from '../../.storybook/mockFetch'
 import type { TradeOffer } from '../api/types'
 import { OutgoingTradeProposals } from './OutgoingTradeProposals'
@@ -13,6 +13,7 @@ export function mockProposals(offers: TradeOffer[]) {
     { path: /\/v1\/trade\/offers\?status=/, body: { offers: [], limit: 100, offset: 0 } },
     { path: '/v1/league/teams', body: { '7': 'Our Team', '8': 'Rival Team' } },
     { path: '/v1/trade/score', method: 'POST', body: stagedProposal().evaluation!.score },
+    { path: /\/v1\/trade\/offers\/.+\/dismiss/, method: 'POST', body: { offer_key: 'a'.repeat(64), reason: 'manual', dismissed_by: 'Sample Manager', dismissed_at: '2026-10-07T12:00:00Z', duplicate: false } },
     { path: /\/v1\/trade\/offers\/.+\/approve/, method: 'POST', status: 202, body: { offer_key: 'b'.repeat(64), status: 'approved', tracking_id: 'story-queue', approved_by: 'Sample Manager', approved_at: '2026-10-07T12:00:00Z', duplicate: false } },
   ])
 }
@@ -52,5 +53,12 @@ export const Review: Story = {
     const button = await canvas.findByRole('button', { name: 'Review approval' })
     await expect(button).toBeEnabled()
     await userEvent.click(button)
+  },
+}
+export const Dismiss: Story = {
+  play: async ({ canvas }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Dismiss' }))
+    // The modal renders in a portal outside the story canvas.
+    await userEvent.type(await within(document.body).findByLabelText('Your name'), 'Sample Manager')
   },
 }

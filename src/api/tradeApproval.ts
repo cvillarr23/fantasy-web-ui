@@ -35,6 +35,19 @@ export async function approveTradeOffer(offerKey: string, label: string, message
   }
   return result
 }
+export interface TradeDismissResponse {
+  offer_key: string
+  reason: 'manual' | 'replaced_by_scan'
+  dismissed_by: string
+  dismissed_at: string
+  duplicate: boolean
+}
+export async function dismissTradeOffer(offerKey: string, label: string): Promise<TradeDismissResponse> {
+  if (!validOfferKey(offerKey) || !validApprover(label)) throw new Error('Invalid offer key or name')
+  return request<TradeDismissResponse>(`/v1/trade/offers/${offerKey}/dismiss`, {
+    method: 'POST', body: JSON.stringify({ dismissed_by: label.trim() }),
+  })
+}
 export async function getTradeProposalStates(config: DraftConfig): Promise<TradeOffer[]> {
   const pages = await Promise.all(tradeOfferStatuses.map(async status => {
     const offers: TradeOffer[] = []
