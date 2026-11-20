@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
-import { getTradeProposalStates } from '../api/tradeApproval'
-import { getOutgoingTradeOffers, getTeamNames, scoreTrade } from '../api/client'
+import { dismissTradeOffer, getTradeProposalStates } from '../api/tradeApproval'
+import { ApiError, getOutgoingTradeOffers, getTeamNames, scoreTrade } from '../api/client'
 import { OutgoingTradeProposals } from './OutgoingTradeProposals'
 import type { DraftConfig, TradeOffer } from '../api/types'
 import { partialScore, proposalEvaluation } from './tradeScore/fixtures'
 
-vi.mock('../api/tradeApproval', async importOriginal => ({ ...await importOriginal<typeof import('../api/tradeApproval')>(), getTradeProposalStates: vi.fn().mockResolvedValue([]), approveTradeOffer: vi.fn() }))
-vi.mock('../api/client', () => ({ getOutgoingTradeOffers: vi.fn(), getTeamNames: vi.fn(), scoreTrade: vi.fn() }))
+vi.mock('../api/tradeApproval', async importOriginal => ({ ...await importOriginal<typeof import('../api/tradeApproval')>(), getTradeProposalStates: vi.fn().mockResolvedValue([]), approveTradeOffer: vi.fn(), dismissTradeOffer: vi.fn() }))
+vi.mock('../api/client', async importOriginal => ({ ApiError: (await importOriginal<typeof import('../api/client')>()).ApiError, getOutgoingTradeOffers: vi.fn(), getTeamNames: vi.fn(), scoreTrade: vi.fn() }))
 const config: DraftConfig = { league_id: '123', team_id: '7', season: 2026, mode: 'live' }
 const offer: TradeOffer = {
   id: 1, status: 'awaiting_approval', league_id: '123', season: 2026,
@@ -319,4 +319,42 @@ it('discards a local edit when refreshed proposal terms change under the same ro
   await screen.findByText('Different player')
   expect(screen.getByRole('button', { name: 'Read generated message' }).getAttribute('aria-expanded')).toBe('false')
   expect(screen.queryByText('Text for the old players')).toBeNull()
+})
+
+const keyed = { ...offer, offer_key: 'c'.repeat(64) }
+async function dismissAs(name: string) {
+  fireEvent.click(await screen.findByRole('button', { name: 'Dismiss' }))
+  fireEvent.change(await screen.findByLabelText('Your name'), { target: { value: name } })
+  fireEvent.click(screen.getByRole('button', { name: 'Dismiss proposal' }))
+}
+
+it('dismisses a proposal and reloads the list without it', async () => {
+  vi.mocked(getOutgoingTradeOffers).mockResolvedValueOnce([keyed]).mockResolvedValue([])
+  vi.mocked(dismissTradeOffer).mockResolvedValue({ offer_key: keyed.offer_key, reason: 'manual', dismissed_by: 'Sam', dismissed_at: '2026-10-06T00:00:00Z', duplicate: false })
+  render(view())
+  await dismissAs('Sam')
+  await waitFor(() => expect(dismissTradeOffer).toHaveBeenCalledWith(keyed.offer_key, 'Sam'))
+  expect(await screen.findByText('No outgoing proposals awaiting approval.')).toBeTruthy()
+})
+
+it('needs a name before it dismisses', async () => {
+  vi.mocked(getOutgoingTradeOffers).mockResolvedValue([keyed])
+  render(view())
+  fireEvent.click(await screen.findByRole('button', { name: 'Dismiss' }))
+  expect((await screen.findByRole('button', { name: 'Dismiss proposal' }) as HTMLButtonElement).disabled).toBe(true)
+  expect(dismissTradeOffer).not.toHaveBeenCalled()
+})
+
+it('explains a conflict when the offer was approved first', async () => {
+  vi.mocked(getOutgoingTradeOffers).mockResolvedValue([keyed])
+  vi.mocked(dismissTradeOffer).mockRejectedValue(new ApiError(409, 'Offer is no longer awaiting approval.'))
+  render(view())
+  await dismissAs('Sam')
+  expect(await screen.findByText(/no longer awaiting approval, so it was not dismissed/)).toBeTruthy()
+})
+
+it('offers no dismiss without a valid offer key', async () => {
+  render(view())
+  await screen.findByText('Rival Team')
+  expect(screen.queryByRole('button', { name: 'Dismiss' })).toBeNull()
 })
