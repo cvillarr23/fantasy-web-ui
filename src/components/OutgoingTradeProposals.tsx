@@ -16,6 +16,7 @@ import { isProposalEvaluation } from './tradeScore/tradeScoreFormat'
 import { offerFingerprint, scope } from './tradeApprovalState'
 import { ProposalVerdict } from './tradeScore/ProposalVerdict'
 import { linkedOfferStyle, useLinkedOffer } from './linkedOffer'
+import { vorpLabel, vorpSummary } from './player/vorpSummary'
 
 function ProposalPlayers({ label, players, roster, week }: {
   label: string; players: TradeOffer['incoming_players']; roster: TradeContextPlayer[]; week?: number
@@ -24,10 +25,9 @@ function ProposalPlayers({ label, players, roster, week }: {
     <Text size="xs" fw={700} tt="uppercase" c={label === 'You get' ? 'var(--incoming)' : 'var(--outgoing)'}>{label}</Text>
     {players.map(player => {
       const details = roster.find(candidate => candidate.espn_id === player.espn_id)
-      const vorp = week == null ? null : details?.metrics[String(week)]?.vorp_score
       return <PlayerCard key={player.espn_id} variant="row" className="proposal-player"
         player={{ id: player.espn_id, name: details?.name || player.name || `ESPN player ${player.espn_id}`, position: details?.position, team: details?.nfl_team, espn: details?.espn }}
-        stats={details && <Text size="sm" fw={700}>{vorp == null ? 'VORP unavailable' : `${vorp.toFixed(1)} VORP`}</Text>}
+        stats={details && <Text size="sm" fw={700}>{week == null ? 'VORP unavailable' : vorpLabel(vorpSummary(details, week))}</Text>}
         badges={details && <ByeBadge byeWeek={details.nfl_bye_week} week={week} />} />
     })}
   </Stack>
@@ -83,6 +83,14 @@ export function OutgoingTradeProposals({ config, linkedOfferKey, players = [], w
   )
 }
 
+/** VORP and byes for the week the pitch was scored on, not whichever week the page shows.
+ * The roster metrics only cover the page week's horizon, so a proposal scored for an earlier
+ * week falls back to the page week; otherwise every player on it has no VORP to show. */
+function _playerMetricsWeek(scoredWeek: number | undefined, pageWeek: number | undefined) {
+  if (scoredWeek == null) return pageWeek
+  return pageWeek != null && scoredWeek < pageWeek ? pageWeek : scoredWeek
+}
+
 function ProposalCard({ offer, config, teamNames, roster, week, cardRef, isLinked, disabled }: {
   offer: TradeOffer; config: DraftConfig; teamNames?: Record<string, string>
   roster: TradeContextPlayer[]; week?: number
@@ -90,8 +98,7 @@ function ProposalCard({ offer, config, teamNames, roster, week, cardRef, isLinke
 }) {
   const counterparty = (offer.to_team_id && teamNames?.[offer.to_team_id]) || `Team ${offer.to_team_id}`
   const evaluation = isProposalEvaluation(offer.evaluation) ? offer.evaluation : undefined
-  // VORP and byes for the week the pitch was scored on, not whichever week the page shows.
-  const scoredWeek = evaluation?.request.week ?? week
+  const scoredWeek = _playerMetricsWeek(evaluation?.request.week, week)
   const [message, setMessage] = useState(offer.message ?? '')
   const [editing, setEditing] = useState(false)
   return (

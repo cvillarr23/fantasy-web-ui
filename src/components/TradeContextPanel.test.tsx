@@ -76,6 +76,8 @@ it('presents current ownership, identities, provenance and exact-week metrics', 
   const row = screen.getByText('Mapped Player').closest('tr')!
   expect(within(row).getByText('0.0')).toBeTruthy()
   expect(within(row).getByText('12.0')).toBeTruthy()
+  const outRow = screen.getByText('ESPN player -16002').closest('tr')!
+  expect(within(outRow).getByText('Out')).toBeTruthy()
 })
 it('distinguishes unknown strength, real zero, bye and unavailable pairing', async () => {
   render(view())
