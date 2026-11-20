@@ -6,7 +6,7 @@ const COLUMNS: { key: EspnSortKey; label: string }[] = [
   { key: 'rank', label: 'ESPN Rk' },
   { key: 'start', label: 'Start%' },
   { key: 'bench', label: 'Bench%' },
-  { key: 'change', label: 'Δ7d' },
+  { key: 'change', label: 'Δ1d' },
 ]
 
 function ariaSort(sort: EspnSort | null, key: EspnSortKey) {

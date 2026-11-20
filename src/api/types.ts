@@ -8,7 +8,7 @@ export type EspnOwnership = {
   percent_owned: number | null
   percent_started: number | null
   percent_bench: number | null
-  /** 7-day change in percent_owned, in points. */
+  /** 24h change in percent_owned, in points. */
   percent_change: number | null
 }
 

@@ -1504,7 +1504,7 @@ a.lineup-open-spot:focus-visible {
 .action-link .mantine-Button-label::after { content: '\00a0→'; }
 .lineup-submit { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
 
-/* ESPN market line: league-wide rank, start%, bench% and 7-day change under a player. */
+/* ESPN market line: league-wide rank, start%, bench% and 24h change under a player. */
 .espn-line {
   display: flex;
   flex-wrap: wrap;
