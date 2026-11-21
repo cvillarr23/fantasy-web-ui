@@ -4,7 +4,7 @@ import { MantineProvider } from '@mantine/core'
 import { dismissTradeOffer, getTradeProposalStates } from '../api/tradeApproval'
 import { ApiError, getOutgoingTradeOffers, getTeamNames, scoreTrade } from '../api/client'
 import { OutgoingTradeProposals } from './OutgoingTradeProposals'
-import type { DraftConfig, TradeOffer } from '../api/types'
+import type { DraftConfig, TradeContextPlayer, TradeOffer } from '../api/types'
 import { partialScore, proposalEvaluation } from './tradeScore/fixtures'
 
 vi.mock('../api/tradeApproval', async importOriginal => ({ ...await importOriginal<typeof import('../api/tradeApproval')>(), getTradeProposalStates: vi.fn().mockResolvedValue([]), approveTradeOffer: vi.fn(), dismissTradeOffer: vi.fn() }))
@@ -295,6 +295,25 @@ it('enriches only matching ESPN identities with position, VORP and bye', async (
   expect(screen.getByText('Bye Wk 9')).toBeTruthy()
   expect(screen.getByText('RB · CIN')).toBeTruthy()
   expect(screen.getByText('ESPN player 9999')).toBeTruthy()
+})
+
+it('explains a missing week VORP with the bye or injury and the rest of the horizon', async () => {
+  vi.mocked(getOutgoingTradeOffers).mockResolvedValue([{ ...offer, incoming_player_ids: ['4046'], incoming_players: [{ espn_id: '4046', name: 'Bye Back' }], outgoing_player_ids: ['4047'], outgoing_players: [{ espn_id: '4047', name: 'Hurt Wideout' }] }])
+  const roster: TradeContextPlayer[] = [
+    { espn_id: '4046', player_id: 'p4046', name: 'Bye Back', position: 'RB', nfl_team: 'CIN', slot: 'RB', eligible_slots: ['RB'], injury_status: 'ACTIVE', nfl_bye_week: 5, metrics: { '5': { vorp_score: null, projected_points: null }, '6': { vorp_score: 2, projected_points: 12 }, '7': { vorp_score: 1.5, projected_points: 11 } } },
+    { espn_id: '4047', player_id: 'p4047', name: 'Hurt Wideout', position: 'WR', nfl_team: 'SF', slot: 'IR', eligible_slots: ['WR'], injury_status: 'INJURY_RESERVE', nfl_bye_week: 9, metrics: { '5': { vorp_score: null, projected_points: null } } },
+  ]
+  render(<MantineProvider><OutgoingTradeProposals config={config} players={roster} week={5} /></MantineProvider>)
+  expect(await screen.findByText('On bye · 3.5 VORP next 2 wks')).toBeTruthy()
+  expect(screen.getByText('IR · no projection')).toBeTruthy()
+  expect(screen.queryByText('VORP unavailable')).toBeNull()
+})
+
+it('falls back to the page week for a proposal scored before the loaded horizon', async () => {
+  vi.mocked(getOutgoingTradeOffers).mockResolvedValue([{ ...offer, evaluation: proposalEvaluation() }])
+  const roster: TradeContextPlayer[] = [{ espn_id: '4046', player_id: 'p4046', name: 'Roster Back', position: 'RB', nfl_team: 'CIN', slot: 'RB', eligible_slots: ['RB'], injury_status: null, nfl_bye_week: 9, metrics: { '7': { vorp_score: 3.1, projected_points: 14 } } }]
+  render(<MantineProvider><OutgoingTradeProposals config={config} players={roster} week={7} /></MantineProvider>)
+  expect(await screen.findByText('3.1 VORP')).toBeTruthy()
 })
 
 it('keeps an already-persisted edit fixed so retry cannot reset the queued terms', async () => {

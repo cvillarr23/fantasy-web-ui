@@ -1,10 +1,11 @@
 import { Table, Text } from '@mantine/core'
-import type { TradeContextTeam } from '../api/types'
+import type { TradeContextPlayer, TradeContextTeam } from '../api/types'
 
 import { contextNumber } from './tradeContextFormat'
 import { ByeBadge } from './player/ByeBadge'
 import { EspnCells, EspnHeaders } from './player/EspnColumns'
 import { useEspnSort } from './player/useEspnSort'
+import { vorpCell, vorpSummary } from './player/vorpSummary'
 
 export function TradeContextRoster({ team, week }: { team: TradeContextTeam; week: number }) {
   const espnSort = useEspnSort(team.roster, (player) => player.espn)
@@ -36,8 +37,8 @@ export function TradeContextRoster({ team, week }: { team: TradeContextTeam; wee
                 </Table.Td>
                 <Table.Td>{player.slot ?? 'Unknown'} / {player.eligible_slots.join(', ') || 'Unknown'}</Table.Td>
                 <Table.Td>{player.injury_status ?? 'Not reported'}</Table.Td>
-                <Table.Td>{contextNumber(player.metrics[String(week)]?.vorp_score)}</Table.Td>
-                <Table.Td>{contextNumber(player.metrics[String(week)]?.projected_points)}</Table.Td>
+                <Table.Td>{vorpCell(vorpSummary(player, week))}</Table.Td>
+                <Table.Td>{_projectedCell(player, week)}</Table.Td>
                 <EspnCells position={player.position} espn={player.espn} />
               </Table.Tr>
             ))}</Table.Tbody>
@@ -46,4 +47,10 @@ export function TradeContextRoster({ team, week }: { team: TradeContextTeam; wee
       )}
     </section>
   )
+}
+
+/** Core writes no projection for a player's bye week, so say so instead of "Unknown". */
+function _projectedCell(player: TradeContextPlayer, week: number): string {
+  const projected = player.metrics[String(week)]?.projected_points
+  return projected == null && player.nfl_bye_week === week ? 'Bye' : contextNumber(projected)
 }
