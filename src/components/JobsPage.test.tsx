@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { ApiError } from '../api/client'
 import { cancelRun, getJobCatalog, getLatestChainRun, getLauncherHealth, getRecentJobRuns, getResourceSuggestions, pauseJob, startJobRun } from '../api/jobs'
-import { getRun } from '../api/runs'
-import { catalogFixture, chainRootFixture, healthFixture } from './jobs/fixtures'
+import { getRun, getWaitingApprovals } from '../api/runs'
+import { catalogFixture, chainApprovalFixture, chainRootFixture, healthFixture } from './jobs/fixtures'
 import { renderForTest } from './jobs/renderForTest'
 import { JobsPage } from './JobsPage'
 
@@ -21,6 +21,7 @@ vi.mock('../api/jobs', async (importOriginal) => ({
 vi.mock('../api/runs', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../api/runs')>()),
   getRun: vi.fn(),
+  getWaitingApprovals: vi.fn(),
 }))
 
 beforeEach(() => {
@@ -29,6 +30,7 @@ beforeEach(() => {
   vi.mocked(getLauncherHealth).mockResolvedValue(healthFixture)
   vi.mocked(getLatestChainRun).mockResolvedValue(chainRootFixture)
   vi.mocked(getRun).mockResolvedValue(chainRootFixture)
+  vi.mocked(getWaitingApprovals).mockResolvedValue({ items: [] })
   vi.mocked(getRecentJobRuns).mockResolvedValue([])
   vi.mocked(getResourceSuggestions).mockResolvedValue({ days: 30, min_runs: 5, jobs: [] })
   vi.mocked(startJobRun).mockResolvedValue({ run_id: 'run-9', status: 'queued' })
@@ -55,6 +57,24 @@ describe('JobsPage', () => {
     expect(screen.getByRole('link', { name: '1 running or queued' })).toBeTruthy()
     expect(screen.getByRole('link', { name: '1 failed last run' })).toBeTruthy()
     expect(await screen.findByText('Launcher healthy · heartbeat 12s ago')).toBeTruthy()
+  })
+
+  it('counts approvals waiting for you and links to them', async () => {
+    vi.mocked(getWaitingApprovals).mockResolvedValue({ items: [chainApprovalFixture, { ...chainApprovalFixture, id: 'run-2' }] })
+    open()
+    const pill = await screen.findByRole('link', { name: '2 waiting for you' })
+    expect(pill.getAttribute('href')).toBe('/activity?tab=runs&status=waiting')
+  })
+
+  it('shows none waiting as zero rather than hiding the count', async () => {
+    open()
+    expect(await screen.findByRole('link', { name: '0 waiting for you' })).toBeTruthy()
+  })
+
+  it('says so when the waiting count cannot load', async () => {
+    vi.mocked(getWaitingApprovals).mockRejectedValue(new ApiError(500, 'down'))
+    open()
+    expect(await screen.findByRole('link', { name: 'waiting for you unavailable' })).toBeTruthy()
   })
 
   it('warns when the launcher heartbeat is old', async () => {
@@ -125,7 +145,7 @@ describe('JobsPage', () => {
   it('brings the rail into view when a job is picked from a chain step', async () => {
     open()
     const scroll = vi.mocked(Element.prototype.scrollIntoView)
-    const step = await screen.findByRole('button', { name: /^set-lineup, Waiting, affects team/ })
+    const step = await screen.findByRole('button', { name: /^set-lineup, Pending, affects team/ })
     scroll.mockClear()
     fireEvent.click(step)
     expect(scroll).toHaveBeenCalled()

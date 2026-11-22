@@ -6,6 +6,7 @@ const TONES: Record<string, string> = {
   timeout: 'failure',
   running: 'running',
   queued: 'queued',
+  waiting: 'waiting',
 }
 
 /** A status badge for these light surfaces. Unknown or quiet statuses stay neutral. */

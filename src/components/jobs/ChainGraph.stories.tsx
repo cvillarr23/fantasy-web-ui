@@ -78,3 +78,25 @@ export const LongRunningStep: Story = {
     await expect(canvas.getByRole('button', { name: `Cancel, ${LONG_STEP}` })).toBeVisible()
   },
 }
+
+const approvalChain = {
+  ...chainFixture,
+  steps: { ...chainFixture.steps, 'refresh-sample': { ...chainFixture.steps['refresh-sample'], approval: { title: 'Approve lineup changes', timeout_seconds: 86_400 } } },
+}
+const waitingRoot: RunDetail = {
+  ...chainRootFixture,
+  children: [
+    chainRootFixture.children[0],
+    { ...chainRootFixture.children[0], id: 'r2', job_name: 'score-sample', status: 'success', finished_at: '2026-11-03T22:10:00Z' },
+    { ...chainRootFixture.children[0], id: 'r3', job_name: 'refresh-sample', status: 'waiting', finished_at: null, expires_at: '2026-11-04T22:00:00Z', executor: 'approval' },
+  ],
+}
+/** An approval step that is waiting for you, with what it asks and when it lapses. */
+export const WaitingForYou: Story = {
+  args: { chain: approvalChain, root: waitingRoot },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('Waiting for you · step 3 of 5')).toBeVisible()
+    await expect(canvas.getByRole('button', { name: /^refresh-sample, Waiting for you/ })).toBeVisible()
+    await expect(canvas.getAllByText('Pending')).toHaveLength(2)
+  },
+}

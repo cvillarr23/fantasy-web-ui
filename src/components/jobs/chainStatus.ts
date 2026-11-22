@@ -1,9 +1,9 @@
 import type { ChainInfo } from '../../api/jobs'
 import type { ChildRun, RunDetail, RunStatus } from '../../api/runs'
-import { isActiveRun, statusLabel } from '../runFormat'
+import { isActiveRun, isWaitingRun, statusLabel } from '../runFormat'
 import { orderedSteps, stepsFrom } from './jobsFormat'
 
-export type ChainStepStatus = RunStatus | 'waiting' | 'not_run' | 'not_in_run' | 'no_run'
+export type ChainStepStatus = RunStatus | 'pending' | 'not_run' | 'not_in_run' | 'no_run'
 
 export interface ChainStepState {
   step: string
@@ -12,7 +12,7 @@ export interface ChainStepState {
 }
 
 const STEP_LABELS: Partial<Record<ChainStepStatus, string>> = {
-  waiting: 'Waiting',
+  pending: 'Pending',
   not_run: 'Not run',
   not_in_run: 'Not in this run',
   no_run: 'No run yet',
@@ -32,7 +32,7 @@ export function chainStepStates(chain: ChainInfo, root: RunDetail | null): Chain
   const steps = orderedSteps(chain)
   if (!root) return steps.map((step) => ({ step, status: 'no_run' }))
   const scope = runScope(chain, root)
-  const unstarted = isActiveRun(root.status) ? 'waiting' : 'not_run'
+  const unstarted = isActiveRun(root.status) ? 'pending' : 'not_run'
   return steps.map((step) => {
     const run = root.children.find((child) => child.job_name === step)
     if (run) return { step, status: run.status, run }
@@ -40,12 +40,17 @@ export function chainStepStates(chain: ChainInfo, root: RunDetail | null): Chain
   })
 }
 
+/** A step that hasn't finished: not started, in progress, or waiting for a person. */
+const isUnfinished = (status: ChainStepStatus) =>
+  status === 'pending' || isActiveRun(status) || isWaitingRun(status)
+
 /** One line on how a chain run stands. */
 export function chainProgress(chain: ChainInfo, root: RunDetail | null) {
   if (!root) return 'No run yet'
   if (!isActiveRun(root.status)) return statusLabel(root.status)
   const inScope = chainStepStates(chain, root).filter((state) => state.status !== 'not_in_run')
-  const current = inScope.findIndex((state) => state.status === 'waiting' || isActiveRun(state.status))
+  const current = inScope.findIndex((state) => isUnfinished(state.status))
   const position = current === -1 ? inScope.length : current + 1
-  return `Running · step ${position} of ${inScope.length}`
+  const heading = isWaitingRun(inScope[current]?.status) ? 'Waiting for you' : 'Running'
+  return `${heading} · step ${position} of ${inScope.length}`
 }

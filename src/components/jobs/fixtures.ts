@@ -214,3 +214,33 @@ export const runResourcesFixture: RunResources = {
   attempt: 1,
   limits: { cpu_cores: 0.5, memory_bytes: 256 * MIB },
 }
+
+/** An approval a chain step opened: nothing to launch, so it is decided on the run itself. */
+export const chainApprovalFixture: RunDetail = {
+  ...runDetailFixture,
+  id: 'run-approve-lineup',
+  job_name: 'review-lineup',
+  trigger_type: 'chain',
+  status: 'waiting',
+  executor: 'approval',
+  finished_at: null,
+  expires_at: '2026-11-04T22:00:00Z',
+  end_reason: null,
+  error: null,
+  trigger: { title: 'Approve lineup changes', then: null },
+  summary: {},
+}
+
+/** An approval a process opened for one trade offer: decided on the Trades page. */
+export const tradeApprovalFixture: RunDetail = {
+  ...chainApprovalFixture,
+  id: 'run-approve-trade',
+  job_name: 'approval',
+  trigger_type: 'manual',
+  trigger: {
+    title: 'Send Sam Example for Pat Sample',
+    key: 'a'.repeat(64),
+    link: `/trades?offer=${'a'.repeat(64)}`,
+    then: { job: 'trade-submit', params: { offer_key: 'a'.repeat(64) } },
+  },
+}

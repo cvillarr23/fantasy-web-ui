@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Alert, Badge, Group, Select, Table, Text } from '@mantine/core'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   getJobs,
   getRuns,
@@ -11,8 +11,9 @@ import {
   type RunStatus,
   type TriggerType,
 } from '../api/runs'
+import { approvalTitle, isApprovalRun } from './jobs/approvalRun'
 import { EmptyState } from './ui/EmptyState'
-import { duration, isActiveRun, logIssues, plural, runLabel, runOutcome, runStamp } from './runFormat'
+import { duration, isActiveRun, isWaitingRun, logIssues, plural, runLabel, runOutcome, runStamp, statusLabel } from './runFormat'
 import { ErrorAlert } from './ui/ErrorAlert'
 import { Pager } from './ui/Pager'
 import { CardListSkeleton } from './skeletons'
@@ -34,12 +35,20 @@ const FILTERABLE_TRIGGERS = Object.keys(TRIGGER_LABELS) as TriggerType[]
 const STATUS_COLORS: Record<RunStatus, string> = {
   queued: 'yellow',
   running: 'blue',
+  waiting: 'clay',
   success: 'teal',
   failure: 'red',
   timeout: 'red',
   skipped: 'gray',
   cancelled: 'gray',
 }
+
+const FILTERABLE_STATUSES: { value: RunStatus; label: string }[] = [
+  { value: 'success', label: 'Success' },
+  { value: 'failure', label: 'Failure' },
+  { value: 'running', label: 'Running' },
+  { value: 'waiting', label: 'Waiting for you' },
+]
 
 export const triggerLabel = (type: TriggerType) => TRIGGER_LABELS[type] ?? type
 
@@ -51,7 +60,8 @@ export function TriggerBadge({ type }: { type: TriggerType }) {
   )
 }
 export function StatusBadge({ status }: { status: RunStatus }) {
-  return <Badge color={STATUS_COLORS[status] ?? 'gray'}>{runLabel(status)}</Badge>
+  const label = isWaitingRun(status) ? statusLabel(status) : runLabel(status)
+  return <Badge color={STATUS_COLORS[status] ?? 'gray'}>{label}</Badge>
 }
 
 /** Latest run per job, plus any dead-lettered queue messages, above the run table. */
@@ -102,7 +112,7 @@ function JobHealthStrip({ onPickJob }: { onPickJob: (job: string) => void }) {
 }
 
 function RunOutcomeCell({ run }: { run: Run }) {
-  const outcome = runOutcome(run)
+  const outcome = (isApprovalRun(run) && approvalTitle(run)) || runOutcome(run)
   const issues = logIssues(run.summary)
   const linked = run.input_count + run.output_count + run.llm_count > 0
   return (
@@ -123,10 +133,17 @@ function RunOutcomeCell({ run }: { run: Run }) {
   )
 }
 
+/** The filter a link such as the Jobs page's waiting pill asked for, if it is one the list can filter. */
+function filtersFromLink(params: URLSearchParams): RunFilters {
+  const status = params.get('status')
+  return FILTERABLE_STATUSES.some((option) => option.value === status) ? { status: status as RunStatus } : {}
+}
+
 export function RunsPanel() {
   const navigate = useNavigate()
+  const [search] = useSearchParams()
   const [offset, setOffset] = useState(0)
-  const [filters, setFilters] = useState<RunFilters>({})
+  const [filters, setFilters] = useState<RunFilters>(() => filtersFromLink(search))
   const runs = useQuery({
     queryKey: ['runs', offset, filters],
     queryFn: () => getRuns(offset, filters),
@@ -155,11 +172,7 @@ export function RunsPanel() {
           label="Status"
           placeholder="Any status"
           clearable
-          data={[
-            { value: 'success', label: 'Success' },
-            { value: 'failure', label: 'Failure' },
-            { value: 'running', label: 'Running' },
-          ]}
+          data={FILTERABLE_STATUSES}
           value={filters.status || null}
           onChange={(status) => update({ status: (status as RunStatus) ?? '' })}
         />

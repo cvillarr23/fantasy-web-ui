@@ -1,5 +1,5 @@
 import type { RunSummary } from '../../api/runs'
-import { duration, isActiveRun, runLabel, runStamp, statusLabel } from '../runFormat'
+import { duration, isActiveRun, isWaitingRun, runLabel, runStamp, statusLabel } from '../runFormat'
 
 interface Stage {
   title: string
@@ -22,6 +22,7 @@ function requestedStage(run: RunSummary): Stage {
 
 function startedStage(run: RunSummary): Stage {
   if (run.status === 'queued') return { title: 'Queued', when: '—', note: 'Waiting to start', tone: 'queued' }
+  if (isWaitingRun(run.status)) return { title: 'Opened', when: runStamp(run.started_at), note: 'Waiting for you', tone: 'waiting' }
   if (NEVER_STARTED.has(run.status)) return { title: 'Not started', when: '—', note: '', tone: 'neutral' }
   return { title: 'Started', when: runStamp(run.started_at), note: 'Latest attempt', tone: 'running' }
 }

@@ -85,6 +85,34 @@ it('filters the table to a job picked from the health strip', async () => {
   await waitFor(() => expect(getRuns).toHaveBeenLastCalledWith(0, { job: 'sync_rumors' }))
 })
 
+it('lists waiting approvals by their title with a waiting-for-you badge', async () => {
+  vi.mocked(getRuns).mockResolvedValue({
+    items: [{ ...run, id: 'run-a', job_name: 'approval', status: 'waiting', executor: 'approval', finished_at: null, summary: {}, trigger: { title: 'Send Sam Example for Pat Sample' } }],
+  })
+  renderAt('/activity')
+  const table = within(await screen.findByRole('table'))
+  expect(table.getByText('Waiting for you')).toBeTruthy()
+  expect(table.getByText('Send Sam Example for Pat Sample')).toBeTruthy()
+})
+
+it('opens filtered to waiting approvals when linked with a status', async () => {
+  renderAt('/activity?tab=runs&status=waiting')
+  await waitFor(() => expect(getRuns).toHaveBeenCalledWith(0, { status: 'waiting' }))
+})
+
+it('ignores a status in the link that the list cannot filter', async () => {
+  renderAt('/activity?status=bogus')
+  await waitFor(() => expect(getRuns).toHaveBeenCalledWith(0, {}))
+})
+
+it('offers waiting as a status filter', async () => {
+  renderAt('/activity')
+  const input = (await screen.findAllByLabelText('Status')).find((element) => element.tagName === 'INPUT')!
+  fireEvent.click(input)
+  fireEvent.click(await screen.findByRole('option', { name: 'Waiting for you', hidden: true }))
+  await waitFor(() => expect(getRuns).toHaveBeenLastCalledWith(0, { status: 'waiting' }))
+})
+
 it('shows what a run read and produced, and links articles to their trace', async () => {
   vi.mocked(getRun).mockResolvedValue({
     ...run,
