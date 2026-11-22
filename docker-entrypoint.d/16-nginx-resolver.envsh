@@ -1,0 +1,29 @@
+# The nginx image's entrypoint sources *.envsh files (rather than running them), so the
+# NGINX_RESOLVER exported here reaches the 20-envsubst step that renders
+# /etc/nginx/templates.
+
+# Defaults NGINX_RESOLVER to the first nameserver in /etc/resolv.conf, which in Kubernetes
+# is the cluster DNS Service, so one image works on any cluster. An explicit
+# NGINX_RESOLVER always wins.
+_first_nameserver() {
+    awk '$1 == "nameserver" { print $2; exit }' /etc/resolv.conf
+}
+
+# nginx needs IPv6 resolver addresses in brackets.
+_nginx_address() {
+    case "$1" in
+        *:*) echo "[$1]" ;;
+        *) echo "$1" ;;
+    esac
+}
+
+if [ -z "${NGINX_RESOLVER:-}" ]; then
+    _nameserver="$(_first_nameserver)"
+    if [ -z "$_nameserver" ]; then
+        echo "16-nginx-resolver.envsh: NGINX_RESOLVER is unset and /etc/resolv.conf has no nameserver" >&2
+        return 1
+    fi
+    NGINX_RESOLVER="$(_nginx_address "$_nameserver")"
+    echo "16-nginx-resolver.envsh: NGINX_RESOLVER not set, using $NGINX_RESOLVER from /etc/resolv.conf"
+fi
+export NGINX_RESOLVER
