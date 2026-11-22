@@ -51,8 +51,14 @@ export interface ChainDependency {
   step: string
   on: 'success' | 'finish'
 }
+export interface ApprovalStepInfo {
+  title: string
+  timeout_seconds: number
+}
 export interface ChainStepInfo {
   after: ChainDependency[]
+  /** Set for a step that waits for a person instead of running a job. */
+  approval?: ApprovalStepInfo | null
   /** Local time, in the chain schedule's timezone, by which the step starts anyway. */
   latest?: string | null
   last_run?: LastRun | null
@@ -89,6 +95,13 @@ export interface StartRunResponse {
 export interface CancelRunResponse {
   run_id: string
   status: string
+}
+export interface ApprovalDecisionResponse {
+  run_id: string
+  status: string
+  end_reason: string
+  /** The run an approval started, or null when it gates nothing or the scheduler will start it. */
+  then_run_id?: string | null
 }
 export interface PauseRequest {
   /** When the pause ends, with a timezone. Null pauses until someone resumes it. */
@@ -155,6 +168,14 @@ export const startJobRun = (name: string, body: StartRunRequest) =>
 /** Cancels a queued or running run. Cancelling a chain root also cancels its active steps. */
 export const cancelRun = (runId: string) =>
   request<CancelRunResponse>(`/v1/runs/${encodeURIComponent(runId)}/cancel`, { method: 'POST' })
+
+/** Approves a waiting approval run: it ends `success` and starts the run it gates, if any. */
+export const approveRun = (runId: string) =>
+  request<ApprovalDecisionResponse>(`/v1/runs/${encodeURIComponent(runId)}/approve`, { method: 'POST' })
+
+/** Dismisses a waiting approval run: it ends `skipped` and starts nothing. */
+export const dismissRun = (runId: string) =>
+  request<ApprovalDecisionResponse>(`/v1/runs/${encodeURIComponent(runId)}/dismiss`, { method: 'POST' })
 
 /** Pauses a job or a chain: its scheduled slots are skipped until ``until`` or a resume. */
 export const pauseJob = (name: string, body: PauseRequest) =>

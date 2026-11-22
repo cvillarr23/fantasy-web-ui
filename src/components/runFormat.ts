@@ -14,10 +14,15 @@ export function skipReason(run: { status: string; end_reason?: string | null }) 
   return run.status === 'skipped' && run.end_reason ? runLabel(run.end_reason) : ''
 }
 
-/** "Success", "Cancelled". */
+const STATUS_LABELS: Record<string, string> = { waiting: 'Waiting for you' }
+
+/** "Success", "Cancelled", "Waiting for you". */
 export function statusLabel(status: string) {
-  return status.charAt(0).toUpperCase() + status.slice(1)
+  return STATUS_LABELS[status] ?? status.charAt(0).toUpperCase() + status.slice(1)
 }
+
+/** An approval run is waiting for a person to decide. It holds no pod, so it isn't "active". */
+export const isWaitingRun = (status?: string | null) => status === 'waiting'
 
 /** Wall-clock length of a finished run, or a dash while it runs. */
 export function duration(run: Pick<RunSummary, 'started_at' | 'finished_at'>) {

@@ -42,6 +42,7 @@
 .job-status-failure { --tone: var(--error); }
 .job-status-running { --tone: var(--projected); }
 .job-status-queued { --tone: var(--warn); }
+.job-status-waiting { --tone: var(--accent); }
 
 .chain-panel { display: flex; flex-direction: column; gap: 12px; }
 .chain-panel-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 16px; }
@@ -59,6 +60,7 @@
 .chain-node { width: 176px; height: 160px; box-sizing: border-box; padding: 10px 12px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; text-align: left; font: inherit; font-size: 14px; border-radius: 12px; cursor: pointer; background: var(--bg); color: var(--text); border: 1px solid var(--border); }
 .chain-node:hover { background: var(--raised); }
 .chain-node-running { border: 2px solid var(--projected); }
+.chain-node-waiting { border: 2px dashed var(--accent); }
 .chain-node-selected { border: 2px solid var(--accent); }
 .chain-node-title { width: 100%; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 2px 6px; }
 .chain-node-name { font-weight: 600; color: var(--text-h); overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
@@ -78,6 +80,7 @@
 .run-stage small { color: var(--muted); font-size: 12px; }
 .run-stage-running { --tone: var(--projected); }
 .run-stage-queued { --tone: var(--warn); }
+.run-stage-waiting { --tone: var(--accent); }
 .run-stage-success { --tone: var(--incoming); }
 .run-stage-failure { --tone: var(--error); }
 .run-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
@@ -110,3 +113,6 @@
   .job-run-actions { display: flex; flex-direction: column; }
   .run-session-chip { margin-left: 0; }
 }
+
+.approval-panel { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 12px 14px; border: 2px dashed var(--accent); border-radius: 12px; }
+.approval-panel h3 { margin: 0; }

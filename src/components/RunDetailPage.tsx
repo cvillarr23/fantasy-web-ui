@@ -17,6 +17,8 @@ import { ErrorAlert } from './ui/ErrorAlert'
 import { EmptyState } from './ui/EmptyState'
 import { TextSkeleton, SkeletonRegion } from './skeletons'
 import { PageHeader } from './ui/PageHeader'
+import { ApprovalPanel } from './jobs/ApprovalPanel'
+import { isApprovalRun } from './jobs/approvalRun'
 import { ChildRunList } from './jobs/ChildRunList'
 import { GrafanaLogs } from './jobs/GrafanaLogs'
 import './jobs/jobs.css'
@@ -27,6 +29,7 @@ import { StatusBadge, TriggerBadge, triggerLabel } from './RunsPanel'
 import {
   duration,
   isActiveRun,
+  isWaitingRun,
   logIssues,
   plural,
   RESERVED_SUMMARY_KEYS,
@@ -170,11 +173,15 @@ function paramsText(run: Run) {
   return entries.map(([key, value]) => `${runLabel(key)}: ${text(value)}`).join(', ') || 'None'
 }
 
+// An approval run's own panel already shows these.
+const APPROVAL_KEYS = new Set(['title', 'link', 'key'])
+
 /** Launcher rows nest params in `trigger`, which get their own fact, and carry a
  * `downstream` flag that the run's chain link already says more clearly. */
 function triggerDetails(run: Run) {
+  const shownElsewhere = (key: string) => key === 'downstream' || (isApprovalRun(run) && APPROVAL_KEYS.has(key))
   return Object.entries(run.trigger)
-    .filter(([key, value]) => key !== 'downstream' && (typeof value !== 'object' || value === null))
+    .filter(([key, value]) => !shownElsewhere(key) && (typeof value !== 'object' || value === null))
     .map(([key, value]) => `${runLabel(key)}: ${text(value)}`)
     .join(' · ')
 }
@@ -213,7 +220,7 @@ export function RunDetailPage() {
   const query = useQuery({
     queryKey: ['run', id],
     queryFn: () => getRun(id),
-    refetchInterval: (q) => (isActiveRun(q.state.data?.status) ? RUNNING_POLL_MS : false),
+    refetchInterval: (q) => (isActiveRun(q.state.data?.status) || isWaitingRun(q.state.data?.status) ? RUNNING_POLL_MS : false),
   })
   const catalog = useQuery({ queryKey: JOB_CATALOG_KEY, queryFn: getJobCatalog })
   const uiConfig = useQuery({ queryKey: ['ui-config'], queryFn: getUiConfig, staleTime: Infinity })
@@ -252,6 +259,7 @@ export function RunDetailPage() {
                 </Text>
               )}
             </Group>
+            {isApprovalRun(run) && <ApprovalPanel run={run} />}
             <RunTimeline run={run} />
             <RunFacts run={run} />
             {triggerDetails(run) && <Text size="sm" c="dimmed">{triggerDetails(run)}</Text>}

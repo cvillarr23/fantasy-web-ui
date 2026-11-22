@@ -1,7 +1,7 @@
 import { request } from './client'
 
 export type TriggerType = 'schedule' | 'queue' | 'http' | 'manual' | 'chain' | 'event' | 'cli' | 'mcp'
-export type RunStatus = 'queued' | 'running' | 'success' | 'failure' | 'timeout' | 'skipped' | 'cancelled'
+export type RunStatus = 'queued' | 'running' | 'waiting' | 'success' | 'failure' | 'timeout' | 'skipped' | 'cancelled'
 
 export interface RunSummary {
   id: string
@@ -89,6 +89,12 @@ export interface RunFilters {
 export const getRuns = (offset = 0, filters: RunFilters = {}) => {
   const params = new URLSearchParams({ offset: String(offset), limit: String(RUNS_PAGE_SIZE) })
   for (const [key, value] of Object.entries(filters)) if (value) params.set(key, value)
+  return request<{ items: Run[] }>(`/v1/activity/runs?${params}`)
+}
+/** Approval runs waiting for a person. Core has no count endpoint, so the page is the count. */
+export const WAITING_APPROVALS_LIMIT = 100
+export const getWaitingApprovals = () => {
+  const params = new URLSearchParams({ status: 'waiting', limit: String(WAITING_APPROVALS_LIMIT) })
   return request<{ items: Run[] }>(`/v1/activity/runs?${params}`)
 }
 export const getRun = (id: string) =>

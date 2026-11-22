@@ -4,9 +4,10 @@ import { mockFetch, type MockRoute } from '../../.storybook/mockFetch'
 import { queryClient } from '../api/queryClient'
 import { JOB_CATALOG_KEY } from '../hooks/jobQueries'
 import { JobsPage } from './JobsPage'
-import { catalogFixture, chainRootFixture, healthFixture } from './jobs/fixtures'
+import { catalogFixture, chainApprovalFixture, chainRootFixture, healthFixture } from './jobs/fixtures'
 
 const chainRoutes: MockRoute[] = [
+  { path: /^\/v1\/activity\/runs\?status=waiting/, body: { items: [] } },
   { path: /^\/v1\/activity\/runs\?job=sample-weekly/, body: { items: [chainRootFixture] } },
   { path: /^\/v1\/activity\/runs\?job=/, body: { items: [] } },
   { path: '/v1/activity/runs/root-1', body: chainRootFixture },
@@ -133,5 +134,16 @@ export const Phone: Story = {
   play: async ({ canvasElement, canvas }) => {
     await expect(await canvas.findByRole('button', { name: 'sync-rumors' })).toBeVisible()
     await expect(canvasElement.ownerDocument.documentElement.scrollWidth).toBeLessThanOrEqual(window.innerWidth)
+  },
+}
+
+/** Approvals waiting for you are counted in the header. */
+export const WaitingApprovals: Story = {
+  beforeEach: () =>
+    mockJobs({ body: catalogFixture }, [
+      { path: /^\/v1\/activity\/runs\?status=waiting/, body: { items: [chainApprovalFixture, { ...chainApprovalFixture, id: 'run-2' }] } },
+    ]),
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('link', { name: '2 waiting for you' })).toBeVisible()
   },
 }

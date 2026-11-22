@@ -10,7 +10,7 @@ Route: `/jobs`. Add `?job=<name>` to open with a job selected.
 
 | Area | Shows |
 |---|---|
-| Header pills | How many jobs there are, how many are running or queued, how many failed their last run, and the launcher heartbeat |
+| Header pills | How many jobs there are, how many are running or queued, how many failed their last run, how many approvals are waiting for you, and the launcher heartbeat |
 | All jobs | Each job's schedule or trigger, last run, next slot, and Run and Cancel buttons |
 | Selected job | Parameters, **With downstream**, the state of a run you started, its pause, and recent runs |
 | Chain panel | The latest run of each chain, step by step, updating while it runs, with the chain's pause. Phones show a list instead of the graph |
@@ -36,6 +36,19 @@ A run that can affect your team, including through a later step, asks you to con
 **Cancel** appears wherever a run is queued or running: on the job's row, on a chain step, and in the side panel when a one-at-a-time job is blocked. **Cancel chain run** on the chain panel stops the whole chain run: its queued and running steps are cancelled, and later steps don't start.
 
 Cancelling asks you to confirm. The launcher then stops the run's pod or process. Anything the run already changed stays changed.
+
+## What does "Waiting for you" mean?
+
+An approval is a run that waits for a person instead of running a job. It holds no pod and no concurrency slot, and it expires if nobody decides in time.
+
+- **Header pill:** counts approvals waiting for you and opens the Runs tab filtered to them. It reads `100+` when there are more than one page of them.
+- **Runs tab:** the **Waiting for you** status, also available in the Status filter.
+- **Chain graph:** an approval step shows as **Waiting for you**, with what it asks and when it expires. Steps after it show **Pending** until it is decided.
+- **Run detail:** shows the title, the run that approving starts, when it expires, and how it ended: approved, dismissed, replaced by a newer approval, or expired.
+
+A chain step has no page of its own, so its run detail has **Approve** and **Dismiss**, each with a confirmation. Approving lets the steps that follow it run. Dismissing, or letting it expire, skips them.
+
+An outgoing trade offer is approved on the Trades page, where you can review and edit it. Its run detail has an **Open** link there instead of the buttons.
 
 ## How do I pause a job or chain?
 

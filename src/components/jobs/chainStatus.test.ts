@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { chainFixture, chainRootFixture } from './fixtures'
-import { chainProgress, chainStepStates } from './chainStatus'
+import { chainProgress, chainStepStates, stepStatusLabel } from './chainStatus'
 
 const status = (root = chainRootFixture) =>
   Object.fromEntries(chainStepStates(chainFixture, root).map((s) => [s.step, s.status]))
@@ -10,8 +10,13 @@ describe('chainStepStates', () => {
     expect(status()).toMatchObject({ 'sync-sample': 'success', 'score-sample': 'running' })
   })
 
-  it('shows steps with no run yet as waiting while the chain runs', () => {
-    expect(status()['set-lineup']).toBe('waiting')
+  it('shows steps with no run yet as pending while the chain runs', () => {
+    expect(status()['set-lineup']).toBe('pending')
+  })
+
+  it('shows a step whose run waits for a person as waiting, not pending', () => {
+    const children = [...chainRootFixture.children, { ...chainRootFixture.children[0], id: 'r3', job_name: 'set-lineup', status: 'waiting' as const }]
+    expect(status({ ...chainRootFixture, children })['set-lineup']).toBe('waiting')
   })
 
   it('shows skipped steps as skipped', () => {
@@ -28,9 +33,9 @@ describe('chainStepStates', () => {
     expect(status(root)).toEqual({
       'sync-sample': 'not_in_run',
       'score-sample': 'not_in_run',
-      'refresh-sample': 'waiting',
-      'set-lineup': 'waiting',
-      'claim-waivers': 'waiting',
+      'refresh-sample': 'pending',
+      'set-lineup': 'pending',
+      'claim-waivers': 'pending',
     })
   })
 
@@ -54,11 +59,27 @@ describe('chainProgress', () => {
     expect(chainProgress(chainFixture, chainRootFixture)).toBe('Running · step 2 of 5')
   })
 
+  it('says the chain waits for you when a step is waiting for approval', () => {
+    const children = [
+      chainRootFixture.children[0],
+      { ...chainRootFixture.children[0], id: 'r2', job_name: 'score-sample', status: 'success' as const },
+      { ...chainRootFixture.children[0], id: 'r3', job_name: 'refresh-sample', status: 'waiting' as const },
+    ]
+    expect(chainProgress(chainFixture, { ...chainRootFixture, children })).toBe('Waiting for you · step 3 of 5')
+  })
+
   it('reports how a finished chain ended', () => {
     expect(chainProgress(chainFixture, { ...chainRootFixture, status: 'failure' })).toBe('Failure')
   })
 
   it('says when the chain has never run', () => {
     expect(chainProgress(chainFixture, null)).toBe('No run yet')
+  })
+})
+
+describe('stepStatusLabel', () => {
+  it('words the waiting status for a person and the unstarted one as pending', () => {
+    expect(stepStatusLabel('waiting')).toBe('Waiting for you')
+    expect(stepStatusLabel('pending')).toBe('Pending')
   })
 })

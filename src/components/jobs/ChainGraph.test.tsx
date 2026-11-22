@@ -27,7 +27,7 @@ describe('ChainGraph', () => {
     renderGraph()
     expect(within(node('sync-sample')).getByText('Success')).toBeTruthy()
     expect(within(node('score-sample')).getByText('Running')).toBeTruthy()
-    expect(within(node('set-lineup')).getByText('Waiting')).toBeTruthy()
+    expect(within(node('set-lineup')).getByText('Pending')).toBeTruthy()
   })
 
   it('flags steps that can change the team', () => {

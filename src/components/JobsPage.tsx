@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Badge } from '@mantine/core'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   getJobCatalog,
   getLatestChainRun,
@@ -14,6 +14,7 @@ import {
 import { getRun } from '../api/runs'
 import { CHAIN_RUN_KEY, JOB_CATALOG_KEY, JOB_RUNS_KEY, RESOURCE_SUGGESTIONS_KEY } from '../hooks/jobQueries'
 import { useStartJobRun } from '../hooks/useStartJobRun'
+import { useWaitingApprovals, waitingCount } from '../hooks/useWaitingApprovals'
 import { ChainPanel } from './jobs/ChainPanel'
 import { JobRunPanel } from './jobs/JobRunPanel'
 import { JobsTable } from './jobs/JobsTable'
@@ -45,12 +46,17 @@ function pillText(count: number | undefined, failed: boolean, suffix: string) {
 function JobsPills({ catalog, failed }: { catalog?: JobCatalog; failed: boolean }) {
   const health = useQuery({ queryKey: ['launcher-health'], queryFn: getLauncherHealth, refetchInterval: IDLE_POLL_MS })
   const launcher = launcherPill(health.data?.heartbeat_age_seconds, health.isError)
+  const waiting = useWaitingApprovals()
+  const waitingText = waiting.isError && !waiting.data ? 'waiting for you unavailable' : `${waitingCount(waiting.data) ?? '…'} waiting for you`
   return (
     <div className="jobs-pills">
       <Badge component="a" href="#jobs" variant="light" color="gray">{pillText(catalog?.jobs.length, failed, 'jobs')}</Badge>
       <Badge component="a" href="#jobs" variant="light" color="blue">{pillText(countJobs(catalog, isActiveRun), failed, 'running or queued')}</Badge>
       <Badge component="a" href="#jobs" variant="light" color="red">
         {pillText(countJobs(catalog, (status) => FAILED_STATUSES.has(status ?? '')), failed, 'failed last run')}
+      </Badge>
+      <Badge component={Link} to="/activity?tab=runs&status=waiting" variant="light" color={waiting.data?.length ? 'clay' : 'gray'}>
+        {waitingText}
       </Badge>
       <Badge variant="light" color={LAUNCHER_COLORS[launcher.tone]}>{launcher.label}</Badge>
     </div>
