@@ -55,6 +55,9 @@ controls. It is injected by the server proxy and must never be put in a `VITE_*`
 variable or browser storage. Production nginx reads the same server-side variable.
 Set `GRAFANA_URL` on the production container to show Grafana links on run pages. Use a
 plain URL with no quotes or backslashes, because nginx writes it into a quoted JSON string.
+Set `NGINX_RESOLVER` on the production container to the DNS server nginx uses to resolve
+`CORE_API_UPSTREAM`. When unset, it defaults to the first `nameserver` in the container's
+`/etc/resolv.conf`, which is the cluster DNS Service in Kubernetes.
 
 To prefill the league and team on every reload, put them in a gitignored `.env.local`:
 

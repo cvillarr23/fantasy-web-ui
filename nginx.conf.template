@@ -24,15 +24,14 @@ server {
     index index.html;
     access_log /var/log/nginx/access.log json if=$loggable;
 
-    # Points at this cluster's CoreDNS ClusterIP directly (confirmed via
-    # `kubectl get svc -n kube-system coredns` - 10.152.183.152 on this cluster; re-check
-    # if this ever gets redeployed onto a different cluster). Resolving the upstream via a
+    # The cluster DNS address comes from NGINX_RESOLVER (defaulted from /etc/resolv.conf by
+    # docker-entrypoint.d/16-nginx-resolver.envsh). Resolving the upstream via a
     # variable, not a literal proxy_pass target, defers DNS lookup to request time rather
     # than nginx config load/startup - a literal hostname there gets resolved once at
     # startup and fails to boot the whole container (serving the static SPA too) if the
     # backend Service isn't resolvable at that exact moment - confirmed locally: the
     # literal form crash-loops outside the cluster with "host not found in upstream".
-    resolver 10.152.183.152 valid=10s;
+    resolver ${NGINX_RESOLVER} valid=10s;
     set $backend "${CORE_API_UPSTREAM}";
 
     location ~ ^/v1/trigger/(waiver|lineup|draft-pick)$ {
