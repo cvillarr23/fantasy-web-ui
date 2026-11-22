@@ -40,10 +40,14 @@ export function approvalLink(run: Pick<Run, 'trigger'>): ApprovalLink | null {
   return null
 }
 
+/** The job whose approvals core refuses to decide through the generic routes. */
+const TRADE_SUBMIT = 'trade-submit'
+
 /** Approve and Dismiss are for approvals with nowhere else to be decided, such as a chain
- * step. A trade offer is approved on the Trades page, which owns the message and the audit. */
+ * step. A trade offer is approved on the Trades page, which owns the message and the audit,
+ * and core answers 409 if the generic routes are used for it. */
 export const decidableHere = (run: Pick<Run, 'executor' | 'status' | 'trigger'>) =>
-  isApprovalRun(run) && isWaitingRun(run.status) && approvalLink(run) === null
+  isApprovalRun(run) && isWaitingRun(run.status) && approvalLink(run) === null && approvalThen(run)?.job !== TRADE_SUBMIT
 
 const ENDINGS: Record<string, string> = {
   approved: 'Approved',

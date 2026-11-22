@@ -37,6 +37,14 @@ describe('decidableHere', () => {
     expect(decidableHere({ ...waiting, trigger: { link: '/trades?offer=k' } })).toBe(false)
   })
 
+  it('leaves an approval that gates a trade send to the Trades page even without a link', () => {
+    expect(decidableHere({ ...waiting, trigger: { then: { job: 'trade-submit', params: { offer_key: 'k' } } } })).toBe(false)
+  })
+
+  it('still offers the buttons when approving starts some other run', () => {
+    expect(decidableHere({ ...waiting, trigger: { then: { job: 'set-lineup', params: {} } } })).toBe(true)
+  })
+
   it('offers nothing once the approval has ended or for an ordinary run', () => {
     expect(decidableHere({ ...waiting, status: 'success' as never })).toBe(false)
     expect(decidableHere({ ...waiting, executor: 'pod' })).toBe(false)
