@@ -1,5 +1,5 @@
 import { palette } from '../theme'
-import type { EspnOwnership, PlayerSearchResult, PlayerSummary } from '../api/types'
+import type { EspnOwnership, NewsItem, PlayerSearchResult, PlayerSummary } from '../api/types'
 import type { PlayerCardData } from '../components/player/PlayerCard'
 
 // Synthetic players for stories. Names and IDs are made up; never use real league,
@@ -59,4 +59,32 @@ export const playerSummary: PlayerSummary = {
     { source: 'Fixture wire', raw_text: 'Limited in Wednesday practice with an ankle issue.', url: null, published_at: '2026-10-07T12:00:00Z' },
     { source: 'Fixture wire', raw_text: 'Expected to play through it this week.', url: 'https://example.com/news', published_at: null },
   ],
+}
+
+export const playerNews: NewsItem[] = [
+  { id: 3, player_id: 'p9002', source: 'bluesky', author: 'Beat reporter', headline: 'Runner was a full participant at Friday practice and says he feels great.', url: 'https://example.com/post', published_at: '2026-10-07T11:00:00Z', score: null, also_reported_by: [] },
+  { id: 2, player_id: 'p9002', source: 'espn_news', author: null, headline: 'Runner is listed questionable; the coach expects him to play.', url: 'https://example.com/espn', published_at: '2026-10-07T09:00:00Z', score: null, also_reported_by: ['rotowire', 'reddit'] },
+  { id: 1, player_id: 'p9002', source: 'rotowire', author: 'RotoWire', headline: 'Runner (ankle) upgraded to full practice.', url: null, published_at: '2026-10-06T09:00:00Z', score: null, also_reported_by: [] },
+]
+
+/** A player summary once core serves the live block and the scoring breakdown. */
+export const playerSummaryLive: PlayerSummary = {
+  ...playerSummary,
+  live: {
+    live_points: 14.4,
+    projected_points: 16,
+    game_label: 'SF 20 – 14 SEA',
+    game_status: 'live',
+    event_id: 'evt-1',
+    breakdown: [
+      { stat_key: 'rushYd', label: 'Rushing yards', qty: 78, rule_label: '1 pt per 10 yds', points: 7.8 },
+      { stat_key: 'rushTD', label: 'Rushing TD', qty: 1, rule_label: '6 pts per TD', points: 6 },
+      { stat_key: 'fumLost', label: 'Fumble lost', qty: 1, rule_label: '−2 pts per fumble lost', points: -2 },
+    ],
+  },
+  season_avg: 16.9,
+  weekly_log: [
+    { week: 8, points: 21 }, { week: 9, points: 9.6 }, { week: 10, points: 18.3 }, { week: 11, points: 14.4 },
+  ],
+  espn: { pos_rank: 7, percent_owned: 98, percent_started: 90, percent_bench: 8, percent_change: 0.4 },
 }

@@ -1,4 +1,4 @@
-import type { BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, ScoreboardResponse, TradeEvaluationResponse, TradeOffer, TradeOfferList, VorpStat, WaiverPlayerSummary, WaiverRecommendationsResponse, FreeAgentSort, FreeAgentsResponse } from './types'
+import type { BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupResponse, NewsFeedResponse, NewsItem, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, ScoreboardResponse, TradeEvaluationResponse, TradeOffer, TradeOfferList, VorpStat, WaiverPlayerSummary, WaiverRecommendationsResponse, FreeAgentSort, FreeAgentsResponse } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -284,6 +284,16 @@ export function isPickTooLateError(err: unknown): boolean {
 
 export function getPlayerSummary(playerId: string): Promise<PlayerSummary> {
   return request(`/v1/players/${encodeURIComponent(playerId)}/summary`)
+}
+
+const NEWS_WINDOW_DAYS = 7
+
+/** The merged, de-duplicated news for one player from the last week, newest first. */
+export async function getPlayerNews(playerId: string, limit = 20): Promise<NewsItem[]> {
+  const since = new Date(Date.now() - NEWS_WINDOW_DAYS * 86_400_000).toISOString()
+  const params = new URLSearchParams({ player_ids: playerId, since, limit: String(limit) })
+  const response = await request<NewsFeedResponse>(`/v1/news?${params}`)
+  return response.items
 }
 
 export function searchPlayers(query: string): Promise<PlayerSearchResult[]> {

@@ -659,19 +659,28 @@
   opacity: 0.8;
   margin: 4px 0 12px;
 }
-.news-list {
+.popover-news {
   list-style: none;
   margin: 0;
   padding: 0;
 }
-.news-list li {
+.popover-news-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
   padding: 8px 0;
   border-bottom: 1px solid var(--border);
 }
-.news-source {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--accent);
+.popover-news-item:last-child {
+  border-bottom: 0;
+}
+.popover-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--raised);
 }
 .muted {
   color: var(--muted);
