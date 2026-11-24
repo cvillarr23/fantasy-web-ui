@@ -1,18 +1,26 @@
 import { useQuery } from '@tanstack/react-query'
 import { queryClient } from '../../api/queryClient'
-import { Modal, Skeleton } from '@mantine/core'
+import { Modal, Skeleton, Tabs } from '@mantine/core'
 import { getPlayerSummary } from '../../api/client'
+import type { PlayerSummary } from '../../api/types'
 import { SkeletonRegion, TextSkeleton } from '../skeletons'
+import { PlayerNewsTab } from './PlayerNewsTab'
+import { PlayerStatsTab } from './PlayerStatsTab'
+import { PlayerSummaryTab } from './PlayerSummaryTab'
 
 interface Props {
   playerId: string
   onClose: () => void
+  /** The Game details page; the link is hidden when this is not given. */
+  onOpenGame?: (eventId: string) => void
+  /** The Scoring guide page; the link is hidden when this is not given. */
+  onOpenScoringGuide?: () => void
 }
 
 // Click-to-expand detail panel: fetches the fuller player summary (name/position/team/
-// injury_status + recent CORE-13 news) on demand, rather than bundling it into every
-// pick-feed row up front.
-export function PlayerSummaryPopover({ playerId, onClose }: Props) {
+// injury_status) on demand, rather than bundling it into every pick-feed row up front. The
+// News tab loads its own feed only once it is opened.
+export function PlayerSummaryPopover({ playerId, onClose, onOpenGame, onOpenScoringGuide }: Props) {
   const query = useQuery({
     queryKey: ['player-summary', playerId],
     queryFn: () => getPlayerSummary(playerId),
@@ -31,27 +39,36 @@ export function PlayerSummaryPopover({ playerId, onClose }: Props) {
       {!summary && !error && (
         <SkeletonRegion label="Loading player">
           <Skeleton height={14} width="60%" my="md" />
-          <h4>Recent news</h4>
           <TextSkeleton lines={4} />
         </SkeletonRegion>
       )}
       {summary && (
-        <>
-          <p className="subtitle">{summary.position} · {summary.team} · {summary.status}
-            {summary.injury_status ? ` · ${summary.injury_status}` : ''}</p>
-          <h4>Recent news</h4>
-          {summary.recent_news.length === 0 && <p className="muted">No recent news.</p>}
-          <ul className="news-list">
-            {summary.recent_news.map((item, i) => (
-              <li key={i}>
-                <span className="news-source">{item.source}</span>
-                <p>{item.raw_text}</p>
-                {item.url && <a href={item.url} target="_blank" rel="noreferrer">source</a>}
-              </li>
-            ))}
-          </ul>
-        </>
+        <PlayerTabs summary={summary} onOpenGame={onOpenGame} onOpenScoringGuide={onOpenScoringGuide} />
       )}
     </Modal>
+  )
+}
+
+function PlayerTabs({ summary, onOpenGame, onOpenScoringGuide }: Omit<Props, 'playerId' | 'onClose'> & { summary: PlayerSummary }) {
+  return (
+    <>
+      <p className="subtitle">{summary.position} · {summary.team} · {summary.status}</p>
+      <Tabs defaultValue="summary" keepMounted={false}>
+        <Tabs.List mb="sm">
+          <Tabs.Tab value="summary">Summary</Tabs.Tab>
+          <Tabs.Tab value="news">News</Tabs.Tab>
+          <Tabs.Tab value="stats">Stats</Tabs.Tab>
+        </Tabs.List>
+        <Tabs.Panel value="summary">
+          <PlayerSummaryTab summary={summary} onOpenGame={onOpenGame} />
+        </Tabs.Panel>
+        <Tabs.Panel value="news">
+          <PlayerNewsTab playerId={summary.player_id} />
+        </Tabs.Panel>
+        <Tabs.Panel value="stats">
+          <PlayerStatsTab summary={summary} onOpenScoringGuide={onOpenScoringGuide} />
+        </Tabs.Panel>
+      </Tabs>
+    </>
   )
 }

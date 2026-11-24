@@ -162,6 +162,53 @@ export interface RecentNewsItem {
   published_at: string | null
 }
 
+export type NewsSource = 'espn_news' | 'bluesky' | 'rotowire' | 'reddit'
+
+/** One story from GET /v1/news, newest first. `also_reported_by` is set only when core
+ * collapsed the same story from other sources into this one. */
+export interface NewsItem {
+  id: number
+  player_id: string
+  source: NewsSource
+  author: string | null
+  headline: string
+  url: string | null
+  published_at: string
+  /** Reddit's score; null for every other source. */
+  score: number | null
+  also_reported_by: NewsSource[]
+}
+
+export interface NewsFeedResponse {
+  items: NewsItem[]
+}
+
+/** One stat line of a player's fantasy points: qty x the league rule = points. */
+export interface ScoreBreakdownLine {
+  stat_key: string
+  label: string
+  qty: number
+  rule_label: string
+  points: number
+}
+
+/** The player's game this week and the points it has produced. */
+export interface PlayerLiveSummary {
+  live_points: number | null
+  projected_points: number | null
+  game_label: string
+  game_status: 'pre' | 'live' | 'final'
+  /** Id of the NFL game, for a link to its details page. */
+  event_id?: string
+  /** Absent until core serves the scoring breakdown. */
+  breakdown?: ScoreBreakdownLine[]
+}
+
+export interface WeeklyPoints {
+  week: number
+  points: number | null
+}
+
 export interface PlayerSummary {
   player_id: string
   name: string
@@ -170,6 +217,12 @@ export interface PlayerSummary {
   status: string
   injury_status: string | null
   recent_news: RecentNewsItem[]
+  /** Optional until core serves the live block. */
+  live?: PlayerLiveSummary | null
+  season_avg?: number | null
+  /** The last 4 weeks of fantasy points, oldest first. */
+  weekly_log?: WeeklyPoints[] | null
+  espn?: EspnOwnership | null
 }
 
 export interface PlayerSearchResult {
