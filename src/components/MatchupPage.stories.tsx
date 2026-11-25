@@ -1,15 +1,17 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, userEvent } from 'storybook/test'
+import { expect, fn, userEvent, within } from 'storybook/test'
 import { mockFetch, type MockRoute } from '../../.storybook/mockFetch'
 import { queryClient } from '../api/queryClient'
 import { matchupQuery } from '../api/weekReads'
 import { DraftConfigContext } from '../hooks/useDraftConfig'
 import { MatchupPage } from './MatchupPage'
 import { matchupConfig, matchupFixture } from './matchup/fixtures'
+import { liveFeedFixture, liveMatchupFixture, type LiveScenario } from './matchup/liveFixtures'
 
-function mockMatchup(matchup: Partial<MockRoute>) {
+function mockMatchup(matchup: Partial<MockRoute>, feed: Partial<MockRoute> = { body: { items: [], next_before: null } }) {
   mockFetch([
     { path: /^\/v1\/matchup\?/, ...matchup },
+    { path: /^\/v1\/matchup\/feed\?/, ...feed },
     { path: /\/v1\/league\/current-week/, body: { week: 7 } },
   ])
 }
@@ -77,4 +79,49 @@ export const Phone: Story = {
     await expect(canvas.getByText('FLEX · WR')).toBeVisible()
     await expect(canvas.queryByText('RB · RB')).toBeNull()
   },
+}
+
+function mockLive(scenario: LiveScenario) {
+  mockMatchup({ body: liveMatchupFixture(scenario) }, { body: liveFeedFixture(scenario) })
+}
+
+/** A Sunday with one game under way, one final, one not started, and a starter on a bye. */
+export const LiveSunday: Story = {
+  beforeEach: () => mockLive('sunday'),
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('2 playing · 1 yet to play · 1 on bye')).toBeVisible()
+    await expect(canvas.getByText("ESPN's live win probability")).toBeVisible()
+    const games = within(canvas.getByRole('region', { name: 'Games in this matchup' }))
+    await expect(games.getByText('TB 14 – 17 ATL')).toBeVisible()
+    await expect(games.getByText('Q3 8:42')).toBeVisible()
+    await expect(canvas.getAllByRole('listitem').length).toBeGreaterThan(6)
+    await userEvent.click(canvas.getByRole('button', { name: 'Touchdowns' }))
+    await expect(canvas.getByText('24-yd TD reception')).toBeVisible()
+    await expect(canvas.queryByText('12-yd run to TB 12')).toBeNull()
+  },
+}
+/** Nothing has kicked off: no polling, an empty feed and upcoming tiles without points. */
+export const PreGameWeek: Story = {
+  beforeEach: () => mockLive('preGame'),
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('0 playing · 5 yet to play · 1 on bye')).toBeVisible()
+    await expect(canvas.getByText('No plays or news yet.')).toBeVisible()
+    const games = within(canvas.getByRole('region', { name: 'Games in this matchup' }))
+    await expect(games.getByText('GB @ DET')).toBeVisible()
+    await expect(games.queryByText(/^You .* pts$/)).toBeNull()
+  },
+}
+export const FinalWeek: Story = {
+  beforeEach: () => mockLive('final'),
+  play: async ({ canvas }) => {
+    const games = within(await canvas.findByRole('region', { name: 'Games in this matchup' }))
+    await expect(games.getByText('MIA 20 – 31 BUF')).toBeVisible()
+    await expect(games.getByText('Final')).toBeVisible()
+    await expect(games.getByText(/^You .* pts$/)).toBeVisible()
+  },
+}
+export const LiveSundayPhone: Story = {
+  ...LiveSunday,
+  globals: { viewport: { value: 'mobile1', isRotated: false } },
+  parameters: { viewport: { defaultViewport: 'mobile1' } },
 }

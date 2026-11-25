@@ -1,6 +1,8 @@
 import { keepPreviousData, queryOptions } from '@tanstack/react-query'
-import { ApiError, getByeOutlook, getLineupRoster, getMatchup, getRosterDeficits, getScoreboard } from './client'
-import type { DraftConfig } from './types'
+import { pollInterval } from '../components/matchup/matchupLive'
+import { ApiError, getByeOutlook, getLineupRoster, getMatchup, getMatchupFeed, getRosterDeficits, getScoreboard } from './client'
+import { queryClient } from './queryClient'
+import type { DraftConfig, MatchupResponse } from './types'
 
 // Week-scoped reads shared by several pages. Keys hold primitives only, so every page that
 // asks for the same league/season/week hits one cache entry; invalidateRoster() matches them
@@ -18,9 +20,13 @@ export function rosterDeficitsQuery(config: DraftConfig, week: number) {
   })
 }
 
+function matchupKey(config: DraftConfig, week: number) {
+  return ['matchup', config.league_id, config.team_id, config.season, week] as const
+}
+
 export function matchupQuery(config: DraftConfig, week: number) {
   return queryOptions({
-    queryKey: ['matchup', config.league_id, config.team_id, config.season, week],
+    queryKey: matchupKey(config, week),
     // A 404 means no opponent this week (bye, or the season hasn't reached it). That is a
     // stable answer, so cache it as null instead of an error.
     queryFn: () =>
@@ -29,6 +35,21 @@ export function matchupQuery(config: DraftConfig, week: number) {
         throw err
       }),
     enabled: Boolean(config.league_id && config.team_id) && validWeek(week),
+    // Live scores move while a game is on; polling also tells core to poll ESPN faster.
+    refetchInterval: (query) => pollInterval(query.state.data),
+    refetchIntervalInBackground: false,
+  })
+}
+
+/** Plays and news for the matchup's players. It polls on the same cadence as the matchup, read
+ * from the matchup's cache entry, so both stop together when no game is in progress. */
+export function matchupFeedQuery(config: DraftConfig, week: number) {
+  return queryOptions({
+    queryKey: ['matchup-feed', config.league_id, config.team_id, config.season, week],
+    queryFn: () => getMatchupFeed(config.season, week),
+    enabled: Boolean(config.league_id && config.team_id) && validWeek(week),
+    refetchInterval: () => pollInterval(queryClient.getQueryData<MatchupResponse | null>(matchupKey(config, week))),
+    refetchIntervalInBackground: false,
   })
 }
 

@@ -1,8 +1,9 @@
+import { useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { queryClient } from '../api/queryClient'
 import { Badge, Button, Group, Skeleton, Table, Text } from '@mantine/core'
 import { Link } from 'react-router-dom'
-import { matchupQuery } from '../api/weekReads'
+import { matchupFeedQuery, matchupQuery } from '../api/weekReads'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { WeekSelector } from './ui/WeekSelector'
@@ -12,10 +13,14 @@ import { PageHeader } from './ui/PageHeader'
 import { EmptyState } from './ui/EmptyState'
 import { ErrorAlert } from './ui/ErrorAlert'
 import { formatNumber } from './ui/formatNumber'
+import { GamesPanel } from './matchup/GamesPanel'
+import { MatchupFeed } from './matchup/MatchupFeed'
 import { MatchupSummary } from './matchup/MatchupSummary'
 import { MatchupTeamCard } from './matchup/MatchupTeamCard'
-import { isZeroProjection, projectedMargin, winChance } from './matchup/matchupFormat'
+import { displayWinChance, isZeroProjection, projectedMargin } from './matchup/matchupFormat'
 import { matchupGlossary } from './matchup/matchupGlossary'
+import { latestUpdate, matchupGames, sideCounts } from './matchup/matchupLive'
+import { PlayerSummaryPopover } from './player/PlayerSummaryPopover'
 
 const MATCHUP_COLUMNS = ['Slot', 'Player', 'Pos', 'Actual', 'Projected']
 
@@ -73,6 +78,9 @@ export function MatchupPage() {
   // as "updating" rather than a no-op or a blank page.
   const query = useQuery({ ...matchupQuery(config, weekValue), placeholderData: keepPreviousData }, queryClient)
   const matchup = query.data ?? null
+  // The feed is secondary: if it fails the matchup still shows, with a note and Retry.
+  const feedQuery = useQuery(matchupFeedQuery(config, weekValue), queryClient)
+  const [openPlayerId, setOpenPlayerId] = useState<string | null>(null)
   // null is a cached bye week (or a week the season hasn't reached), not a failure.
   const notFound = query.data === null
   const error = query.error ? String(query.error) : null
@@ -85,7 +93,7 @@ export function MatchupPage() {
   }
 
   const margin = matchup ? projectedMargin(matchup.our_team.team.projected, matchup.opponent.team.projected) : null
-  const chance = winChance(margin)
+  const chance = displayWinChance(matchup?.our_team.team ?? {}, margin)
   const zeroStarters = matchup
     ? matchup.our_team.starters.filter((line) => isZeroProjection(line.projected_points)).length
     : 0
@@ -96,7 +104,7 @@ export function MatchupPage() {
     : margin == null ? 'Projected margin unavailable' : `Projected margin ${formatNumber(margin, { signed: true })}`
   const chanceLabel = pending
     ? 'Win chance …'
-    : chance == null ? 'Win chance unavailable' : `Win chance ~${chance}% (estimate)`
+    : chance == null ? 'Win chance unavailable' : `Win chance ~${chance}%${matchup?.our_team.team.win_probability == null ? ' (estimate)' : ''}`
 
   return (
     <div className="dashboard">
@@ -133,7 +141,25 @@ export function MatchupPage() {
       {query.isPending && validWeek && !matchup && <MatchupSkeleton />}
       {matchup && (
         <div className={stale ? 'matchup-stale' : undefined} aria-busy={query.isPlaceholderData || undefined}>
-          <MatchupSummary ours={matchup.our_team.team} opponent={matchup.opponent.team} />
+          <MatchupSummary
+            ours={matchup.our_team.team}
+            opponent={matchup.opponent.team}
+            oursCounts={sideCounts(matchup.our_team)}
+            opponentCounts={sideCounts(matchup.opponent)}
+          />
+          <div className="matchup-live">
+            <div>
+              {feedQuery.error && (
+                <ErrorAlert mb="sm" onRetry={() => void feedQuery.refetch()}>Could not load the live feed. {String(feedQuery.error)}</ErrorAlert>
+              )}
+              {!feedQuery.error && feedQuery.isPending ? (
+                <SkeletonRegion label="Loading live feed"><Skeleton height={14} width="80%" my="sm" /><Skeleton height={14} width="60%" /></SkeletonRegion>
+              ) : (
+                <MatchupFeed items={feedQuery.data?.items ?? []} onOpenPlayer={setOpenPlayerId} />
+              )}
+            </div>
+            <GamesPanel games={matchupGames(matchup)} updatedAt={latestUpdate(matchup)} />
+          </div>
           <Text size="sm" c="dimmed" mb="md">
             <strong>Actual</strong>: {matchupGlossary.actual} <strong>Projected</strong>: {matchupGlossary.projected}
           </Text>
@@ -143,6 +169,7 @@ export function MatchupPage() {
           </div>
         </div>
       )}
+      {openPlayerId && <PlayerSummaryPopover playerId={openPlayerId} onClose={() => setOpenPlayerId(null)} />}
     </div>
   )
 }

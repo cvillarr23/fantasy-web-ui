@@ -1,4 +1,4 @@
-import type { LivePlayersResponse, BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupResponse, NewsFeedResponse, NewsItem, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, ScoreboardResponse, TradeEvaluationResponse, TradeOffer, TradeOfferList, VorpStat, WaiverPlayerSummary, WaiverRecommendationsResponse, FreeAgentSort, FreeAgentsResponse } from './types'
+import type { LivePlayersResponse, BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupFeedResponse, MatchupResponse, NewsFeedResponse, NewsItem, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, ScoreboardResponse, TradeEvaluationResponse, TradeOffer, TradeOfferList, VorpStat, WaiverPlayerSummary, WaiverRecommendationsResponse, FreeAgentSort, FreeAgentsResponse } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -354,6 +354,13 @@ export function getWaiverFreeAgents({ season, week, position, q, sort, limit, of
 export function getMatchup(season: number, week: number): Promise<MatchupResponse> {
   const params = new URLSearchParams({ season: String(season), week: String(week) })
   return request(`/v1/matchup?${params}`)
+}
+
+// Plays and recent news for both sides' players, newest first. Reading it also tells core to
+// poll ESPN faster.
+export function getMatchupFeed(season: number, week: number, limit = 50): Promise<MatchupFeedResponse> {
+  const params = new URLSearchParams({ season: String(season), week: String(week), limit: String(limit) })
+  return request(`/v1/matchup/feed?${params}`)
 }
 
 // Every matchup in the league for a week, score-only - see get_league_scoreboard in
