@@ -974,6 +974,47 @@
   width: 32px;
   height: 32px;
 }
+.player-avatar-wrap {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+.player-avatar-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--incoming);
+  border: 2px solid var(--surface);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .player-avatar-dot { animation: player-live-pulse 2s ease-in-out infinite; }
+}
+@keyframes player-live-pulse {
+  50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--incoming) 25%, transparent); }
+}
+.player-card.is-live {
+  border: 1px solid color-mix(in srgb, var(--incoming) 45%, var(--border));
+}
+.live-game-line {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 12px;
+}
+.live-game-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.live-game-sep { color: var(--border); }
+.live-game-redzone { color: var(--outgoing); font-weight: 600; }
+.live-game-stats { color: var(--muted); }
 .player-avatar-fallback {
   display: inline-flex;
   align-items: center;
