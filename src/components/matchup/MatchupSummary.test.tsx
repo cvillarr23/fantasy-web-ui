@@ -3,6 +3,8 @@ import { MantineProvider } from '@mantine/core'
 import { afterEach, expect, it } from 'vitest'
 import { MatchupSummary } from './MatchupSummary'
 import { matchupFixture } from './fixtures'
+import { liveMatchupFixture } from './liveFixtures'
+import { sideCounts } from './matchupLive'
 
 afterEach(cleanup)
 
@@ -36,4 +38,20 @@ it('shows dashes, not zero, when a projection is missing', () => {
   // The opponent's projected total and the win chance are dashes; the margin tile says so in words.
   expect(summary.getAllByText('—')).toHaveLength(2)
   expect(summary.queryByText('Not available')).toBeTruthy()
+})
+
+it('shows how many starters are playing and yet to play for each side', () => {
+  const matchup = liveMatchupFixture('sunday')
+  render(<MantineProvider><MatchupSummary ours={matchup.our_team.team} opponent={matchup.opponent.team} oursCounts={sideCounts(matchup.our_team)} opponentCounts={sideCounts(matchup.opponent)} /></MantineProvider>)
+  const summary = within(screen.getByRole('region', { name: 'Matchup summary' }))
+  expect(summary.getByText('2 playing · 1 yet to play · 1 on bye')).toBeTruthy()
+  expect(summary.getByText('2 playing · 2 yet to play')).toBeTruthy()
+})
+
+it('prefers ESPN\'s win probability over the estimate when it is sent', () => {
+  const matchup = liveMatchupFixture('sunday')
+  render(<MantineProvider><MatchupSummary ours={matchup.our_team.team} opponent={matchup.opponent.team} /></MantineProvider>)
+  const summary = within(screen.getByRole('region', { name: 'Matchup summary' }))
+  expect(summary.getByText('~64%')).toBeTruthy()
+  expect(summary.getByText("ESPN's live win probability")).toBeTruthy()
 })

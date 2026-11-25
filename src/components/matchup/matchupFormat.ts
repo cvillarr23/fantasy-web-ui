@@ -28,6 +28,12 @@ export function winChance(margin: number | null): number | null {
   return Math.min(99, Math.max(1, Math.round(probability * 100)))
 }
 
+/** The win chance to show, as a whole percent: ESPN's live figure when it sends one, otherwise
+ * the estimate from the projected margin. */
+export function displayWinChance(team: { win_probability?: number | null }, margin: number | null): number | null {
+  return team.win_probability == null ? winChance(margin) : Math.round(team.win_probability * 100)
+}
+
 /** Slot and position once when they match ("RB"), both when they differ ("FLEX · WR"). */
 export function slotLabel(slot: string, position: string): string {
   return slot === position ? slot : `${slot} · ${position}`

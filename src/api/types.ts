@@ -350,6 +350,8 @@ export interface PlayerLine {
   projected_points: number | null
   // NFL bye week; null when core couldn't read the NFL schedule.
   bye_week?: number | null
+  /** Where the player's NFL game stands; null on a bye, without a schedule, or for a stored week. */
+  game_status?: GameStatus | null
   /** Core's live snapshot for this player; null or absent without one. */
   live?: LiveBlock | null
   headshot_url: string
@@ -364,6 +366,8 @@ export interface MatchupTeamInfo {
   logo_url: string
   score: number
   projected: number | null
+  /** ESPN's chance (0-1) this team wins; only sent for the week in progress. */
+  win_probability?: number | null
 }
 
 export interface MatchupTeamSide {

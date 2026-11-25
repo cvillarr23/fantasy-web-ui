@@ -1579,3 +1579,143 @@ a.lineup-open-spot:focus-visible {
 .espn-change-down { color: var(--outgoing); }
 .espn-cold .espn-start,
 .espn-cell-cold { color: var(--outgoing); font-weight: 600; }
+
+/* Matchup live feed and games panel */
+.matchup-summary-counts {
+  color: var(--muted);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+.matchup-live {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 24px;
+  margin-bottom: 24px;
+}
+@media (max-width: 900px) {
+  .matchup-live { grid-template-columns: 1fr; }
+}
+.matchup-feed,
+.games-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 14px 16px;
+}
+.feed-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.feed-pill {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.feed-pill:hover { border-color: var(--accent); }
+.feed-pill[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: var(--accent);
+  color: var(--text-h);
+}
+.feed-list { list-style: none; margin: 0; padding: 0; }
+.feed-row {
+  display: grid;
+  grid-template-columns: 56px 4px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  padding: 9px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+.feed-row:last-child { border-bottom: 0; }
+.feed-row-new { animation: feed-row-new 1.6s ease-out; }
+@keyframes feed-row-new {
+  from { background: color-mix(in srgb, var(--incoming) 14%, transparent); }
+  to { background: transparent; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .feed-row-new { animation: none; }
+}
+.feed-clock { color: var(--muted); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.feed-stripe { align-self: stretch; border-radius: 2px; }
+.feed-stripe-mine { background: var(--incoming); }
+.feed-stripe-theirs { background: var(--outgoing); }
+.feed-stripe-news { background: var(--accent); }
+.feed-text { min-width: 0; font-size: 12.5px; }
+.feed-player {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text-h);
+  cursor: pointer;
+}
+.feed-player:hover { text-decoration: underline; }
+.feed-game { display: block; color: var(--muted); font-size: 11.5px; }
+.feed-delta { font-weight: 700; font-size: 13px; font-variant-numeric: tabular-nums; }
+.feed-delta-positive { color: var(--incoming); }
+.feed-delta-negative { color: var(--error); }
+.feed-delta-news { color: var(--muted); font-weight: 500; }
+.feed-empty { color: var(--muted); font-size: 12.5px; margin: 0; padding: 12px 0; }
+.feed-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.feed-legend i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 5px;
+  border-radius: 2px;
+  vertical-align: -1px;
+}
+.games-panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.games-panel-header h2 { margin: 0; font-size: 15px; }
+.games-panel-updated { color: var(--muted); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+.games-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.game-tile {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 10px;
+  border-radius: 6px;
+  background: var(--raised);
+  padding: 9px 10px;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+.game-tile-label { font-weight: 600; color: var(--text-h); }
+.game-tile-status { color: var(--muted); }
+.game-tile-status-in_progress { color: var(--incoming); font-weight: 600; }
+.game-tile-points { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; }
+.game-tile-mine { color: var(--incoming); }
+.game-tile-theirs { color: var(--outgoing); }
+.game-tile-players { grid-column: 1 / -1; color: var(--muted); font-size: 12px; }
+.games-panel-link {
+  align-self: flex-start;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--accent);
+  cursor: pointer;
+}
