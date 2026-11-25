@@ -1,6 +1,6 @@
 import { Anchor, Stack, Table, Text, Title } from '@mantine/core'
 import type { PlayerSummary, ScoreBreakdownLine, WeeklyPoints } from '../../api/types'
-import { breakdownTotal, formatPoints, weeklyAverage } from './popoverFormat'
+import { breakdownTotal, formatPoints, formatQty, weeklyAverage } from './popoverFormat'
 
 interface Props {
   summary: PlayerSummary
@@ -43,7 +43,7 @@ function BreakdownTable({ lines }: { lines: ScoreBreakdownLine[] }) {
             {lines.map((line) => (
               <Table.Tr key={line.stat_key}>
                 <Table.Td>{line.label}</Table.Td>
-                <Table.Td ta="right" className="num">{line.qty}</Table.Td>
+                <Table.Td ta="right" className="num">{formatQty(line)}</Table.Td>
                 <Table.Td><Text size="sm" c="dimmed">{line.rule_label}</Text></Table.Td>
                 <Table.Td ta="right" className="num">{formatPoints(line.points, true)}</Table.Td>
               </Table.Tr>

@@ -22,6 +22,13 @@ export function formatPoints(points: number | null | undefined, signed = false):
   return signed && points > 0 ? `+${text}` : text
 }
 
+/** "98 yds", "1 TD", or a dash when core has no count (the other line, an older snapshot). */
+export function formatQty(line: ScoreBreakdownLine): string {
+  if (line.qty == null) return '—'
+  const qty = Number.isInteger(line.qty) ? String(line.qty) : line.qty.toFixed(1)
+  return line.unit ? `${qty} ${line.unit}` : qty
+}
+
 export function breakdownTotal(lines: ScoreBreakdownLine[]): number {
   return lines.reduce((sum, line) => sum + line.points, 0)
 }

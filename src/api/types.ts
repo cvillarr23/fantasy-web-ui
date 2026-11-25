@@ -183,12 +183,18 @@ export interface NewsFeedResponse {
   items: NewsItem[]
 }
 
-/** One stat line of a player's fantasy points: qty x the league rule = points. */
+/** One stat line of a player's fantasy points: qty x the league rule = points. `points` is
+ * ESPN's own, so the lines sum to `live_points`; `stat_key: 'other'` carries any remainder
+ * core can't itemize, with null `qty` and `unit`. */
 export interface ScoreBreakdownLine {
   stat_key: string
   label: string
-  qty: number
-  rule_label: string
+  /** Raw count (98 for 98 rushing yds; 1 for a range like "7–13 points allowed"). */
+  qty: number | null
+  /** What `qty` counts: `yds`, `TD`, `rec`...; null for a range stat and the other line. */
+  unit: string | null
+  /** The league rule in plain English, e.g. "1 pt per 10 rushing yds". */
+  rule_label: string | null
   points: number
 }
 
@@ -258,8 +264,8 @@ export interface PlayerLiveSummary {
   game_status: GameStatus | null
   /** Id of the NFL game, for a link to its details page. */
   event_id?: string
-  /** Absent until core serves the scoring breakdown. */
-  breakdown?: ScoreBreakdownLine[]
+  /** Null when the player has no live points yet or core can't read the league's rules. */
+  breakdown?: ScoreBreakdownLine[] | null
 }
 
 export interface WeeklyPoints {

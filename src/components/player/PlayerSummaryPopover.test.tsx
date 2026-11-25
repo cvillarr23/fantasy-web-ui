@@ -96,7 +96,9 @@ describe('Stats tab', () => {
     const breakdown = await screen.findByRole('table', { name: "This week's scoring breakdown" })
     expect(breakdown.textContent).toContain('−2.0')
     const total = Array.from(breakdown.querySelectorAll('tr')).find((r) => r.textContent?.startsWith('Total'))
-    expect(total?.textContent).toBe('Total11.8')
+    expect(breakdown.textContent).toContain('78 yds')
+    // The lines add up to the player's live points, as core guarantees.
+    expect(total?.textContent).toBe(`Total${playerSummaryLive.live!.live_points}`)
     const log = screen.getByRole('table', { name: 'Recent weekly fantasy points' })
     expect(log.textContent).toContain('15.8')
     expect(screen.getByRole('button', { name: 'How is this scored?' })).toBeTruthy()
