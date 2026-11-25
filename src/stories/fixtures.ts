@@ -74,7 +74,7 @@ export const playerSummaryLive: PlayerSummary = {
     live_points: 14.4,
     projected_points: 16,
     game_label: 'SF 20 – 14 SEA',
-    game_status: 'live',
+    game_status: 'in_progress',
     event_id: 'evt-1',
     breakdown: [
       { stat_key: 'rushYd', label: 'Rushing yards', qty: 78, rule_label: '1 pt per 10 yds', points: 7.8 },

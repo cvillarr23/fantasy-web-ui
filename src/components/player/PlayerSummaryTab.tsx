@@ -58,7 +58,9 @@ function summaryTiles(summary: PlayerSummary): TileData[] {
   const tiles: TileData[] = []
   if (live) {
     tiles.push({ label: 'This week', value: formatPoints(live.live_points), detail: `Proj ${formatPoints(live.projected_points)}` })
-    tiles.push({ label: 'Game', value: live.game_label, detail: GAME_STATUS[live.game_status] })
+    if (live.game_label) {
+      tiles.push({ label: 'Game', value: live.game_label, detail: live.game_status ? GAME_STATUS[live.game_status] : undefined })
+    }
   }
   if (season_avg != null) tiles.push({ label: 'Season avg', value: formatPoints(season_avg), detail: 'pts / game' })
   if (espn?.percent_owned != null) {
@@ -71,7 +73,7 @@ function summaryTiles(summary: PlayerSummary): TileData[] {
   return tiles
 }
 
-const GAME_STATUS = { pre: 'Upcoming', live: 'Live', final: 'Final' } as const
+const GAME_STATUS = { not_started: 'Upcoming', in_progress: 'Live', final: 'Final' } as const
 
 function formatPercent(value: number): string {
   return String(Math.round(value * 10) / 10)
