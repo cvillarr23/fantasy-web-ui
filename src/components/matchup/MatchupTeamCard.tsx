@@ -1,6 +1,8 @@
 import { Table, Text } from '@mantine/core'
 import type { MatchupTeamSide, PlayerLine } from '../../api/types'
 import { DeficitBadge, SwapBadge } from '../player/DeficitBadge'
+import { LiveBadge } from '../player/LiveBadge'
+import { LiveGameLine } from '../player/LiveGameLine'
 import { PlayerCard } from '../player/PlayerCard'
 import { BadgeSlot } from '../ui/BadgeSlot'
 import { ScoreValue } from '../ui/ScoreValue'
@@ -24,9 +26,11 @@ function PlayerRow({ line, starter }: { line: PlayerLine; starter: boolean }) {
     <PlayerCard
       variant="tableRow"
       before={line.slot}
-      player={{ id: line.player_id, name: line.name, position: line.position, espn: line.espn }}
+      player={{ id: line.player_id, name: line.name, position: line.position, espn: line.espn, live: line.live }}
+      meta={<LiveGameLine live={line.live} />}
       badges={
         <>
+          <LiveBadge live={line.live} />
           <DeficitBadge isDeficit={line.deficit_flag} />
           <SwapBadge benchFor={line.suggested_swap?.bench_for} />
           {starter && isZeroProjection(line.projected_points) && (
@@ -49,11 +53,13 @@ function MobilePlayer({ line, starter }: { line: PlayerLine; starter: boolean })
         <Text size="xs" c="dimmed">{slotLabel(line.slot, line.position)}</Text>
         <Text fw={600}>
           {line.name}
+          <LiveBadge live={line.live} />
           {starter && isZeroProjection(line.projected_points) && (
             <span className="matchup-zero-flag" role="img" aria-label="Projected 0.0">!</span>
           )}
         </Text>
         <DeficitBadge isDeficit={line.deficit_flag} />
+        <LiveGameLine live={line.live} />
       </div>
       <Points line={line} />
     </div>

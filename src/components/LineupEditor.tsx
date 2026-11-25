@@ -12,9 +12,12 @@ import { RosterQuickActions } from './RosterQuickActions'
 import { irMoveIdempotencyKey, irMoveInstruction, irSwapCandidates, irSwapIdempotencyKey, irSwapInstructions } from './irMoves'
 import { lineupSections } from './lineupSections'
 import { LineupSuggestionPanel, LineupSuggestionPanelSkeleton } from './LineupSuggestionPanel'
+import { useLivePlayers } from '../hooks/useLivePlayers'
+import { LiveBadge } from './player/LiveBadge'
+import { LiveGameLine } from './player/LiveGameLine'
 import { PlayerCard } from './player/PlayerCard'
 import { PlayerRowSkeleton, SkeletonRegion } from './skeletons'
-import type { DraftConfig, LineupPlayerLine } from '../api/types'
+import type { DraftConfig, LineupPlayerLine, LineupRosterResponse, LiveBlock } from '../api/types'
 import { ToastLine } from './ui/ToastLine'
 import { InfoTip } from './ui/InfoTip'
 import { PageHeader } from './ui/PageHeader'
@@ -108,6 +111,7 @@ function IrMoveAction({ action }: { action: IrAction }) {
 
 // The week being viewed, so a player's bye in that week shows as BYE on his card.
 const ViewedWeekContext = createContext<number | null>(null)
+const LivePlayersContext = createContext<Record<string, LiveBlock | null>>({})
 
 // The whole card is the drag handle, so controls inside it must not start a drag.
 function NoDrag({ children }: { children: ReactNode }) {
@@ -123,6 +127,7 @@ function NoDrag({ children }: { children: ReactNode }) {
 
 function DraggablePlayerCard({ line, irAction }: { line: LineupPlayerLine; irAction?: IrAction | null }) {
   const viewedWeek = useContext(ViewedWeekContext)
+  const live = useContext(LivePlayersContext)[line.player_id]
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: line.player_id,
     data: { line },
@@ -149,9 +154,12 @@ function DraggablePlayerCard({ line, irAction }: { line: LineupPlayerLine; irAct
           team: line.pro_team,
           headshotUrl: line.headshot_url,
           espn: line.espn,
+          live,
         }}
+        meta={live ? <LiveGameLine live={live} team={line.pro_team} /> : undefined}
         badges={
           <NoDrag>
+            <LiveBadge live={live} />
             <PlayerStatusBadges
               player={line}
               week={viewedWeek}
@@ -272,6 +280,11 @@ function LineupEditorSkeleton({ week, banner }: { week: number | string; banner?
   )
 }
 
+function rosterPlayerIds(roster: LineupRosterResponse | null): string[] {
+  if (!roster) return []
+  return [...roster.starters, ...roster.bench].map((line) => line.player_id)
+}
+
 export function LineupEditor({ config, week = '', banner }: Props) {
   const currentWeek = useCurrentWeek()
   const canSubmit = Number(week) === currentWeek
@@ -281,6 +294,7 @@ export function LineupEditor({ config, week = '', banner }: Props) {
   const roster = rosterQuery.data ?? null
   // Also true during background refreshes of a cached roster, so submits wait for them.
   const loading = rosterQuery.isFetching
+  const livePlayers = useLivePlayers(rosterPlayerIds(roster))
   const error = rosterQuery.error ? String(rosterQuery.error) : null
   // Only identifiers survive navigation; player details come from the fresh roster.
   const draftKey = `fantasy.lineup-draft:${config.league_id}:${config.team_id}:${config.season}:${week}`
@@ -492,6 +506,7 @@ export function LineupEditor({ config, week = '', banner }: Props) {
 
   return (
     <ViewedWeekContext.Provider value={Number(week) || currentWeek || null}>
+    <LivePlayersContext.Provider value={livePlayers}>
     <section className="lineup-editor" id="set-lineup" aria-busy={loading || undefined}>
       <PageHeader title="Set your lineup" actions={<RosterQuickActions page="lineup" week={week} />} />
       {banner}
@@ -672,6 +687,7 @@ export function LineupEditor({ config, week = '', banner }: Props) {
         )}
       </Modal>
     </section>
+    </LivePlayersContext.Provider>
     </ViewedWeekContext.Provider>
   )
 }

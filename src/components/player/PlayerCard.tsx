@@ -1,7 +1,8 @@
 import type { CSSProperties, ReactNode, Ref } from 'react'
 import { Table, UnstyledButton } from '@mantine/core'
-import type { EspnOwnership } from '../../api/types'
+import type { EspnOwnership, LiveBlock } from '../../api/types'
 import { EspnMarketLine } from './EspnMarketLine'
+import { liveState } from './liveGameState'
 import { PlayerAvatar } from './PlayerAvatar'
 
 export interface PlayerCardData {
@@ -12,6 +13,8 @@ export interface PlayerCardData {
   headshotUrl?: string | null
   jersey?: string | number | null
   espn?: EspnOwnership | null
+  /** Core's live snapshot; a game in progress adds the avatar dot and a green-tinted border. */
+  live?: LiveBlock | null
 }
 
 type PlayerCardVariant = 'row' | 'tableRow' | 'card' | 'listItem'
@@ -64,7 +67,8 @@ export function PlayerCard({
 }: Props) {
   const metaContent = meta ?? defaultMeta(player)
   const espnLine = <EspnMarketLine position={player.position} espn={player.espn} />
-  const avatar = player.headshotUrl ? <PlayerAvatar name={player.name} headshotUrl={player.headshotUrl} /> : null
+  const isLive = liveState(player.live) === 'live'
+  const avatar = player.headshotUrl ? <PlayerAvatar name={player.name} headshotUrl={player.headshotUrl} live={isLive} /> : null
 
   if (variant === 'tableRow') {
     return (
@@ -74,6 +78,7 @@ export function PlayerCard({
         <Table.Td>
           {player.name}
           {badgeGroup(badges)}
+          {meta && <div>{meta}</div>}
           {espnLine}
         </Table.Td>
         <Table.Td>{player.position}</Table.Td>
@@ -114,7 +119,7 @@ export function PlayerCard({
         ref={innerRef}
         style={style}
         {...dragHandleProps}
-        className={`player-card ${className ?? ''}`}
+        className={`player-card ${isLive ? 'is-live' : ''} ${className ?? ''}`}
         role="button"
         tabIndex={0}
       >
