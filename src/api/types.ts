@@ -192,12 +192,68 @@ export interface ScoreBreakdownLine {
   points: number
 }
 
+export type GameStatus = 'not_started' | 'in_progress' | 'final'
+
+/** The poller's live snapshot for one player (matchup lines and GET /v1/live/players); every
+ * field is nullable, and the whole object is null when there is no snapshot. */
+export interface LiveBlock {
+  status: GameStatus | null
+  period: number | null
+  clock: string | null
+  home_abbr: string | null
+  home_score: number | null
+  away_abbr: string | null
+  away_score: number | null
+  possession: string | null
+  yard_line: string | null
+  red_zone: boolean | null
+  stat_line: Record<string, number> | null
+  live_points: number | null
+  updated_at: string | null
+}
+
+export interface LivePlayersResponse {
+  players: Record<string, LiveBlock | null>
+}
+
+/** One item of GET /v1/matchup/feed: a play, or news on a matchup player. */
+export interface FeedItem {
+  type: 'play' | 'news'
+  cursor: string
+  at: string | null
+  player_id: string
+  espn_id: string | null
+  player_name: string | null
+  position: string | null
+  team: string | null
+  side: 'mine' | 'theirs'
+  play_id?: string | null
+  event_id?: string | null
+  game_label?: string | null
+  period?: number | null
+  clock?: string | null
+  text?: string | null
+  scoring?: boolean | null
+  /** Null when core can't tell the points this play produced. */
+  fantasy_delta?: number | null
+  news_id?: number | null
+  source?: string | null
+  headline?: string | null
+  url?: string | null
+}
+
+export interface MatchupFeedResponse {
+  items: FeedItem[]
+  next_before: string | null
+}
+
 /** The player's game this week and the points it has produced. */
 export interface PlayerLiveSummary {
   live_points: number | null
   projected_points: number | null
-  game_label: string
-  game_status: 'pre' | 'live' | 'final'
+  game_label: string | null
+  /** Core's values; null when the game is unknown. */
+  game_status: GameStatus | null
   /** Id of the NFL game, for a link to its details page. */
   event_id?: string
   /** Absent until core serves the scoring breakdown. */
@@ -286,6 +342,8 @@ export interface PlayerLine {
   projected_points: number | null
   // NFL bye week; null when core couldn't read the NFL schedule.
   bye_week?: number | null
+  /** Core's live snapshot for this player; null or absent without one. */
+  live?: LiveBlock | null
   headshot_url: string
   deficit_flag: boolean
   suggested_swap: { bench_for: string } | null
