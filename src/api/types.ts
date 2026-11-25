@@ -210,6 +210,8 @@ export interface LiveBlock {
   stat_line: Record<string, number> | null
   live_points: number | null
   updated_at: string | null
+  /** ISO-8601 UTC kickoff; core is adding it, so absent until then. */
+  kickoff?: string | null
 }
 
 export interface LivePlayersResponse {

@@ -1,4 +1,4 @@
-import type { BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupResponse, NewsFeedResponse, NewsItem, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, ScoreboardResponse, TradeEvaluationResponse, TradeOffer, TradeOfferList, VorpStat, WaiverPlayerSummary, WaiverRecommendationsResponse, FreeAgentSort, FreeAgentsResponse } from './types'
+import type { LivePlayersResponse, BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupResponse, NewsFeedResponse, NewsItem, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, ScoreboardResponse, TradeEvaluationResponse, TradeOffer, TradeOfferList, VorpStat, WaiverPlayerSummary, WaiverRecommendationsResponse, FreeAgentSort, FreeAgentsResponse } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -361,6 +361,12 @@ export function getMatchup(season: number, week: number): Promise<MatchupRespons
 export function getScoreboard(season: number, week: number): Promise<ScoreboardResponse> {
   const params = new URLSearchParams({ season: String(season), week: String(week) })
   return request(`/v1/matchup/scoreboard?${params}`)
+}
+
+/** The live snapshot for each player id; a player with no snapshot maps to null. */
+export function getLivePlayers(playerIds: string[]): Promise<LivePlayersResponse> {
+  const params = new URLSearchParams({ ids: playerIds.join(',') })
+  return request(`/v1/live/players?${params}`)
 }
 
 export function getTeamNames(leagueId?: string): Promise<Record<string, string>> {
