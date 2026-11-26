@@ -21,6 +21,7 @@ Set your league and team in [Settings](./settings.md) first. Every other page as
 | | [Inbox](./inbox.md) | Triage and answer incoming trade offers |
 | League | [Scoreboard](./scoreboard.md) | See every matchup's score for a week |
 | | [Standings & leaders](./league.md) | See standings and player leaders |
+| | [Scoring guide](./scoring.md) | Learn how this league scores fantasy points |
 | Activity | [Submissions & sessions](./activity.md) | Track queued actions and LLM sessions |
 | | [Jobs](./jobs.md) | Start a job, follow its runs and watch a chain |
 | | [Assistant](./chat.md) | Ask questions about your league |

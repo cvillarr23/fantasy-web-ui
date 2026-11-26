@@ -1719,3 +1719,25 @@ a.lineup-open-spot:focus-visible {
   color: var(--accent);
   cursor: pointer;
 }
+
+.scoring-intro { max-width: 70ch; }
+.scoring-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 900px) {
+  .scoring-columns { grid-template-columns: 1fr; }
+}
+.scoring-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.scoring-box h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.breakdown-qty { white-space: nowrap; }
+.scoring-rule-category { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+.scoring-rule-negative { color: var(--error); }
+.scoring-steps { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.scoring-steps li::marker { color: var(--accent); font-weight: 600; }

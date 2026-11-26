@@ -198,6 +198,27 @@ export interface ScoreBreakdownLine {
   points: number
 }
 
+/** One league rule from GET /v1/scoring/rules: `points_per` points per unit of the stat, or,
+ * for a range stat like "7–13 points allowed", once when it happens. */
+export interface ScoringRule {
+  stat_key: string
+  label: string
+  /** Passing, Rushing, Receiving, Turnovers, Kicking, Defense or Returns. */
+  category: string
+  points_per: number
+  /** What the stat counts (`yds`, `TD`, `rec`...); null for a range stat. */
+  unit: string | null
+  /** Plain English, e.g. "1 pt per 10 rushing yds". */
+  rule_label: string
+  /** The one position the rule applies to; null when it applies to every player. */
+  position: string | null
+}
+
+export interface ScoringRulesResponse {
+  season: number
+  rules: ScoringRule[]
+}
+
 export type GameStatus = 'not_started' | 'in_progress' | 'final'
 
 /** The poller's live snapshot for one player (matchup lines and GET /v1/live/players); every
@@ -218,6 +239,8 @@ export interface LiveBlock {
   updated_at: string | null
   /** ISO-8601 UTC kickoff; core is adding it, so absent until then. */
   kickoff?: string | null
+  /** Null when the player has no live points yet or core can't read the league's rules. */
+  breakdown?: ScoreBreakdownLine[] | null
 }
 
 export interface LivePlayersResponse {

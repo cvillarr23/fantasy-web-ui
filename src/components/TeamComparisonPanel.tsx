@@ -4,6 +4,7 @@ import { SkeletonRegion, TextSkeleton } from './skeletons'
 import type { DraftPickSummary, TeamAggregate } from '../api/types'
 import { usePlayerDetailsCache } from '../hooks/usePlayerDetailsCache'
 import { useTeamNames } from '../hooks/useTeamNames'
+import { useOpenScoringGuide } from '../hooks/useOpenScoringGuide'
 import { MatchupBadge, ScarcityBadge } from './player/DraftSignalBadges'
 import { PlayerCard } from './player/PlayerCard'
 import { PlayerSummaryPopover } from './player/PlayerSummaryPopover'
@@ -60,6 +61,7 @@ export function TeamComparisonPanel({ teamIds: teamIdsFromStatus, teamRosters, t
   )
   const playerDetailsById = usePlayerDetailsCache(allPlayerIds)
   const teamNames = useTeamNames()
+  const openScoringGuide = useOpenScoringGuide()
 
   const valueAlertTeamId = teamIds.find((teamId) => teamAggregates[teamId]?.most_recent_pick_value_alert)
 
@@ -111,7 +113,11 @@ export function TeamComparisonPanel({ teamIds: teamIdsFromStatus, teamRosters, t
               ))}
             </div>
             {expandedPlayerId && (
-              <PlayerSummaryPopover playerId={expandedPlayerId} onClose={() => setExpandedPlayerId(null)} />
+              <PlayerSummaryPopover
+                playerId={expandedPlayerId}
+                onClose={() => setExpandedPlayerId(null)}
+                onOpenScoringGuide={openScoringGuide}
+              />
             )}
           </>
         )
