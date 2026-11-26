@@ -125,9 +125,10 @@ const RecentNewsContext = createContext<Record<string, boolean>>({})
 const OpenPlayerContext = createContext<((playerId: string) => void) | undefined>(undefined)
 
 // The whole card is the drag handle, so controls inside it must not start a drag.
-function NoDrag({ children }: { children: ReactNode }) {
+function NoDrag({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <span
+      className={className}
       onPointerDown={(event) => event.stopPropagation()}
       onKeyDown={(event) => { if (event.key === ' ' || event.key === 'Enter') event.stopPropagation() }}
     >
@@ -149,6 +150,11 @@ function CardPoints({ line, live }: { line: LineupPlayerLine; live: LiveBlock | 
       <ScoreValue value={line.projected_points} projected />
     </span>
   )
+}
+
+/** Undefined without a game, so the card falls back to the player's position and team. */
+function cardGameLine(live: LiveBlock | null | undefined, team: LineupPlayerLine['pro_team']) {
+  return liveState(live) === 'none' ? undefined : <LiveGameLine live={live} team={team} />
 }
 
 function DraggablePlayerCard({ line, irAction }: { line: LineupPlayerLine; irAction?: IrAction | null }) {
@@ -185,11 +191,11 @@ function DraggablePlayerCard({ line, irAction }: { line: LineupPlayerLine; irAct
           espn: line.espn,
           live,
         }}
-        meta={live ? <LiveGameLine live={live} team={line.pro_team} /> : undefined}
+        meta={cardGameLine(live, line.pro_team)}
         nameContent={open && <NoDrag><PlayerNameButton name={line.name} onOpen={open} /></NoDrag>}
         after={<CardPoints line={line} live={live} />}
         badges={
-          <NoDrag>
+          <NoDrag className="player-card-badges">
             <LiveBadge live={live} />
             <NewsBadge hasRecentNews={hasRecentNews} />
             <PlayerStatusBadges

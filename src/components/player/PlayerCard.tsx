@@ -46,6 +46,20 @@ function defaultMeta(player: PlayerCardData): ReactNode {
   return parts.length > 0 ? parts.join(' · ') : null
 }
 
+/** The default position and team share a line with `stats`. The non-breaking space keeps a wrap
+ * from starting the next line with the separator. */
+function inlineDetails(identity: ReactNode, stats: ReactNode): ReactNode {
+  if (!identity || !stats) return identity || stats
+  return <>{identity}{'\u00a0· '}{stats}</>
+}
+
+/** The details under a card's name. A caller's `meta`, such as a game line, is a block of its own,
+ * so `stats` goes beneath it with nothing to separate. */
+function cardDetails(player: PlayerCardData, meta: ReactNode, stats: ReactNode): ReactNode {
+  if (!meta) return inlineDetails(defaultMeta(player), stats)
+  return <>{meta}{stats && <span className="player-card-stats">{stats}</span>}</>
+}
+
 function badgeGroup(badges: ReactNode): ReactNode {
   if (!badges) return null
   return <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginLeft: 6 }}>{badges}</span>
@@ -129,17 +143,18 @@ export function PlayerCard({
       >
         {avatar}
         <div className="player-card-info">
-          <span className="player-card-name">
-            {nameContent ?? player.name}
-            {badges}
-          </span>
-          <span className="player-card-meta">
-            {metaContent}
-            {stats !== undefined && stats !== null && <> · {stats}</>}
-          </span>
+          <div className="player-card-head">
+            <div className="player-card-title">
+              <span className="player-card-name">
+                {nameContent ?? player.name}
+                {badges}
+              </span>
+              <span className="player-card-meta">{cardDetails(player, meta, stats)}</span>
+            </div>
+            {after !== undefined && <div className="player-card-after">{after}</div>}
+          </div>
           {espnLine}
         </div>
-        {after !== undefined && <div className="player-card-after">{after}</div>}
       </div>
     )
   }

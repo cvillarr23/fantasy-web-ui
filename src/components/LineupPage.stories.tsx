@@ -3,7 +3,7 @@ import { expect, fn, userEvent, within } from 'storybook/test'
 import { mockFetch, type MockRoute } from '../../.storybook/mockFetch'
 import type { LiveBlock } from '../api/types'
 import { DraftConfigContext } from '../hooks/useDraftConfig'
-import { playerSummary } from '../stories/fixtures'
+import { espnCold, espnStarter, playerSummary } from '../stories/fixtures'
 import { LineupPage } from './LineupPage'
 import {
   lineupByeOutlook, lineupConfig, lineupDeficits, lineupNoCrunchOutlook, lineupPlayer, lineupRoster, lineupTeamNames,
@@ -139,21 +139,29 @@ const upcomingGame: LiveBlock = {
   ...liveGame, status: 'not_started', period: null, clock: null, home_score: null, away_score: null, possession: null,
   yard_line: null, red_zone: false, stat_line: null, live_points: null, kickoff: '2026-11-29T21:25Z',
 }
+const idleGame: LiveBlock = { ...upcomingGame, status: null, kickoff: null }
 const cardRoster = {
   starters: [
-    lineupPlayer('live', 'Sample Live Runner', 'RB', 'RB', { projected_points: 22.4 }),
-    lineupPlayer('upcoming', 'Sample Waiting Receiver', 'WR', 'WR', { projected_points: 11.8, pro_team: 'LV' }),
+    lineupPlayer('live', 'Sample Live Runner', 'RB', 'RB', {
+      projected_points: 22.4, espn: espnStarter, injury_status: 'QUESTIONABLE', rumor_sentiment: 'negative',
+      rumor_confidence: 0.64, rumor_suggested_action: 'consider_benching',
+      suggested_swap: { bench_for: 'RB', add_player_id: 'unknown', explanation: 'Questionable; the backup adds value.' },
+    }),
+    lineupPlayer('upcoming', 'Sample Waiting Receiver', 'WR', 'WR', {
+      projected_points: 11.8, pro_team: 'LV', espn: espnCold, deficit_flag: true,
+    }),
+    lineupPlayer('idle', 'Sample Idle Tight End', 'TE', 'TE', { projected_points: 8.3, espn: espnStarter }),
   ],
   bench: [lineupPlayer('unknown', 'Sample Unknown Back', 'RB', 'BE', { projected_points: null, net_vorp: null })],
   lineup_slot_counts: { BE: 1 },
 }
 
-/** Cards for a game under way (with news), one yet to start, and one with nothing known. A name
- * opens the player's popover from the keyboard. */
+/** Cards for a game under way (with news), one yet to start, one whose live block has no game and
+ * one with nothing known. A name opens the player's popover from the keyboard. */
 export const PlayerCards: Story = {
   beforeEach: () => mockFetch(routes([
     { path: /\/v1\/matchup\/roster/, body: cardRoster },
-    { path: /\/v1\/live\/players/, body: { players: { 'core-live': liveGame, 'core-upcoming': upcomingGame } } },
+    { path: /\/v1\/live\/players/, body: { players: { 'core-live': liveGame, 'core-upcoming': upcomingGame, 'core-idle': idleGame } } },
     { path: /\/v1\/news\/recent/, body: { has_news_24h: { 'core-live': true } } },
     { path: /\/v1\/players\/core-live\/summary/, body: playerSummary },
   ])),

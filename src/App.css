@@ -1034,8 +1034,13 @@
 @media (max-width: 900px) {
   .lineup-editor-columns { grid-template-columns: 1fr; }
 }
+/* Starter slots also hold the slot label, so their column gets the larger share. */
+@media (min-width: 1100px) {
+  .lineup-editor-columns { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+}
 .lineup-slot {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   padding: 8px;
@@ -1049,15 +1054,36 @@
 }
 .lineup-player-details .player-card-name {
   flex-wrap: wrap;
-}
-/* The points move under the player when a card is too narrow to hold both side by side. */
-.lineup-player-details .player-card {
-  flex-wrap: wrap;
+  column-gap: 4px;
 }
 .lineup-player-details .player-card-info {
-  flex: 1 1 150px;
+  flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+/* Each badge wraps on its own beside the name, not as one block pushed to the next row. The
+   wrapper still receives the events it stops from starting a drag. */
+.player-card-badges {
+  display: contents;
+}
+/* Smaller than the matchup score pair, to leave the name and badges more room. */
+.lineup-player-details .score-pair {
+  gap: 4px;
+}
+.lineup-player-details .score-value {
+  min-width: 46px;
+  line-height: 1.25;
+}
+.lineup-player-details .score-value.projected {
+  padding: 2px 4px;
+}
+/* The hint button and "thin" badge drop below a card that they would otherwise squeeze. The
+   basis never exceeds the room beside the slot label, so the card stays on the label's line. */
+.lineup-slot > .lineup-player-details {
+  flex: 1 1 min(320px, calc(100% - 68px));
+}
+.lineup-slot > :not(.lineup-slot-label, .lineup-player-details) {
+  margin-left: auto;
 }
 .lineup-slot-over {
   border-color: var(--accent);
@@ -1085,6 +1111,20 @@
   flex-direction: column;
   font-size: 13px;
 }
+/* The name and details share their width with `after`, which drops below them on a card too
+   narrow for both. The ESPN line underneath keeps the full width. */
+.player-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+}
+.player-card-title {
+  display: flex;
+  flex: 1 1 150px;
+  flex-direction: column;
+  min-width: 0;
+}
 .player-card-name {
   display: flex;
   align-items: center;
@@ -1094,6 +1134,9 @@
   font-size: 11px;
   color: var(--text);
   opacity: 0.7;
+}
+.player-card-stats {
+  display: block;
 }
 .player-card-after {
   margin-left: auto;
@@ -1433,9 +1476,6 @@ a.lineup-open-spot:focus-visible {
   }
   .dashboard h1 {
     font-size: 28px;
-  }
-  .lineup-slot {
-    flex-wrap: wrap;
   }
 }
 .waiver-recommendation-list {
