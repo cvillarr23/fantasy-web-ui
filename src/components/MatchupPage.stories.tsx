@@ -120,6 +120,20 @@ export const FinalWeek: Story = {
     await expect(games.getByText(/^You .* pts$/)).toBeVisible()
   },
 }
+/** Core sends a game id with each snapshot, so the tiles link to Game details. */
+export const LinkedGameTiles: Story = {
+  beforeEach: () => {
+    const matchup = liveMatchupFixture('sunday')
+    for (const line of [...matchup.our_team.starters, ...matchup.opponent.starters]) {
+      if (line.live) line.live.event_id = `${line.live.away_abbr}-${line.live.home_abbr}`
+    }
+    mockMatchup({ body: matchup }, { body: liveFeedFixture('sunday') })
+  },
+  play: async ({ canvas }) => {
+    const games = within(await canvas.findByRole('region', { name: 'Games in this matchup' }))
+    await expect(games.getByRole('link', { name: /TB 14 – 17 ATL/ })).toHaveAttribute('href', '/matchup/game/TB-ATL?week=7')
+  },
+}
 export const LiveSundayPhone: Story = {
   ...LiveSunday,
   globals: { viewport: { value: 'mobile1', isRotated: false } },

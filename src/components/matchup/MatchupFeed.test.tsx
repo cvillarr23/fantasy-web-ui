@@ -1,5 +1,6 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, expect, it, vi } from 'vitest'
 import { MatchupFeed } from './MatchupFeed'
 import { GamesPanel } from './GamesPanel'
@@ -78,4 +79,31 @@ it('shows the scoring guide link only when there is somewhere to go', () => {
   expect(screen.queryByText(/How fantasy scoring works/)).toBeNull()
   rerender(<GamesPanel games={[]} updatedAt={null} onOpenScoringGuide={() => {}} />)
   expect(screen.getByText(/How fantasy scoring works/)).toBeTruthy()
+})
+
+function renderPanel(eventId: string | null) {
+  const matchup = liveMatchupFixture('sunday')
+  if (eventId) matchup.our_team.starters[0].live!.event_id = eventId
+  render(
+    <MantineProvider>
+      <MemoryRouter>
+        <GamesPanel games={matchupGames(matchup)} updatedAt={null} gameHref={(id) => `/matchup/game/${id}`} />
+      </MemoryRouter>
+    </MantineProvider>,
+  )
+}
+
+it('links a game tile to its details only when the game has an id', () => {
+  renderPanel('evt-1')
+  const links = screen.getAllByRole('link')
+  expect(links).toHaveLength(1)
+  expect(links[0].getAttribute('href')).toBe('/matchup/game/evt-1')
+  expect(within(links[0]).getByText('TB 14 – 17 ATL')).toBeTruthy()
+  expect(within(links[0]).getByText('Game details →')).toBeTruthy()
+})
+
+it('leaves tiles non-interactive while core sends no game id', () => {
+  renderPanel(null)
+  expect(screen.queryByRole('link')).toBeNull()
+  expect(screen.queryByText('Game details →')).toBeNull()
 })

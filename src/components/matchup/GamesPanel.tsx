@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { formatNumber } from '../ui/formatNumber'
 import type { GameTile } from './matchupLive'
 import { updatedAgo } from './matchupLive'
 
-function Tile({ game }: { game: GameTile }) {
+function TileBody({ game }: { game: GameTile }) {
   const players = [
     game.myPlayers.length > 0 && `You: ${game.myPlayers.join(', ')}`,
     game.theirPlayers.length > 0 && `Opp: ${game.theirPlayers.join(', ')}`,
   ].filter(Boolean).join(' · ')
   return (
-    <li className="game-tile" data-status={game.status ?? 'unknown'}>
+    <>
       <span className="game-tile-label">{game.label}</span>
       <span className={`game-tile-status game-tile-status-${game.status ?? 'unknown'}`}>{game.statusText}</span>
       {game.status !== 'not_started' && (
@@ -19,6 +20,21 @@ function Tile({ game }: { game: GameTile }) {
         </span>
       )}
       <span className="game-tile-players">{players}</span>
+    </>
+  )
+}
+
+function Tile({ game, href }: { game: GameTile; href: string | null }) {
+  return (
+    <li data-status={game.status ?? 'unknown'}>
+      {href ? (
+        <Link to={href} className="game-tile game-tile-link">
+          <TileBody game={game} />
+          <span className="game-tile-go">Game details →</span>
+        </Link>
+      ) : (
+        <div className="game-tile"><TileBody game={game} /></div>
+      )}
     </li>
   )
 }
@@ -37,13 +53,16 @@ interface Props {
   games: GameTile[]
   /** Epoch milliseconds of the newest live snapshot. */
   updatedAt: number | null
+  /** Where a tile links to; tiles are non-interactive without it or without a game id. */
+  gameHref?: (eventId: string) => string
   /** The Scoring guide page; the link is hidden when this is not given. */
   onOpenScoringGuide?: () => void
 }
 
-/** One non-interactive tile per NFL game that has a starter in this matchup. */
-export function GamesPanel({ games, updatedAt, onOpenScoringGuide }: Props) {
+/** One tile per NFL game that has a starter in this matchup. */
+export function GamesPanel({ games, updatedAt, gameHref, onOpenScoringGuide }: Props) {
   const now = useNow()
+  const hrefFor = ({ eventId }: GameTile) => (eventId && gameHref ? gameHref(eventId) : null)
   return (
     <section className="games-panel" aria-label="Games in this matchup">
       <header className="games-panel-header">
@@ -53,7 +72,7 @@ export function GamesPanel({ games, updatedAt, onOpenScoringGuide }: Props) {
       {games.length === 0 ? (
         <p className="feed-empty">No live game data for this week.</p>
       ) : (
-        <ul className="games-list">{games.map((game) => <Tile key={game.key} game={game} />)}</ul>
+        <ul className="games-list">{games.map((game) => <Tile key={game.key} game={game} href={hrefFor(game)} />)}</ul>
       )}
       {onOpenScoringGuide && (
         <button type="button" className="games-panel-link" onClick={onOpenScoringGuide}>How fantasy scoring works →</button>

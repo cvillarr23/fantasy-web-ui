@@ -16,6 +16,7 @@ Set your league and team in [Settings](./settings.md) first. Every other page as
 |---|---|---|
 | Your team | [Lineup](./lineup.md) | Swap starters and bench, move players to or from IR |
 | | [Matchup](./matchup.md) | Compare your starters with this week's opponent |
+| | [Game details](./game-details.md) (linked from Matchup) | See the fantasy points each side got from one NFL game |
 | | [Waivers](./waivers.md) | See ranked pickups and open a move review |
 | | [Trades](./trades.md) | Evaluate a trade and approve outgoing proposals |
 | | [Inbox](./inbox.md) | Triage and answer incoming trade offers |

@@ -21,6 +21,9 @@ import { Layout } from './components/Layout'
 import { PageSkeleton } from './components/skeletons'
 import { LineupPage } from './components/LineupPage'
 import { MatchupPage } from './components/MatchupPage'
+const GameDetailsPage = lazy(() =>
+  import('./components/GameDetailsPage').then((m) => ({ default: m.GameDetailsPage })),
+)
 const PracticeDraftScreen = lazy(() =>
   import('./components/PracticeDraftScreen').then((m) => ({ default: m.PracticeDraftScreen })),
 )
@@ -53,6 +56,7 @@ function App() {
               <Route path="practice" element={<PracticeDraftScreen />} />
               <Route path="lineup" element={<LineupPage />} />
               <Route path="matchup" element={<MatchupPage />} />
+              <Route path="matchup/game/:eventId" element={<GameDetailsPage />} />
               <Route path="scoreboard" element={<ScoreboardPage />} />
               <Route path="scoring" element={<ScoringGuidePage />} />
               <Route path="inbox" element={<TradeInboxPage />} />
