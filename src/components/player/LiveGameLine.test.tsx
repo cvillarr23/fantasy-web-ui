@@ -22,6 +22,16 @@ it('shows the live line with the red zone marked and the stat line underneath', 
   expect(screen.getByText('78 rush yds 1 TD')).toBeTruthy()
 })
 
+it('keeps each separator inside the item after it so it cannot wrap onto a line of its own', () => {
+  const { container } = wrap(<LiveGameLine live={live} team="ATL" />)
+  const items = container.querySelectorAll('.live-game-main > .live-game-item')
+  expect(items).toHaveLength(3)
+  expect(items[0].querySelector('.live-game-sep')).toBeNull()
+  expect(items[1].querySelector('.live-game-sep')).not.toBeNull()
+  expect(items[2].querySelector('.live-game-sep')).not.toBeNull()
+  expect(container.querySelectorAll('.live-game-main > .live-game-sep')).toHaveLength(0)
+})
+
 it('shows opponent without a kickoff before the game, and the result after it', () => {
   const { rerender } = wrap(<LiveGameLine live={{ ...live, status: 'not_started', stat_line: null }} team="ATL" />)
   expect(screen.getByText('vs TB')).toBeTruthy()

@@ -39,7 +39,7 @@ export function EspnMarketLine({ position, espn }: Props) {
       </span>
       {parts.map((part, i) => (
         <span key={i} className="espn-part">
-          {i > 0 && <span className="espn-sep">|</span>}
+          {i > 0 && <span className="espn-sep" aria-hidden="true">|</span>}
           {part}
         </span>
       ))}

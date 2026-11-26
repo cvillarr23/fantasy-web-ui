@@ -1011,8 +1011,11 @@
   align-items: center;
   color: var(--text);
   font-variant-numeric: tabular-nums;
+  /* Clips a separator hanging left of an item that wrapped to the start of a line. */
+  overflow: hidden;
 }
-.live-game-sep { color: var(--border); }
+.live-game-item { position: relative; white-space: nowrap; }
+.live-game-sep { position: absolute; right: 100%; margin-right: 2px; color: var(--border); }
 .live-game-redzone { color: var(--outgoing); font-weight: 600; }
 .live-game-stats { color: var(--muted); }
 .player-avatar-fallback {
@@ -1632,6 +1635,8 @@ a.lineup-open-spot:focus-visible {
   margin-top: 2px;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
+  /* Clips a separator hanging left of a part that wrapped to the start of a line. */
+  overflow: hidden;
 }
 .espn-tag {
   cursor: help;
@@ -1642,8 +1647,8 @@ a.lineup-open-spot:focus-visible {
   background: color-mix(in srgb, var(--accent) 14%, transparent);
   color: var(--accent);
 }
-.espn-part { display: inline-flex; gap: 6px; }
-.espn-sep { color: var(--border); }
+.espn-part { position: relative; white-space: nowrap; }
+.espn-sep { position: absolute; right: 100%; margin-right: 2px; color: var(--border); }
 .espn-change-up { color: var(--incoming); }
 .espn-change-down { color: var(--outgoing); }
 .espn-cold .espn-start,
