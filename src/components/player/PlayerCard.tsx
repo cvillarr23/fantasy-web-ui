@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode, Ref } from 'react'
+import type { CSSProperties, MouseEvent, ReactNode, Ref } from 'react'
 import { Table, UnstyledButton } from '@mantine/core'
 import type { EspnOwnership, LiveBlock } from '../../api/types'
 import { EspnMarketLine } from './EspnMarketLine'
@@ -29,7 +29,10 @@ interface Props {
   after?: ReactNode
   /** tableRow only: extra trailing columns, each rendered as its own <Table.Td>. Overrides jersey/stats/after when given. */
   columns?: ReactNode[]
-  onClick?: () => void
+  /** listItem: the button's click. tableRow: a click anywhere on the row. */
+  onClick?: (event: MouseEvent) => void
+  /** card and tableRow: replaces the plain name, such as with a button. */
+  nameContent?: ReactNode
   disabled?: boolean
   ariaLabel?: string
   innerRef?: Ref<HTMLDivElement>
@@ -58,6 +61,7 @@ export function PlayerCard({
   after,
   columns,
   onClick,
+  nameContent,
   disabled,
   ariaLabel,
   innerRef,
@@ -72,11 +76,11 @@ export function PlayerCard({
 
   if (variant === 'tableRow') {
     return (
-      <Table.Tr>
+      <Table.Tr onClick={onClick} className={className}>
         {before !== undefined && <Table.Td>{before}</Table.Td>}
         {player.headshotUrl !== undefined && <Table.Td>{avatar}</Table.Td>}
         <Table.Td>
-          {player.name}
+          {nameContent ?? player.name}
           {badgeGroup(badges)}
           {meta && <div>{meta}</div>}
           {espnLine}
@@ -126,7 +130,7 @@ export function PlayerCard({
         {avatar}
         <div className="player-card-info">
           <span className="player-card-name">
-            {player.name}
+            {nameContent ?? player.name}
             {badges}
           </span>
           <span className="player-card-meta">
@@ -135,6 +139,7 @@ export function PlayerCard({
           </span>
           {espnLine}
         </div>
+        {after !== undefined && <div className="player-card-after">{after}</div>}
       </div>
     )
   }

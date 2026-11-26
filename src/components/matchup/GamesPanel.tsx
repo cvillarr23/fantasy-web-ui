@@ -4,6 +4,12 @@ import { formatNumber } from '../ui/formatNumber'
 import type { GameTile } from './matchupLive'
 import { updatedAgo } from './matchupLive'
 
+/** A side's points from a game. With none of its starters in the game it scored 0; with
+ * starters but no points reported yet, the total is unknown. */
+function sidePoints(total: number | null, players: string[]): number | null {
+  return players.length === 0 ? 0 : total
+}
+
 function TileBody({ game }: { game: GameTile }) {
   const players = [
     game.myPlayers.length > 0 && `You: ${game.myPlayers.join(', ')}`,
@@ -15,8 +21,8 @@ function TileBody({ game }: { game: GameTile }) {
       <span className={`game-tile-status game-tile-status-${game.status ?? 'unknown'}`}>{game.statusText}</span>
       {game.status !== 'not_started' && (
         <span className="game-tile-points">
-          <span className="game-tile-mine">You {formatNumber(game.myPoints ?? 0)} pts</span>
-          <span className="game-tile-theirs">Opp {formatNumber(game.theirPoints ?? 0)} pts</span>
+          <span className="game-tile-mine">You {formatNumber(sidePoints(game.myPoints, game.myPlayers))} pts</span>
+          <span className="game-tile-theirs">Opp {formatNumber(sidePoints(game.theirPoints, game.theirPlayers))} pts</span>
         </span>
       )}
       <span className="game-tile-players">{players}</span>

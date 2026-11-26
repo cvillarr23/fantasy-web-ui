@@ -1,10 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, within } from 'storybook/test'
 import { mockFetch, type MockRoute } from '../../.storybook/mockFetch'
+import type { LiveBlock } from '../api/types'
 import { DraftConfigContext } from '../hooks/useDraftConfig'
+import { playerSummary } from '../stories/fixtures'
 import { LineupPage } from './LineupPage'
 import {
-  lineupByeOutlook, lineupConfig, lineupDeficits, lineupNoCrunchOutlook, lineupRoster, lineupTeamNames,
+  lineupByeOutlook, lineupConfig, lineupDeficits, lineupNoCrunchOutlook, lineupPlayer, lineupRoster, lineupTeamNames,
   lineupTradeCandidates, lineupWaivers,
 } from './lineupFixtures'
 
@@ -126,5 +128,44 @@ export const Phone: Story = {
     await expect(await canvas.findByRole('link', { name: '1 position short' })).toBeVisible()
     await expect(await canvas.findByText('Sample Waiver Back')).toBeVisible()
     await expect(canvasElement.ownerDocument.documentElement.scrollWidth).toBeLessThanOrEqual(canvasElement.ownerDocument.documentElement.clientWidth)
+  },
+}
+
+const liveGame: LiveBlock = {
+  status: 'in_progress', period: 3, clock: '8:42', home_abbr: 'KC', home_score: 17, away_abbr: 'LV', away_score: 14,
+  possession: 'KC', yard_line: 'LV 12', red_zone: true, stat_line: { rushYd: 78, rushTD: 1 }, live_points: 14.2, updated_at: null,
+}
+const upcomingGame: LiveBlock = {
+  ...liveGame, status: 'not_started', period: null, clock: null, home_score: null, away_score: null, possession: null,
+  yard_line: null, red_zone: false, stat_line: null, live_points: null, kickoff: '2026-11-29T21:25Z',
+}
+const cardRoster = {
+  starters: [
+    lineupPlayer('live', 'Sample Live Runner', 'RB', 'RB', { projected_points: 22.4 }),
+    lineupPlayer('upcoming', 'Sample Waiting Receiver', 'WR', 'WR', { projected_points: 11.8, pro_team: 'LV' }),
+  ],
+  bench: [lineupPlayer('unknown', 'Sample Unknown Back', 'RB', 'BE', { projected_points: null, net_vorp: null })],
+  lineup_slot_counts: { BE: 1 },
+}
+
+/** Cards for a game under way (with news), one yet to start, and one with nothing known. A name
+ * opens the player's popover from the keyboard. */
+export const PlayerCards: Story = {
+  beforeEach: () => mockFetch(routes([
+    { path: /\/v1\/matchup\/roster/, body: cardRoster },
+    { path: /\/v1\/live\/players/, body: { players: { 'core-live': liveGame, 'core-upcoming': upcomingGame } } },
+    { path: /\/v1\/news\/recent/, body: { has_news_24h: { 'core-live': true } } },
+    { path: /\/v1\/players\/core-live\/summary/, body: playerSummary },
+  ])),
+  play: async ({ canvas, canvasElement }) => {
+    await expect(await canvas.findByText('14.2')).toBeVisible()
+    await expect(await canvas.findByText('News')).toBeVisible()
+    await expect(canvas.getByText('22.4')).toBeVisible()
+    await expect(canvas.getByText('@ KC', { exact: false })).toBeVisible()
+    const name = canvas.getByRole('button', { name: 'Sample Live Runner' })
+    name.focus()
+    await userEvent.keyboard('{Enter}')
+    const dialog = within(canvasElement.ownerDocument.body)
+    await expect(await dialog.findByRole('tab', { name: 'News' })).toBeVisible()
   },
 }

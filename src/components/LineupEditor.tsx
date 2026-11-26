@@ -13,14 +13,22 @@ import { irMoveIdempotencyKey, irMoveInstruction, irSwapCandidates, irSwapIdempo
 import { lineupSections } from './lineupSections'
 import { LineupSuggestionPanel, LineupSuggestionPanelSkeleton } from './LineupSuggestionPanel'
 import { useLivePlayers } from '../hooks/useLivePlayers'
-import { LiveBadge } from './player/LiveBadge'
+import { useOpenGame } from '../hooks/useOpenGame'
+import { useOpenScoringGuide } from '../hooks/useOpenScoringGuide'
+import { useRecentNews } from '../hooks/useRecentNews'
+import { corePlayerIds, playerOpener } from './player/corePlayerIds'
+import { LiveBadge, NewsBadge } from './player/LiveBadge'
 import { LiveGameLine } from './player/LiveGameLine'
+import { liveState } from './player/liveGameState'
 import { PlayerCard } from './player/PlayerCard'
+import { PlayerNameButton } from './player/PlayerNameButton'
+import { PlayerSummaryPopover } from './player/PlayerSummaryPopover'
 import { PlayerRowSkeleton, SkeletonRegion } from './skeletons'
 import type { DraftConfig, LineupPlayerLine, LineupRosterResponse, LiveBlock } from '../api/types'
 import { ToastLine } from './ui/ToastLine'
 import { InfoTip } from './ui/InfoTip'
 import { PageHeader } from './ui/PageHeader'
+import { ScoreValue } from './ui/ScoreValue'
 import { lineupGlossary } from './lineupGlossary'
 import { PlayerStatusBadges } from './player/PlayerStatusBadges'
 
@@ -111,7 +119,10 @@ function IrMoveAction({ action }: { action: IrAction }) {
 
 // The week being viewed, so a player's bye in that week shows as BYE on his card.
 const ViewedWeekContext = createContext<number | null>(null)
+// Both keyed by core player id.
 const LivePlayersContext = createContext<Record<string, LiveBlock | null>>({})
+const RecentNewsContext = createContext<Record<string, boolean>>({})
+const OpenPlayerContext = createContext<((playerId: string) => void) | undefined>(undefined)
 
 // The whole card is the drag handle, so controls inside it must not start a drag.
 function NoDrag({ children }: { children: ReactNode }) {
@@ -125,9 +136,27 @@ function NoDrag({ children }: { children: ReactNode }) {
   )
 }
 
+/** The player's points so far: core's live total once his game has started, otherwise unknown. */
+function actualPoints(live: LiveBlock | null | undefined): number | null {
+  const state = liveState(live)
+  return state === 'live' || state === 'final' ? live?.live_points ?? null : null
+}
+
+function CardPoints({ line, live }: { line: LineupPlayerLine; live: LiveBlock | null | undefined }) {
+  return (
+    <span className="score-pair">
+      <ScoreValue value={actualPoints(live)} />
+      <ScoreValue value={line.projected_points} projected />
+    </span>
+  )
+}
+
 function DraggablePlayerCard({ line, irAction }: { line: LineupPlayerLine; irAction?: IrAction | null }) {
   const viewedWeek = useContext(ViewedWeekContext)
-  const live = useContext(LivePlayersContext)[line.player_id]
+  const coreId = line.core_player_id ?? ''
+  const live = useContext(LivePlayersContext)[coreId]
+  const hasRecentNews = useContext(RecentNewsContext)[coreId]
+  const open = playerOpener(line, useContext(OpenPlayerContext))
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: line.player_id,
     data: { line },
@@ -157,9 +186,12 @@ function DraggablePlayerCard({ line, irAction }: { line: LineupPlayerLine; irAct
           live,
         }}
         meta={live ? <LiveGameLine live={live} team={line.pro_team} /> : undefined}
+        nameContent={open && <NoDrag><PlayerNameButton name={line.name} onOpen={open} /></NoDrag>}
+        after={<CardPoints line={line} live={live} />}
         badges={
           <NoDrag>
             <LiveBadge live={live} />
+            <NewsBadge hasRecentNews={hasRecentNews} />
             <PlayerStatusBadges
               player={line}
               week={viewedWeek}
@@ -281,8 +313,7 @@ function LineupEditorSkeleton({ week, banner }: { week: number | string; banner?
 }
 
 function rosterPlayerIds(roster: LineupRosterResponse | null): string[] {
-  if (!roster) return []
-  return [...roster.starters, ...roster.bench].map((line) => line.player_id)
+  return roster ? corePlayerIds([...roster.starters, ...roster.bench]) : []
 }
 
 export function LineupEditor({ config, week = '', banner }: Props) {
@@ -295,6 +326,10 @@ export function LineupEditor({ config, week = '', banner }: Props) {
   // Also true during background refreshes of a cached roster, so submits wait for them.
   const loading = rosterQuery.isFetching
   const livePlayers = useLivePlayers(rosterPlayerIds(roster))
+  const recentNews = useRecentNews(rosterPlayerIds(roster))
+  const [openPlayerId, setOpenPlayerId] = useState<string | null>(null)
+  const openGame = useOpenGame()
+  const openScoringGuide = useOpenScoringGuide()
   const error = rosterQuery.error ? String(rosterQuery.error) : null
   // Only identifiers survive navigation; player details come from the fresh roster.
   const draftKey = `fantasy.lineup-draft:${config.league_id}:${config.team_id}:${config.season}:${week}`
@@ -507,6 +542,8 @@ export function LineupEditor({ config, week = '', banner }: Props) {
   return (
     <ViewedWeekContext.Provider value={Number(week) || currentWeek || null}>
     <LivePlayersContext.Provider value={livePlayers}>
+    <RecentNewsContext.Provider value={recentNews}>
+    <OpenPlayerContext.Provider value={setOpenPlayerId}>
     <section className="lineup-editor" id="set-lineup" aria-busy={loading || undefined}>
       <PageHeader title="Set your lineup" actions={<RosterQuickActions page="lineup" week={week} />} />
       {banner}
@@ -686,7 +723,17 @@ export function LineupEditor({ config, week = '', banner }: Props) {
           </Stack>
         )}
       </Modal>
+      {openPlayerId && (
+        <PlayerSummaryPopover
+          playerId={openPlayerId}
+          onClose={() => setOpenPlayerId(null)}
+          onOpenGame={openGame}
+          onOpenScoringGuide={openScoringGuide}
+        />
+      )}
     </section>
+    </OpenPlayerContext.Provider>
+    </RecentNewsContext.Provider>
     </LivePlayersContext.Provider>
     </ViewedWeekContext.Provider>
   )

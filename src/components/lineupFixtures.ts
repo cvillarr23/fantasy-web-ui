@@ -13,7 +13,7 @@ export const lineupConfig: DraftConfig = { league_id: '123', team_id: '7', seaso
 
 export function lineupPlayer(id: string, name: string, position: string, slot: string, overrides: Partial<LineupPlayerLine> = {}): LineupPlayerLine {
   return {
-    player_id: id, espn_id: `espn-${id}`, name, position, slot, pro_team: 'KC', jersey: null, injury_status: null,
+    player_id: id, espn_id: `espn-${id}`, core_player_id: `core-${id}`, name, position, slot, pro_team: 'KC', jersey: null, injury_status: null,
     bye_week: 12, headshot_url: headshot, deficit_flag: false, suggested_swap: null, net_vorp: 5.2,
     rumor_sentiment: null, rumor_confidence: null, rumor_suggested_action: null, ...overrides,
   }

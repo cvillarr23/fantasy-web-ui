@@ -3,11 +3,13 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { queryClient } from '../api/queryClient'
 import { Badge, Button, Group, Skeleton, Table, Text } from '@mantine/core'
 import { Link, useLocation } from 'react-router-dom'
+import type { MatchupTeamSide } from '../api/types'
 import { matchupFeedQuery, matchupQuery } from '../api/weekReads'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useDraftConfig } from '../hooks/useDraftConfig'
 import { useOpenGame } from '../hooks/useOpenGame'
 import { useOpenScoringGuide } from '../hooks/useOpenScoringGuide'
+import { useRecentNews } from '../hooks/useRecentNews'
 import { WeekSelector } from './ui/WeekSelector'
 import { PageSkeleton, SkeletonRegion, TableRowsSkeleton } from './skeletons'
 import { LeagueNotConfigured } from './ui/LeagueNotConfigured'
@@ -22,10 +24,17 @@ import { MatchupTeamCard } from './matchup/MatchupTeamCard'
 import { displayWinChance, isZeroProjection, projectedMargin } from './matchup/matchupFormat'
 import { matchupGlossary } from './matchup/matchupGlossary'
 import { latestUpdate, matchupGames, sideCounts } from './matchup/matchupLive'
+import { corePlayerIds } from './player/corePlayerIds'
 import { gamePath } from './game/gameRoutes'
 import { PlayerSummaryPopover } from './player/PlayerSummaryPopover'
 
 const MATCHUP_COLUMNS = ['Slot', 'Player', 'Pos', 'Actual', 'Projected']
+
+/** Core ids of one side's players. Each side asks for news on its own, which keeps a request
+ * within core's id limit. */
+function sideIds(side: MatchupTeamSide | undefined): string[] {
+  return side ? corePlayerIds([...side.starters, ...side.bench]) : []
+}
 
 function MatchupSkeleton() {
   return (
@@ -87,6 +96,8 @@ export function MatchupPage() {
   const feedQuery = useQuery(matchupFeedQuery(config, weekValue), queryClient)
   const [openPlayerId, setOpenPlayerId] = useState<string | null>(null)
   const openScoringGuide = useOpenScoringGuide()
+  const ourNews = useRecentNews(sideIds(matchup?.our_team))
+  const theirNews = useRecentNews(sideIds(matchup?.opponent))
   // null is a cached bye week (or a week the season hasn't reached), not a failure.
   const notFound = query.data === null
   const error = query.error ? String(query.error) : null
@@ -175,8 +186,8 @@ export function MatchupPage() {
             <strong>Actual</strong>: {matchupGlossary.actual} <strong>Projected</strong>: {matchupGlossary.projected}
           </Text>
           <div className="matchup-columns">
-            <MatchupTeamCard id="matchup-yours" side={matchup.our_team} label="Your team" />
-            <MatchupTeamCard id="matchup-theirs" side={matchup.opponent} label="Opponent" />
+            <MatchupTeamCard id="matchup-yours" side={matchup.our_team} label="Your team" onOpenPlayer={setOpenPlayerId} recentNews={ourNews} />
+            <MatchupTeamCard id="matchup-theirs" side={matchup.opponent} label="Opponent" onOpenPlayer={setOpenPlayerId} recentNews={theirNews} />
           </div>
         </div>
       )}

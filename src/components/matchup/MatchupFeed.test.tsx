@@ -74,6 +74,16 @@ it('lists each game with both sides\' points, and no points before kickoff', () 
   expect(screen.queryByRole('button')).toBeNull()
 })
 
+it('shows a dash for a side whose starters have no points yet, and 0 for a side with none in the game', () => {
+  const matchup = liveMatchupFixture('sunday')
+  for (const line of matchup.our_team.starters) if (line.live) line.live.live_points = null
+  matchup.opponent.starters = []
+  render(<GamesPanel games={matchupGames(matchup)} updatedAt={null} />)
+  const tile = within(screen.getAllByRole('listitem')[0])
+  expect(tile.getByText('You — pts')).toBeTruthy()
+  expect(tile.getByText('Opp 0.0 pts')).toBeTruthy()
+})
+
 it('shows the scoring guide link only when there is somewhere to go', () => {
   const { rerender } = render(<GamesPanel games={[]} updatedAt={null} />)
   expect(screen.queryByText(/How fantasy scoring works/)).toBeNull()

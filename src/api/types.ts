@@ -275,6 +275,11 @@ export interface FeedItem {
   url?: string | null
 }
 
+/** GET /v1/news/recent: whether each requested player has news from the last 24 hours. */
+export interface RecentNewsResponse {
+  has_news_24h: Record<string, boolean>
+}
+
 export interface MatchupFeedResponse {
   items: FeedItem[]
   next_before: string | null
@@ -419,8 +424,12 @@ export interface RosterDeficitsResponse {
 
 // Mirrors fantasy-core-pipeline's src/api/matchup.py response models exactly.
 export interface PlayerLine {
+  /** ESPN's player id, the same as `espn_id`. */
   player_id: string
   espn_id: string
+  /** Core's own player id, for the summary, news and live reads; null for a player core can't
+   * match, absent for a core that doesn't serve it. */
+  core_player_id?: string | null
   name: string
   position: string
   jersey: string | null
@@ -513,8 +522,11 @@ export interface IrSuggestion {
 // PlayerLine (used by /v1/matchup) - no points/projected_points, since this view isn't
 // tied to a scoring period, it's "what's on my roster right now."
 export interface LineupPlayerLine {
+  /** ESPN's player id, the same as `espn_id`. */
   player_id: string
   espn_id: string
+  /** Same meaning as PlayerLine.core_player_id. */
+  core_player_id?: string | null
   name: string
   position: string
   jersey: string | null
@@ -527,6 +539,8 @@ export interface LineupPlayerLine {
   deficit_flag: boolean
   suggested_swap: { bench_for: string; add_player_id: string; explanation?: string | null } | null
   net_vorp: number | null
+  /** This week's projected fantasy points; null when core has none. */
+  projected_points?: number | null
   rumor_sentiment: string | null
   rumor_confidence: number | null
   rumor_suggested_action: string | null
