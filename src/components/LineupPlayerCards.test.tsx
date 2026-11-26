@@ -72,6 +72,47 @@ it('shows actual points once a game has started, with a dash for anything unknow
   expect(await scores('Unmatched Back')).toEqual(['—', '22.4'])
 })
 
+const details = async (name: string) => {
+  const element = (await screen.findByText(name)).closest('.player-card') as HTMLElement
+  return element.querySelector('.player-card-meta')!
+}
+// Collapses the non-breaking space so the assertions read as the card does.
+const text = (element: Element) => element.textContent!.replace(/\s+/g, ' ').trim()
+
+it('puts VORP under a game line without a separator', async () => {
+  start()
+  await (await card('Live Back')).findByText('Q3 8:42')
+  const stats = (await details('Live Back')).querySelector('.player-card-stats')!
+  expect(text(stats)).toBe('VORP 5.2 ?')
+})
+
+it('joins position, team and VORP on one line when there is no game', async () => {
+  start()
+  expect(text(await details('Unmatched Back'))).toBe('RB · KC · VORP 5.2 ?')
+})
+
+it('keeps the separator on the same line as the item before it', async () => {
+  start()
+  expect((await details('Unmatched Back')).textContent).toContain('KC · VORP')
+})
+
+it('falls back to position and team when the live block has no game', async () => {
+  vi.mocked(getLivePlayers).mockResolvedValue({
+    players: { 'core-1': block({}), 'core-2': block({ status: null }) },
+  })
+  start()
+  await (await card('Live Back')).findByText('Q3 8:42')
+  expect(text(await details('Waiting Back'))).toBe('RB · KC · VORP 5.2 ?')
+})
+
+it('shows no leading separator when position and team are unknown', async () => {
+  vi.mocked(getLineupRoster).mockResolvedValue({
+    starters: [line('5', 'Bare Back', 'RB', { position: '', pro_team: undefined })], bench: [],
+  })
+  start()
+  expect(text(await details('Bare Back'))).toBe('VORP 5.2 ?')
+})
+
 it('badges only the players with news in the last day', async () => {
   start()
   expect(await (await card('Live Back')).findByText('News')).toBeTruthy()
