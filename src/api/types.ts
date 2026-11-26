@@ -237,7 +237,7 @@ export interface LiveBlock {
   stat_line: Record<string, number> | null
   live_points: number | null
   updated_at: string | null
-  /** ISO-8601 UTC kickoff; core is adding it, so absent until then. */
+  /** The game's scheduled start, ISO-8601 UTC; null when ESPN sends none. */
   kickoff?: string | null
   /** Null when the player has no live points yet or core can't read the league's rules. */
   breakdown?: ScoreBreakdownLine[] | null
@@ -425,6 +425,9 @@ export interface PlayerLine {
   position: string
   jersey: string | null
   slot: string
+  /** The player's NFL team as an nflverse code, matching the live game's; null when ESPN gives no
+   * team, absent for a core that doesn't serve it. */
+  pro_team?: string | null
   // Null when ESPN has no value yet; the UI shows a dash, never zero.
   points: number | null
   projected_points: number | null

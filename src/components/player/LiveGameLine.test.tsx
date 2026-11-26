@@ -29,6 +29,20 @@ it('shows opponent without a kickoff before the game, and the result after it', 
   expect(screen.getByText('W 17–14 vs TB')).toBeTruthy()
 })
 
+it('matches an ESPN team code to the code the game uses', () => {
+  const washington = { ...live, home_abbr: 'WAS', stat_line: null }
+  const { rerender } = wrap(<LiveGameLine live={{ ...washington, status: 'not_started' }} team="WSH" />)
+  expect(screen.getByText('vs TB')).toBeTruthy()
+  rerender(<MantineProvider><LiveGameLine live={{ ...washington, status: 'final' }} team="WSH" /></MantineProvider>)
+  expect(screen.getByText('W 17–14 vs TB')).toBeTruthy()
+})
+
+it('shows an upcoming kickoff sent without seconds beside the opponent', () => {
+  wrap(<LiveGameLine live={{ ...live, status: 'not_started', stat_line: null, kickoff: '2026-11-29T21:25Z' }} team="TB" />)
+  expect(screen.getByText(/^[A-Z][a-z]{2} \d{1,2}:25 [AP]M$/)).toBeTruthy()
+  expect(screen.getByText('@ ATL')).toBeTruthy()
+})
+
 it('renders nothing for a missing or status-less block', () => {
   const { container } = wrap(<><LiveGameLine live={null} /><LiveGameLine live={{ ...live, status: null }} /></>)
   expect(container.querySelector('.live-game-line')).toBeNull()

@@ -1,6 +1,7 @@
 import { cleanup, render, screen, within } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
 import { afterEach, expect, it } from 'vitest'
+import type { LiveBlock } from '../../api/types'
 import { MatchupTeamCard } from './MatchupTeamCard'
 import { matchupFixture } from './fixtures'
 
@@ -54,4 +55,25 @@ it('keeps the suggested-swap badge on wide screens', () => {
   side.starters[1].suggested_swap = { bench_for: 'Sample Runner C' }
   render(<MantineProvider><MatchupTeamCard id="card" side={side} label="Your team" /></MantineProvider>)
   expect(screen.getByText('swap?')).toBeTruthy()
+})
+
+function renderFinalStarter(proTeam: string | null) {
+  const side = matchupFixture().our_team
+  side.starters = [{ ...side.starters[0], pro_team: proTeam, live: washingtonWin }]
+  render(<MantineProvider><MatchupTeamCard id="card" side={side} label="Your team" /></MantineProvider>)
+}
+
+const washingtonWin: LiveBlock = {
+  status: 'final', period: 4, clock: '0:00', home_abbr: 'WAS', home_score: 31, away_abbr: 'DAL', away_score: 20,
+  possession: null, yard_line: null, red_zone: null, stat_line: null, live_points: 24.6, updated_at: null,
+}
+
+it('shows the result from the player side in both the table and the phone card', () => {
+  renderFinalStarter('WAS')
+  expect(screen.getAllByText('W 31–20 vs DAL')).toHaveLength(2)
+})
+
+it('shows the plain final score for a player with no NFL team', () => {
+  renderFinalStarter(null)
+  expect(screen.getAllByText('DAL 20–31 WAS')).toHaveLength(2)
 })

@@ -33,7 +33,12 @@ function liveBlock(game: GameSpec, points: number | null, updatedAt: string): Li
 
 function withLive(line: PlayerLine, game: GameSpec | undefined, updatedAt: string): PlayerLine {
   if (!game) return line.player_id === 'a5' ? { ...line, game_status: null, bye_week: 7, live: null } : line
-  return { ...line, game_status: game.status, live: liveBlock(game, line.points, updatedAt) }
+  return { ...line, game_status: game.status, pro_team: teamIn(game, line.player_id), live: liveBlock(game, line.points, updatedAt) }
+}
+
+/** Splits a game's players across both teams, so home and away lines both show up. */
+function teamIn(game: GameSpec, playerId: string): string {
+  return Number(playerId.slice(1)) % 2 ? game.home : game.away
 }
 
 /** The week-7 matchup with live snapshots. 'sunday' has a game under way, one final, one not

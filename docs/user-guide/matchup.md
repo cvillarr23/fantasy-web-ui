@@ -15,6 +15,16 @@ Route: `/matchup`. A summary of both teams, a live feed beside a games panel (st
 - A starter projected for 0.0 is highlighted in red with a "Projected 0.0" label (a red "!" on phones). That usually means the player is out, inactive or on a bye, so check your lineup.
 - The pills under the title jump to the summary or to your team.
 
+## What does a player's game line show?
+
+While core is tracking the week's games, each player with a game has a line under their name:
+
+- **Before kickoff:** the kickoff time in your time zone, then `vs` the opponent at home or `@` the opponent away.
+- **During the game:** the quarter and clock, the score, and who has the ball.
+- **After the game:** **W**, **L** or **T**, the score with the player's team first, and the opponent.
+
+If core sends no NFL team for a player, the line shows the plain matchup or final score instead.
+
 ## What is in the live feed?
 
 Plays and recent news for both teams' players, newest first. Each row has the clock (or the time, for news), a stripe for your player, the opponent's player or news, the player's name (opens the player popover), the text, the game, and the change in fantasy points. A dash means the change is unknown.
