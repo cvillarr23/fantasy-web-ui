@@ -1,4 +1,5 @@
 import type { LiveBlock } from '../../api/types'
+import { toNflverseTeam } from './teamCodes'
 
 export type LiveState = 'live' | 'upcoming' | 'final' | 'none'
 
@@ -64,11 +65,20 @@ export function liveLineParts(live: LiveBlock): LiveLineParts {
   return { clock: clockText(live), score: scoreText(live), field: fieldText(live), redZone: live.red_zone === true }
 }
 
+/** Which side of the game a team is on. Roster lines carry ESPN's team codes, which don't always
+ * match the game's, so the team is converted before comparing. */
+function playerSide(live: LiveBlock, team: string | null | undefined): 'home' | 'away' | null {
+  if (!team) return null
+  const code = toNflverseTeam(team)
+  if (code === live.home_abbr) return 'home'
+  return code === live.away_abbr ? 'away' : null
+}
+
 /** `vs GB` for a home game, `@ GB` for an away one; null when the teams are unknown. */
 export function opponentText(live: LiveBlock, team: string | null | undefined): string | null {
-  if (!team) return null
-  if (team === live.home_abbr && live.away_abbr) return `vs ${live.away_abbr}`
-  if (team === live.away_abbr && live.home_abbr) return `@ ${live.home_abbr}`
+  const side = playerSide(live, team)
+  if (side === 'home' && live.away_abbr) return `vs ${live.away_abbr}`
+  if (side === 'away' && live.home_abbr) return `@ ${live.home_abbr}`
   return null
 }
 
@@ -82,16 +92,15 @@ export function kickoffText(kickoff: string | null | undefined): string | null {
   return `${day} ${time}`
 }
 
-function ownAndOpposingScore(live: LiveBlock, team: string): [number, number] | null {
+function ownAndOpposingScore(live: LiveBlock, team: string | null | undefined): [number, number] | null {
   if (live.home_score === null || live.away_score === null) return null
-  if (team === live.home_abbr) return [live.home_score, live.away_score]
-  if (team === live.away_abbr) return [live.away_score, live.home_score]
-  return null
+  const side = playerSide(live, team)
+  if (side === 'home') return [live.home_score, live.away_score]
+  return side === 'away' ? [live.away_score, live.home_score] : null
 }
 
 /** `W 31–20 vs MIA`; null when the player's side of the score can't be told. */
 export function finalResultText(live: LiveBlock, team: string | null | undefined): string | null {
-  if (!team) return null
   const scores = ownAndOpposingScore(live, team)
   if (!scores) return null
   const [own, other] = scores

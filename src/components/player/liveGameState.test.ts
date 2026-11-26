@@ -62,3 +62,23 @@ it('falls back to neutral text when the player team is unknown', () => {
   expect(matchupText(final)).toBe('MIA @ BUF')
   expect(matchupText(block({ away_abbr: null }))).toBeNull()
 })
+
+// ESPN's pro-team codes as roster lines send them, each with the code live games use.
+const ESPN_AND_LIVE_CODES = [
+  'ATL', 'BUF', 'CHI', 'CIN', 'CLE', 'DAL', 'DEN', 'DET', 'GB', 'TEN', 'IND', 'KC', 'LV', 'LAR', 'MIA', 'MIN',
+  'NE', 'NO', 'NYG', 'NYJ', 'PHI', 'ARI', 'PIT', 'LAC', 'SF', 'SEA', 'TB', 'WSH', 'CAR', 'JAX', 'BAL', 'HOU',
+].map((espn) => [espn, espn === 'WSH' ? 'WAS' : espn])
+
+it.each(ESPN_AND_LIVE_CODES)('places an ESPN %s player on the %s side of a game', (espn, code) => {
+  const home = block({ status: 'final', home_abbr: code, home_score: 31, away_abbr: 'OPP', away_score: 20 })
+  const away = block({ status: 'final', away_abbr: code, away_score: 20, home_abbr: 'OPP', home_score: 31 })
+  expect(finalResultText(home, espn)).toBe('W 31–20 vs OPP')
+  expect(finalResultText(away, espn)).toBe('L 20–31 @ OPP')
+})
+
+it.each([
+  ['LA', 'LAR'], ['STL', 'LAR'], ['OAK', 'LV'], ['LVR', 'LV'], ['SD', 'LAC'],
+  ['ARZ', 'ARI'], ['BLT', 'BAL'], ['CLV', 'CLE'], ['HST', 'HOU'],
+])('reads the older team code %s as %s', (alias, code) => {
+  expect(opponentText(block({ home_abbr: code, away_abbr: 'OPP' }), alias)).toBe('vs OPP')
+})

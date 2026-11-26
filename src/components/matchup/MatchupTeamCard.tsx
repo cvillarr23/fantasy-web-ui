@@ -27,7 +27,7 @@ function PlayerRow({ line, starter }: { line: PlayerLine; starter: boolean }) {
       variant="tableRow"
       before={line.slot}
       player={{ id: line.player_id, name: line.name, position: line.position, espn: line.espn, live: line.live }}
-      meta={<LiveGameLine live={line.live} />}
+      meta={<LiveGameLine live={line.live} team={line.pro_team} />}
       badges={
         <>
           <LiveBadge live={line.live} />
@@ -59,7 +59,7 @@ function MobilePlayer({ line, starter }: { line: PlayerLine; starter: boolean })
           )}
         </Text>
         <DeficitBadge isDeficit={line.deficit_flag} />
-        <LiveGameLine live={line.live} />
+        <LiveGameLine live={line.live} team={line.pro_team} />
       </div>
       <Points line={line} />
     </div>
