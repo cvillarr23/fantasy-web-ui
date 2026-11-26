@@ -4,7 +4,7 @@ export const matchupConfig: DraftConfig = { league_id: '123', team_id: '7', seas
 
 function line(id: string, slot: string, position: string, name: string, points: number | null, projected: number | null): PlayerLine {
   return {
-    player_id: id, espn_id: `espn-${id}`, name, position, jersey: null, slot, points, projected_points: projected,
+    player_id: id, espn_id: `espn-${id}`, core_player_id: `core-${id}`, name, position, jersey: null, slot, points, projected_points: projected,
     headshot_url: '', deficit_flag: false, suggested_swap: null,
   }
 }

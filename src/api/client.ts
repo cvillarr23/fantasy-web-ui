@@ -1,4 +1,4 @@
-import type { LivePlayersResponse, BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupFeedResponse, MatchupResponse, GameDetailResponse, NewsFeedResponse, NewsItem, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, ScoreboardResponse, ScoringRulesResponse, TradeEvaluationResponse, TradeOffer, TradeOfferList, VorpStat, WaiverPlayerSummary, WaiverRecommendationsResponse, FreeAgentSort, FreeAgentsResponse } from './types'
+import type { LivePlayersResponse, BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupFeedResponse, MatchupResponse, GameDetailResponse, NewsFeedResponse, NewsItem, RecentNewsResponse, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, ScoreboardResponse, ScoringRulesResponse, TradeEvaluationResponse, TradeOffer, TradeOfferList, VorpStat, WaiverPlayerSummary, WaiverRecommendationsResponse, FreeAgentSort, FreeAgentsResponse } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -294,6 +294,12 @@ export async function getPlayerNews(playerId: string, limit = 20): Promise<NewsI
   const params = new URLSearchParams({ player_ids: playerId, since, limit: String(limit) })
   const response = await request<NewsFeedResponse>(`/v1/news?${params}`)
   return response.items
+}
+
+/** Core accepts up to 50 ids, more than either side of a roster holds. */
+export function getRecentNews(playerIds: string[]): Promise<RecentNewsResponse> {
+  const params = new URLSearchParams({ player_ids: playerIds.join(',') })
+  return request(`/v1/news/recent?${params}`)
 }
 
 export function searchPlayers(query: string): Promise<PlayerSearchResult[]> {

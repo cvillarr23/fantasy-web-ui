@@ -15,6 +15,10 @@ Route: `/matchup`. A summary of both teams, a live feed beside a games panel (st
 - A starter projected for 0.0 is highlighted in red with a "Projected 0.0" label (a red "!" on phones). That usually means the player is out, inactive or on a bye, so check your lineup.
 - The pills under the title jump to the summary or to your team.
 
+## How do I see a player's details?
+
+Select a player's row (card on phones) or name on either team to open the player popover (Summary, News and Stats). The name is a button, so Enter and Space work too. A **News** badge marks news from the last 24 hours. A player core can't match to its player records has a plain name and no badge.
+
 ## What does a player's game line show?
 
 While core is tracking the week's games, each player with a game has a line under their name:
@@ -33,7 +37,7 @@ Filter it with **All**, **My players**, **Opponent**, **Touchdowns** or **News**
 
 ## What is in the games panel?
 
-One tile per NFL game that has a starter from either team: the score and status, the points your starters and the opponent's starters have scored in it (hidden before kickoff), and which starters are playing. "Updated Ns ago" is the age of the newest live data.
+One tile per NFL game that has a starter from either team: the score and status, the points your starters and the opponent's starters have scored in it (hidden before kickoff), and which starters are playing. A dash means no points are known yet for that side's players. "Updated Ns ago" is the age of the newest live data.
 
 ## How often does it refresh?
 
@@ -46,6 +50,7 @@ Every 30 seconds while any player in the matchup has a game in progress. It stop
 | `GET /v1/matchup` | Both sides, with actual and projected points and live game data |
 | `GET /v1/matchup/feed` | Plays and news for the live feed |
 | `GET /v1/players/{id}/summary` | The player popover |
+| `GET /v1/news/recent` | News badges |
 | `GET /v1/league/current-week` | Default week |
 
 A `404` means no opponent this week (bye, or the season hasn't reached it) and shows an empty state, not an error. If only the feed fails, the rest of the page stays and the feed offers **Retry**.

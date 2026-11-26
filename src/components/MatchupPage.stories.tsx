@@ -5,6 +5,7 @@ import { queryClient } from '../api/queryClient'
 import { matchupQuery } from '../api/weekReads'
 import { DraftConfigContext } from '../hooks/useDraftConfig'
 import { MatchupPage } from './MatchupPage'
+import { playerSummary } from '../stories/fixtures'
 import { matchupConfig, matchupFixture } from './matchup/fixtures'
 import { liveFeedFixture, liveMatchupFixture, type LiveScenario } from './matchup/liveFixtures'
 
@@ -138,4 +139,24 @@ export const LiveSundayPhone: Story = {
   ...LiveSunday,
   globals: { viewport: { value: 'mobile1', isRotated: false } },
   parameters: { viewport: { defaultViewport: 'mobile1' } },
+}
+
+/** A click anywhere on a team-card player opens his popover. */
+export const PopoverFromTeamCard: Story = {
+  beforeEach: () => mockFetch([
+    { path: /^\/v1\/matchup\?/, body: liveMatchupFixture('sunday') },
+    { path: /^\/v1\/matchup\/feed\?/, body: { items: [], next_before: null } },
+    { path: /\/v1\/league\/current-week/, body: { week: 7 } },
+    { path: /\/v1\/news\/recent/, body: { has_news_24h: { 'core-a2': true } } },
+    { path: /\/v1\/players\/core-a2\/summary/, body: playerSummary },
+  ]),
+  play: async ({ canvas, canvasElement }) => {
+    const name = await canvas.findByRole('button', { name: 'Sample Runner A' })
+    // The table row or the phone card, whichever this viewport shows.
+    const surface = name.closest<HTMLElement>('tr, .matchup-mobile-player')!
+    await expect(await within(surface).findByText('News')).toBeVisible()
+    await userEvent.click(surface)
+    const dialog = within(canvasElement.ownerDocument.body)
+    await expect(await dialog.findByRole('tab', { name: 'Stats' })).toBeVisible()
+  },
 }
