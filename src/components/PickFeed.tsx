@@ -3,6 +3,7 @@ import { ListRowsSkeleton } from './skeletons'
 import type { DraftPickSummary, DraftStatusResponse } from '../api/types'
 import { usePlayerDetailsCache } from '../hooks/usePlayerDetailsCache'
 import { useTeamNames } from '../hooks/useTeamNames'
+import { useOpenScoringGuide } from '../hooks/useOpenScoringGuide'
 import { AutodraftBadge } from './player/AutodraftBadge'
 import { PlayerCard } from './player/PlayerCard'
 import { PlayerSummaryPopover } from './player/PlayerSummaryPopover'
@@ -28,6 +29,7 @@ export function PickFeed({ picks, myTeamId, status, loading = false }: Props) {
   const playerIds = useMemo(() => picks.map((pick) => pick.player_id), [picks])
   const playerDetailsById = usePlayerDetailsCache(playerIds)
   const teamNames = useTeamNames()
+  const openScoringGuide = useOpenScoringGuide()
   // was_autodrafted is only ever set (true/false) once the backend listener actually
   // processes a pick - if that listener isn't running at all, the column silently stays
   // NULL forever, indistinguishable in the badge below from a legitimate opponent pick.
@@ -96,7 +98,11 @@ export function PickFeed({ picks, myTeamId, status, loading = false }: Props) {
         </article>
       </div>
       {expandedPlayerId && (
-        <PlayerSummaryPopover playerId={expandedPlayerId} onClose={() => setExpandedPlayerId(null)} />
+        <PlayerSummaryPopover
+          playerId={expandedPlayerId}
+          onClose={() => setExpandedPlayerId(null)}
+          onOpenScoringGuide={openScoringGuide}
+        />
       )}
     </section>
   )

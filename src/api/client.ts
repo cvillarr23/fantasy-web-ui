@@ -1,4 +1,4 @@
-import type { LivePlayersResponse, BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupFeedResponse, MatchupResponse, NewsFeedResponse, NewsItem, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, ScoreboardResponse, TradeEvaluationResponse, TradeOffer, TradeOfferList, VorpStat, WaiverPlayerSummary, WaiverRecommendationsResponse, FreeAgentSort, FreeAgentsResponse } from './types'
+import type { LivePlayersResponse, BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupFeedResponse, MatchupResponse, NewsFeedResponse, NewsItem, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, ScoreboardResponse, ScoringRulesResponse, TradeEvaluationResponse, TradeOffer, TradeOfferList, VorpStat, WaiverPlayerSummary, WaiverRecommendationsResponse, FreeAgentSort, FreeAgentsResponse } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -368,6 +368,12 @@ export function getMatchupFeed(season: number, week: number, limit = 50): Promis
 export function getScoreboard(season: number, week: number): Promise<ScoreboardResponse> {
   const params = new URLSearchParams({ season: String(season), week: String(week) })
   return request(`/v1/matchup/scoreboard?${params}`)
+}
+
+/** The league's scoring rules in plain English; 404 when that season's settings aren't synced. */
+export function getScoringRules(season: number): Promise<ScoringRulesResponse> {
+  const params = new URLSearchParams({ season: String(season) })
+  return request(`/v1/scoring/rules?${params}`)
 }
 
 /** The live snapshot for each player id; a player with no snapshot maps to null. */

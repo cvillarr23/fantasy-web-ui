@@ -20,6 +20,7 @@ const GROUPS = [
     links: [
       ['/scoreboard', 'Scoreboard'],
       ['/league', 'Standings & leaders'],
+      ['/scoring', 'Scoring guide'],
     ],
   },
   {

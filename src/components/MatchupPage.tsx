@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom'
 import { matchupFeedQuery, matchupQuery } from '../api/weekReads'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useDraftConfig } from '../hooks/useDraftConfig'
+import { useOpenScoringGuide } from '../hooks/useOpenScoringGuide'
 import { WeekSelector } from './ui/WeekSelector'
 import { PageSkeleton, SkeletonRegion, TableRowsSkeleton } from './skeletons'
 import { LeagueNotConfigured } from './ui/LeagueNotConfigured'
@@ -81,6 +82,7 @@ export function MatchupPage() {
   // The feed is secondary: if it fails the matchup still shows, with a note and Retry.
   const feedQuery = useQuery(matchupFeedQuery(config, weekValue), queryClient)
   const [openPlayerId, setOpenPlayerId] = useState<string | null>(null)
+  const openScoringGuide = useOpenScoringGuide()
   // null is a cached bye week (or a week the season hasn't reached), not a failure.
   const notFound = query.data === null
   const error = query.error ? String(query.error) : null
@@ -158,7 +160,7 @@ export function MatchupPage() {
                 <MatchupFeed items={feedQuery.data?.items ?? []} onOpenPlayer={setOpenPlayerId} />
               )}
             </div>
-            <GamesPanel games={matchupGames(matchup)} updatedAt={latestUpdate(matchup)} />
+            <GamesPanel games={matchupGames(matchup)} updatedAt={latestUpdate(matchup)} onOpenScoringGuide={openScoringGuide} />
           </div>
           <Text size="sm" c="dimmed" mb="md">
             <strong>Actual</strong>: {matchupGlossary.actual} <strong>Projected</strong>: {matchupGlossary.projected}
@@ -169,7 +171,9 @@ export function MatchupPage() {
           </div>
         </div>
       )}
-      {openPlayerId && <PlayerSummaryPopover playerId={openPlayerId} onClose={() => setOpenPlayerId(null)} />}
+      {openPlayerId && (
+        <PlayerSummaryPopover playerId={openPlayerId} onClose={() => setOpenPlayerId(null)} onOpenScoringGuide={openScoringGuide} />
+      )}
     </div>
   )
 }
