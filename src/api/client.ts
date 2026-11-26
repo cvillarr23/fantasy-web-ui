@@ -1,4 +1,4 @@
-import type { LivePlayersResponse, BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupFeedResponse, MatchupResponse, NewsFeedResponse, NewsItem, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, ScoreboardResponse, ScoringRulesResponse, TradeEvaluationResponse, TradeOffer, TradeOfferList, VorpStat, WaiverPlayerSummary, WaiverRecommendationsResponse, FreeAgentSort, FreeAgentsResponse } from './types'
+import type { LivePlayersResponse, BacktestResultDetail, BacktestResultSummary, ChatQueryResponse, DraftConfig, DraftStatusResponse, LineupRosterResponse, LineupSwapInstruction, MatchupFeedResponse, MatchupResponse, GameDetailResponse, NewsFeedResponse, NewsItem, PlayerSearchResult, PlayerSummary, PracticeSyncJobStatus, RosterDeficitsResponse, ScoreboardResponse, ScoringRulesResponse, TradeEvaluationResponse, TradeOffer, TradeOfferList, VorpStat, WaiverPlayerSummary, WaiverRecommendationsResponse, FreeAgentSort, FreeAgentsResponse } from './types'
 
 export class ApiError extends Error {
   status: number
@@ -361,6 +361,12 @@ export function getMatchup(season: number, week: number): Promise<MatchupRespons
 export function getMatchupFeed(season: number, week: number, limit = 50): Promise<MatchupFeedResponse> {
   const params = new URLSearchParams({ season: String(season), week: String(week), limit: String(limit) })
   return request(`/v1/matchup/feed?${params}`)
+}
+
+/** One NFL game of the matchup week. 404s when core has no live snapshot of it. */
+export function getMatchupGame(eventId: string, season: number, week: number): Promise<GameDetailResponse> {
+  const params = new URLSearchParams({ season: String(season), week: String(week) })
+  return request(`/v1/matchup/games/${encodeURIComponent(eventId)}?${params}`)
 }
 
 // Every matchup in the league for a week, score-only - see get_league_scoreboard in

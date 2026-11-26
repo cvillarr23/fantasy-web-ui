@@ -46,6 +46,8 @@ export function sideCounts(side: MatchupTeamSide): SideCounts {
 
 export interface GameTile {
   key: string
+  /** Id for the Game details page; null while no snapshot in this game carries one. */
+  eventId: string | null
   /** "TB @ ATL" before kickoff, otherwise "TB 14 – 17 ATL". */
   label: string
   status: GameStatus | null
@@ -92,9 +94,10 @@ export function matchupGames(matchup: MatchupResponse): GameTile[] {
       const key = line.live ? gameKey(line.live) : null
       if (!line.live || !key) continue
       const tile = tiles.get(key) ?? {
-        key, label: gameLabel(line.live), status: line.live.status, statusText: statusText(line.live),
+        key, eventId: null, label: gameLabel(line.live), status: line.live.status, statusText: statusText(line.live),
         myPoints: null, theirPoints: null, myPlayers: [], theirPlayers: [],
       }
+      tile.eventId ??= line.live.event_id ?? null
       if (mine) {
         tile.myPoints = addPoints(tile.myPoints, line.live.live_points)
         tile.myPlayers.push(lastName(line.name))

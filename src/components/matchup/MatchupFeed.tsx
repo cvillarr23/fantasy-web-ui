@@ -1,37 +1,8 @@
 import { useState } from 'react'
 import type { FeedItem } from '../../api/types'
-import { formatNumber } from '../ui/formatNumber'
 import { emptyFeedText, FEED_FILTERS, filterFeed, type FeedFilter } from './feedFilter'
-import { feedClock, feedText, newCursors } from './feedFormat'
-
-function stripeClass(item: FeedItem): string {
-  if (item.type === 'news') return 'feed-stripe-news'
-  return item.side === 'mine' ? 'feed-stripe-mine' : 'feed-stripe-theirs'
-}
-
-function Delta({ item }: { item: FeedItem }) {
-  if (item.type === 'news') return <span className="feed-delta feed-delta-news">News</span>
-  const delta = item.fantasy_delta
-  const tone = delta == null ? '' : delta < 0 ? 'feed-delta-negative' : 'feed-delta-positive'
-  return <span className={`feed-delta ${tone}`}>{formatNumber(delta, { signed: true })}</span>
-}
-
-function FeedRow({ item, fresh, onOpenPlayer }: { item: FeedItem; fresh: boolean; onOpenPlayer: (playerId: string) => void }) {
-  return (
-    <li className={fresh ? 'feed-row feed-row-new' : 'feed-row'} data-side={item.side} data-type={item.type}>
-      <span className="feed-clock">{feedClock(item)}</span>
-      <span className={`feed-stripe ${stripeClass(item)}`} aria-hidden="true" />
-      <span className="feed-text">
-        <button type="button" className="feed-player" onClick={() => onOpenPlayer(item.player_id)}>
-          {item.player_name ?? 'Unknown player'}
-        </button>{' '}
-        <span>{feedText(item)}</span>
-        {item.game_label && <span className="feed-game">{item.game_label}</span>}
-      </span>
-      <Delta item={item} />
-    </li>
-  )
-}
+import { FeedRow } from './FeedRow'
+import { useFreshCursors } from './useFreshCursors'
 
 interface Props {
   items: FeedItem[]
@@ -42,10 +13,7 @@ interface Props {
  * since the previous poll are highlighted briefly. */
 export function MatchupFeed({ items, onOpenPlayer }: Props) {
   const [filter, setFilter] = useState<FeedFilter>('all')
-  // Each poll that brings a new list replaces the highlighted set; the first list highlights nothing.
-  const [seen, setSeen] = useState({ items, fresh: new Set<string>() })
-  if (seen.items !== items) setSeen({ items, fresh: newCursors(seen.items, items) })
-  const { fresh } = seen
+  const fresh = useFreshCursors(items)
   const shown = filterFeed(items, filter)
 
   return (

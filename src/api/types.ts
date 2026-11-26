@@ -241,6 +241,8 @@ export interface LiveBlock {
   kickoff?: string | null
   /** Null when the player has no live points yet or core can't read the league's rules. */
   breakdown?: ScoreBreakdownLine[] | null
+  /** Id of the NFL game, for a link to its details page; absent until core serves it here. */
+  event_id?: string | null
 }
 
 export interface LivePlayersResponse {
@@ -276,6 +278,61 @@ export interface FeedItem {
 export interface MatchupFeedResponse {
   items: FeedItem[]
   next_before: string | null
+}
+
+export interface GameTeam {
+  abbr: string | null
+  /** Null before kickoff. */
+  score: number | null
+}
+
+/** The poller's snapshot of one NFL game. */
+export interface LiveGame {
+  event_id: string
+  status: GameStatus | null
+  /** ESPN's short status, such as "3rd 8:42" or "Final". */
+  detail: string | null
+  period: number | null
+  clock: string | null
+  home: GameTeam
+  away: GameTeam
+  possession: string | null
+  yard_line: string | null
+  red_zone: boolean | null
+  kickoff: string | null
+  updated_at: string | null
+  game_label: string | null
+}
+
+/** A matchup player, bench included, whose NFL team plays in the game. */
+export interface GamePlayer {
+  player_id: string
+  espn_id: string | null
+  player_name: string | null
+  position: string | null
+  team: string | null
+  side: 'mine' | 'theirs'
+  /** ESPN lineup slot name: `QB`, `RB/WR/TE`, `BE`, `IR`... */
+  slot: string | null
+  /** False for bench and IR, whose points don't count toward the matchup. */
+  starter: boolean
+  live_points: number | null
+  projected_points: number | null
+  stat_line: Record<string, number> | null
+  breakdown: ScoreBreakdownLine[] | null
+}
+
+/** GET /v1/matchup/games/{event_id}. */
+export interface GameDetailResponse {
+  season: number
+  week: number
+  game: LiveGame
+  /** Each side's starters' points from this game; null before kickoff. */
+  mine_points: number | null
+  theirs_points: number | null
+  players: GamePlayer[]
+  /** This game's plays, newest first. */
+  plays: FeedItem[]
 }
 
 /** The player's game this week and the points it has produced. */

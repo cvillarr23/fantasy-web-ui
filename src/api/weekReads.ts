@@ -1,6 +1,7 @@
 import { keepPreviousData, queryOptions } from '@tanstack/react-query'
+import { gamePollInterval } from '../components/game/gameDetails'
 import { pollInterval } from '../components/matchup/matchupLive'
-import { ApiError, getByeOutlook, getLineupRoster, getMatchup, getMatchupFeed, getRosterDeficits, getScoreboard } from './client'
+import { ApiError, getByeOutlook, getLineupRoster, getMatchup, getMatchupFeed, getMatchupGame, getRosterDeficits, getScoreboard } from './client'
 import { queryClient } from './queryClient'
 import type { DraftConfig, MatchupResponse } from './types'
 
@@ -20,6 +21,14 @@ export function rosterDeficitsQuery(config: DraftConfig, week: number) {
   })
 }
 
+/** A 404 is a stable answer ("there is none"), so it is cached as null instead of an error. */
+function nullWhenMissing<T>(read: Promise<T>): Promise<T | null> {
+  return read.catch((err: unknown) => {
+    if (err instanceof ApiError && err.status === 404) return null
+    throw err
+  })
+}
+
 function matchupKey(config: DraftConfig, week: number) {
   return ['matchup', config.league_id, config.team_id, config.season, week] as const
 }
@@ -27,13 +36,8 @@ function matchupKey(config: DraftConfig, week: number) {
 export function matchupQuery(config: DraftConfig, week: number) {
   return queryOptions({
     queryKey: matchupKey(config, week),
-    // A 404 means no opponent this week (bye, or the season hasn't reached it). That is a
-    // stable answer, so cache it as null instead of an error.
-    queryFn: () =>
-      getMatchup(config.season, week).catch((err: unknown) => {
-        if (err instanceof ApiError && err.status === 404) return null
-        throw err
-      }),
+    // A 404 means no opponent this week (bye, or the season hasn't reached it).
+    queryFn: () => nullWhenMissing(getMatchup(config.season, week)),
     enabled: Boolean(config.league_id && config.team_id) && validWeek(week),
     // Live scores move while a game is on; polling also tells core to poll ESPN faster.
     refetchInterval: (query) => pollInterval(query.state.data),
@@ -49,6 +53,16 @@ export function matchupFeedQuery(config: DraftConfig, week: number) {
     queryFn: () => getMatchupFeed(config.season, week),
     enabled: Boolean(config.league_id && config.team_id) && validWeek(week),
     refetchInterval: () => pollInterval(queryClient.getQueryData<MatchupResponse | null>(matchupKey(config, week))),
+    refetchIntervalInBackground: false,
+  })
+}
+
+export function matchupGameQuery(config: DraftConfig, week: number, eventId: string) {
+  return queryOptions({
+    queryKey: ['matchup-game', config.league_id, config.team_id, config.season, week, eventId],
+    queryFn: () => nullWhenMissing(getMatchupGame(eventId, config.season, week)),
+    enabled: Boolean(config.league_id && config.team_id && eventId) && validWeek(week),
+    refetchInterval: (query) => gamePollInterval(query.state.data),
     refetchIntervalInBackground: false,
   })
 }

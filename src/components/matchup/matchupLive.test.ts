@@ -56,3 +56,10 @@ it('reports the newest snapshot time and its age', () => {
   expect(updatedAgo(at, at + 12_000)).toBe('Updated 12s ago')
   expect(updatedAgo(at, at + 150_000)).toBe('Updated 2m ago')
 })
+
+it('gives a tile its game id from whichever starter\'s snapshot carries one', () => {
+  const matchup = liveMatchupFixture('sunday')
+  matchup.opponent.starters.find((line) => line.player_id === 'c4')!.live!.event_id = 'evt-1'
+  const games = matchupGames(matchup)
+  expect(games.map((game) => game.eventId)).toEqual(['evt-1', null, null])
+})

@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { queryClient } from '../api/queryClient'
 import { Badge, Button, Group, Skeleton, Table, Text } from '@mantine/core'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { matchupFeedQuery, matchupQuery } from '../api/weekReads'
 import { useSelectedWeek } from '../hooks/useSelectedWeek'
 import { useDraftConfig } from '../hooks/useDraftConfig'
+import { useOpenGame } from '../hooks/useOpenGame'
 import { useOpenScoringGuide } from '../hooks/useOpenScoringGuide'
 import { WeekSelector } from './ui/WeekSelector'
 import { PageSkeleton, SkeletonRegion, TableRowsSkeleton } from './skeletons'
@@ -21,6 +22,7 @@ import { MatchupTeamCard } from './matchup/MatchupTeamCard'
 import { displayWinChance, isZeroProjection, projectedMargin } from './matchup/matchupFormat'
 import { matchupGlossary } from './matchup/matchupGlossary'
 import { latestUpdate, matchupGames, sideCounts } from './matchup/matchupLive'
+import { gamePath } from './game/gameRoutes'
 import { PlayerSummaryPopover } from './player/PlayerSummaryPopover'
 
 const MATCHUP_COLUMNS = ['Slot', 'Player', 'Pos', 'Actual', 'Projected']
@@ -72,6 +74,8 @@ export function MatchupPage() {
   const isConfigured = Boolean(config.league_id && config.team_id)
 
   const [week, setWeek] = useSelectedWeek()
+  const { search } = useLocation()
+  const openGame = useOpenGame()
   const weekValue = Number(week)
   const validWeek = Number.isFinite(weekValue) && weekValue > 0
 
@@ -160,7 +164,12 @@ export function MatchupPage() {
                 <MatchupFeed items={feedQuery.data?.items ?? []} onOpenPlayer={setOpenPlayerId} />
               )}
             </div>
-            <GamesPanel games={matchupGames(matchup)} updatedAt={latestUpdate(matchup)} onOpenScoringGuide={openScoringGuide} />
+            <GamesPanel
+              games={matchupGames(matchup)}
+              updatedAt={latestUpdate(matchup)}
+              gameHref={(eventId) => gamePath(eventId, search)}
+              onOpenScoringGuide={openScoringGuide}
+            />
           </div>
           <Text size="sm" c="dimmed" mb="md">
             <strong>Actual</strong>: {matchupGlossary.actual} <strong>Projected</strong>: {matchupGlossary.projected}
@@ -172,7 +181,12 @@ export function MatchupPage() {
         </div>
       )}
       {openPlayerId && (
-        <PlayerSummaryPopover playerId={openPlayerId} onClose={() => setOpenPlayerId(null)} onOpenScoringGuide={openScoringGuide} />
+        <PlayerSummaryPopover
+          playerId={openPlayerId}
+          onClose={() => setOpenPlayerId(null)}
+          onOpenGame={openGame}
+          onOpenScoringGuide={openScoringGuide}
+        />
       )}
     </div>
   )
