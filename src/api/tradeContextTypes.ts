@@ -9,6 +9,15 @@ export interface TradeContextPlayer {
   slot: string | null
   eligible_slots: string[]
   injury_status: string | null
+  /** ESPN's injury report for him (core #330): null when it has nothing on him. */
+  injury?: {
+    status: string | null
+    fantasy_status: string | null
+    injury_type: string | null
+    return_date: string | null
+    expected_return_week: number | null
+    reported_at: string | null
+  } | null
   metrics: Record<string, { vorp_score: number | null; projected_points: number | null }>
   // NFL bye week; null when core couldn't read the NFL schedule.
   nfl_bye_week?: number | null

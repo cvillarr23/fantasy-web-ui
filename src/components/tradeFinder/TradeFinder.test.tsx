@@ -44,6 +44,14 @@ it('browses the default proposable candidates and reports the whole-run count', 
   expect(screen.getByText('Needs RB · deep at WR')).toBeTruthy()
   expect(screen.getByText('H2H wk 6')).toBeTruthy()
 })
+it('shows an injured player\'s expected return week on the row', async () => {
+  const c = candidate()
+  c.receive = [{ ...c.receive[0], injury_status: 'OUT', expected_return_week: 7, weeks_out_in_horizon: 2 }]
+  payload = candidates({ items: [c], total: 1 })
+  render(view())
+  expect(await screen.findByText('O · back wk 7')).toBeTruthy()
+})
+
 it('debounces every filter and resets paging, including clicking a team card', async () => {
   payload = candidates({ total: 80 })
   render(view())

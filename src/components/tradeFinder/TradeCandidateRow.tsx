@@ -1,6 +1,7 @@
 import { Button } from '@mantine/core'
 import type { TradeCandidatePlayer } from '../../api/tradeCandidateTypes'
 import { InfoTip } from '../ui/InfoTip'
+import { InjuryBadge } from '../player/InjuryBadge'
 import { tradeGlossary, tradeGlossaryForWeights } from '../tradeScore/tradeGlossary'
 import { signedScore } from '../tradeScore/tradeScoreFormat'
 import { GainBreakdown } from './GainBreakdown'
@@ -22,7 +23,8 @@ function PlayerChips({ players, side }: { players: TradeCandidatePlayer[]; side:
     <span className="finder-mobile-label">{side === 'receive' ? 'You get' : 'You give'}</span>
     {players.map((p) => <div className="finder-player" key={p.espn_id}>
       <span className="finder-position">{p.position ?? '?'}</span>
-      <span className="finder-player-name"><strong>{p.name || p.espn_id}</strong><small>{p.nfl_team ?? 'Team unknown'} · bye {p.nfl_bye_week == null ? 'unknown' : `wk ${p.nfl_bye_week}`}</small></span>
+      <span className="finder-player-name"><strong>{p.name || p.espn_id}</strong>
+        {p.injury_status && <InjuryBadge status={p.injury_status} returnWeek={p.expected_return_week} />}<small>{p.nfl_team ?? 'Team unknown'} · bye {p.nfl_bye_week == null ? 'unknown' : `wk ${p.nfl_bye_week}`}</small></span>
       <span className="finder-vorp">{p.vorp == null ? '—' : p.vorp.toFixed(1)}<small>VORP</small></span>
     </div>)}
   </div>
