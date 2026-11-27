@@ -1,5 +1,12 @@
 import { reasonLabel } from './tradeScoreReasons'
-import type { ProposalEvaluation, TradeScore, TradeScoreLineupWeek, TradeScoreRequest, TradeScoreStarter } from '../../api/types'
+import type { ProposalEvaluation, ScoringVersion, TradeScore, TradeScoreLineupWeek, TradeScoreRequest, TradeScoreStarter } from '../../api/types'
+
+const SCORING_VERSION_PATTERN = /^trade-score-v[1-9]\d*$/
+
+/** Any trade-score-vN: versions only add fields, so the required sections are what's checked. */
+export function isScoringVersion(value: unknown): value is ScoringVersion {
+  return typeof value === 'string' && SCORING_VERSION_PATTERN.test(value)
+}
 
 /** Formats a value core returned. A missing value is unknown, so it never reads as zero. */
 export function signedScore(value: number | null | undefined, digits = 1): string {
@@ -46,7 +53,7 @@ export function isProposalEvaluation(value: unknown): value is ProposalEvaluatio
   const score = evaluation.score as Partial<ProposalEvaluation['score']> | undefined
   return evaluation.version === 'proposal-evaluation-v1'
     && !!evaluation.request
-    && !!score && score.scoring_version === 'trade-score-v1'
+    && !!score && isScoringVersion(score.scoring_version)
     && !!score.score && !!score.horizon && !!score.raw_vorp && !!score.roster_impact
     && !!score.schedule && !!score.coverage && !!score.weights
 }

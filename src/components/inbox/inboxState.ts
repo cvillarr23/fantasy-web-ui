@@ -3,6 +3,7 @@ import { ApiError } from '../../api/client'
 import { retryableResponse } from '../../api/tradeResponseRetry'
 import type { DraftConfig } from '../../api/types'
 import type { InboxAction, IncomingTrade, PublicationReceipt } from '../../api/tradeInboxTypes'
+import { isScoringVersion } from '../tradeScore/tradeScoreFormat'
 export function inboxScope(config: DraftConfig) {
   return `${config.league_id}:${config.team_id}:${config.season}:${config.mode}`
 }
@@ -61,7 +62,7 @@ export function actionReason(
   const score = row.score
   if (
     !score ||
-    score.scoring_version !== 'trade-score-v1' ||
+    !isScoringVersion(score.scoring_version) ||
     score.scored_fingerprint !== row.fingerprint
   )
     return 'Score evidence for this offer is unavailable.'
