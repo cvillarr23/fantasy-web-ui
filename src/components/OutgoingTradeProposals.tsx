@@ -4,13 +4,14 @@ import { useQuery } from '@tanstack/react-query'
 import { Alert, Badge, Button, Card, Group, SimpleGrid, Stack, Text } from '@mantine/core'
 import { getTeamNames } from '../api/client'
 import { queryClient } from '../api/queryClient'
-import type { DraftConfig, TradeOffer, TradeContextPlayer } from '../api/types'
+import type { DraftConfig, TradeOffer, TradeContextPlayer, TradeScore } from '../api/types'
 import { SkeletonRegion, TextSkeleton } from './skeletons'
 import { TradeOfferApproval, TradeApprovalStatus } from './TradeOfferApproval'
 import { DismissProposal } from './DismissProposal'
 import { ProposalScoreSummary } from './tradeScore/ProposalScoreSummary'
 import { PlayerCard } from './player/PlayerCard'
 import { ByeBadge } from './player/ByeBadge'
+import { InjuryBadge } from './player/InjuryBadge'
 import { useOutgoingTradeOffers } from '../hooks/useOutgoingTradeOffers'
 import { isProposalEvaluation } from './tradeScore/tradeScoreFormat'
 import { offerFingerprint, scope } from './tradeApprovalState'
@@ -18,17 +19,25 @@ import { ProposalVerdict } from './tradeScore/ProposalVerdict'
 import { linkedOfferStyle, useLinkedOffer } from './linkedOffer'
 import { vorpLabel, vorpSummary } from './player/vorpSummary'
 
-function ProposalPlayers({ label, players, roster, week }: {
+function ProposalPlayers({ label, players, roster, week, injuries }: {
   label: string; players: TradeOffer['incoming_players']; roster: TradeContextPlayer[]; week?: number
+  injuries?: TradeScore['injuries']
 }) {
   return <Stack gap="xs">
     <Text size="xs" fw={700} tt="uppercase" c={label === 'You get' ? 'var(--incoming)' : 'var(--outgoing)'}>{label}</Text>
     {players.map(player => {
       const details = roster.find(candidate => candidate.espn_id === player.espn_id)
+      // The timeline the pitch was scored with, else today's roster report.
+      const scored = injuries?.[player.espn_id]
+      const status = scored ? scored.injury_status : details?.injury_status
+      const returnWeek = scored ? scored.expected_return_week : details?.injury === undefined ? undefined : details.injury?.expected_return_week ?? null
       return <PlayerCard key={player.espn_id} variant="row" className="proposal-player"
         player={{ id: player.espn_id, name: details?.name || player.name || `ESPN player ${player.espn_id}`, position: details?.position, team: details?.nfl_team, espn: details?.espn }}
         stats={details && <Text size="sm" fw={700}>{week == null ? 'VORP unavailable' : vorpLabel(vorpSummary(details, week))}</Text>}
-        badges={details && <ByeBadge byeWeek={details.nfl_bye_week} week={week} />} />
+        badges={(details || scored) && <>
+          <InjuryBadge status={status} returnWeek={returnWeek} />
+          {details && <ByeBadge byeWeek={details.nfl_bye_week} week={week} />}
+        </>} />
     })}
   </Stack>
 }
@@ -116,8 +125,8 @@ function ProposalCard({ offer, config, teamNames, roster, week, cardRef, isLinke
         <ProposalVerdict offer={offer} />
       </Group>
       <SimpleGrid cols={{ base: 1, sm: 2 }}>
-        <ProposalPlayers label="You get" players={offer.incoming_players} roster={roster} week={scoredWeek} />
-        <ProposalPlayers label="You give" players={offer.outgoing_players} roster={roster} week={scoredWeek} />
+        <ProposalPlayers label="You get" players={offer.incoming_players} roster={roster} week={scoredWeek} injuries={evaluation?.score.injuries} />
+        <ProposalPlayers label="You give" players={offer.outgoing_players} roster={roster} week={scoredWeek} injuries={evaluation?.score.injuries} />
       </SimpleGrid>
       <ProposalScoreSummary compact offer={offer} teamNames={teamNames} />
       <Text size="xs" c="dimmed" mt="sm">

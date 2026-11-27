@@ -50,6 +50,19 @@ it('shows the counterparty, sides, pitch and pending status with ESPN-id fallbac
   expect((screen.getByRole('button', { name: 'Review approval' }) as HTMLButtonElement).disabled).toBe(true)
 })
 
+it('badges a traded player with the injury timeline the pitch was scored with', async () => {
+  const evaluation = proposalEvaluation()
+  evaluation.score.injuries = {
+    '4046': {
+      injury_status: 'INJURY_RESERVE', slot: 'BE', return_date: '2026-11-01', expected_return_week: 8,
+      injury_type: 'Ankle', reported_at: null, weeks_out: [5, 6, 7], as_of_week_availability: 0,
+    },
+  }
+  vi.mocked(getOutgoingTradeOffers).mockResolvedValue([{ ...offer, evaluation }])
+  render(view())
+  expect(await screen.findByText('IR · back wk 8')).toBeTruthy()
+})
+
 it('scrolls to and outlines the proposal a notification linked to', async () => {
   const scrollIntoView = vi.fn()
   Element.prototype.scrollIntoView = scrollIntoView

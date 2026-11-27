@@ -17,15 +17,24 @@ export const INJURY_BADGES: Record<string, { label: string; color: string }> = {
 // confirmed live, not documented anywhere in espn_api.
 export const HEALTHY_STATUSES = new Set(['ACTIVE', 'NORMAL', 'HEALTHY'])
 
-export function InjuryBadge({ status }: { status: string | null }) {
+// Statuses core's trade scoring (src/injury_timeline) holds out until a return week.
+const SITS_UNTIL_RETURN = new Set(['OUT', 'INJURY_RESERVE', 'IR', 'SUSPENSION'])
+
+/** Label and tooltip for a status, plus the expected return week when core sent one
+ * (undefined means the caller has no timeline, so the badge stays the plain status). */
+export function injuryBadge(status: string | null | undefined, returnWeek?: number | null) {
   if (!status || HEALTHY_STATUSES.has(status.toUpperCase())) return null
-  const badge = INJURY_BADGES[status.toUpperCase()] ?? { label: status, color: 'yellow' }
-  return (
-    <BadgeSlot
-      label={badge.label}
-      tooltip={status.replaceAll('_', ' ')}
-      color={badge.color}
-      variant="filled"
-    />
-  )
+  const key = status.toUpperCase()
+  const badge = INJURY_BADGES[key] ?? { label: status, color: 'yellow' }
+  const text = status.replaceAll('_', ' ')
+  if (returnWeek === undefined || !SITS_UNTIL_RETURN.has(key)) return { ...badge, tooltip: text }
+  if (returnWeek === null)
+    return { ...badge, label: `${badge.label} · return unknown`, tooltip: `${text}; ESPN gives no return date` }
+  return { ...badge, label: `${badge.label} · back wk ${returnWeek}`, tooltip: `${text}; ESPN expects him back in week ${returnWeek}` }
+}
+
+export function InjuryBadge({ status, returnWeek }: { status: string | null | undefined; returnWeek?: number | null }) {
+  const badge = injuryBadge(status, returnWeek)
+  if (!badge) return null
+  return <BadgeSlot label={badge.label} tooltip={badge.tooltip} color={badge.color} variant="filled" />
 }
