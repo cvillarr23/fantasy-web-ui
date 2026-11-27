@@ -86,6 +86,18 @@ export interface TradeScoreComponent {
   unavailable_reasons: string[]
 }
 
+/** A traded player's injury timeline as core scored it (trade-score-v3+). */
+export interface TradeScorePlayerInjury {
+  injury_status: string | null
+  slot: string | null
+  return_date: string | null
+  expected_return_week: number | null
+  injury_type: string | null
+  reported_at: string | null
+  weeks_out: number[]
+  as_of_week_availability: number
+}
+
 export interface TradeScore {
   scoring_version: ScoringVersion
   league_id: string
@@ -116,6 +128,8 @@ export interface TradeScore {
   // terms already count every bye week.
   bye_coverage?: { us: TradeScoreByeCoverage; counterparty: TradeScoreByeCoverage }
   schedule: { weeks: TradeScoreScheduleWeek[] }
+  // Traded players by ESPN id; absent before trade-score-v3.
+  injuries?: Record<string, TradeScorePlayerInjury> | null
   score: {
     our_lineup_gain: number | null
     counterparty_lineup_change: number | null

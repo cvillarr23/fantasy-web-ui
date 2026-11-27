@@ -8,6 +8,10 @@ export type TradeCandidateSort = 'final_score' | 'our_gain' | 'their_benefit'
 export interface TradeCandidatePlayer extends TradeScoreTradedPlayer {
   vorp: number | null
   nfl_bye_week: number | null
+  /** ESPN's live status and core's return-week reading of it (#330); absent in older runs. */
+  injury_status?: string | null
+  expected_return_week?: number | null
+  weeks_out_in_horizon?: number
   /** ESPN's league-wide market signal; carried into the builder when the finder prefills it. */
   espn?: EspnOwnership | null
 }
