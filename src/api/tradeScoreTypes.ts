@@ -75,8 +75,19 @@ export interface TradeScoreByeCoverage {
   created: number[]
 }
 
+/** Core bumps N once per score change (fantasy-core-pipeline KNOWN_SCORING_VERSIONS), and
+ * each version only adds fields, so any vN reads with the fields below. */
+export type ScoringVersion = `trade-score-v${number}`
+
+/** One named term of final_score (trade-score-v2+); in_final_score false is reported only. */
+export interface TradeScoreComponent {
+  value: number | null
+  in_final_score: boolean
+  unavailable_reasons: string[]
+}
+
 export interface TradeScore {
-  scoring_version: 'trade-score-v1'
+  scoring_version: ScoringVersion
   league_id: string
   season: number
   as_of_week: number
@@ -113,6 +124,8 @@ export interface TradeScore {
     counterparty_weighted_benefit: number | null
     final_score: number | null
     final_score_unavailable_reasons: string[]
+    // Absent from stored trade-score-v1 evidence.
+    components?: Record<string, TradeScoreComponent> | null
   }
   coverage: {
     unmapped_traded_espn_ids: string[]

@@ -40,6 +40,22 @@ it('explains score terms on demand and labels raw VORP as single-week', async ()
   expect((await screen.findByText(/Change in their best starting lineup/)).textContent).toMatch(/their best starting lineup/)
 })
 
+it('lists components beyond G* and C* by name, including reported-only ones', () => {
+  const score = completeScore()
+  score.scoring_version = 'trade-score-v3'
+  score.score.components = {
+    our_weighted_gain: { value: 13.8, in_final_score: true, unavailable_reasons: [] },
+    counterparty_weighted_benefit: { value: 2.1, in_final_score: true, unavailable_reasons: [] },
+    roster_spot: { value: 1.5, in_final_score: true, unavailable_reasons: [] },
+    acceptance_likelihood: { value: null, in_final_score: false, unavailable_reasons: ['no_scored_weeks'] },
+  }
+  view(score)
+  expect(within(term(/Roster spot/)).getByText('+1.5')).toBeTruthy()
+  expect(within(term(/Acceptance likelihood/)).getByText('Not available')).toBeTruthy()
+  expect(screen.queryByRole('row', { name: /^Our weighted gain$/ })).toBeNull()
+  expect(within(screen.getByRole('table', { name: 'Score terms' })).getAllByRole('row', { name: /Our weighted gain/ })).toHaveLength(1)
+})
+
 it('explains a complete horizon', () => {
   view(completeScore())
   expect(screen.getByText('Weeks 5–8 · 4 of 4 scored')).toBeTruthy()

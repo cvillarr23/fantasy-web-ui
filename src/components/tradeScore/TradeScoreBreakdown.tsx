@@ -6,7 +6,7 @@ import { InfoTip } from '../ui/InfoTip'
 import { StrengthChip } from '../ui/StrengthChip'
 import { tradeGlossaryForWeights, type TradeGlossary } from './tradeGlossary'
 import { Badge, Group, List, Stack, Table, Text } from '@mantine/core'
-import type { TradeScore, TradeScoreByeCoverage, TradeScoreLineupWeek, TradeScoreScheduleWeek } from '../../api/types'
+import type { TradeScore, TradeScoreByeCoverage, TradeScoreComponent, TradeScoreLineupWeek, TradeScoreScheduleWeek } from '../../api/types'
 import { TradeContextProvenance } from '../TradeContextProvenance'
 import { reasonLabel } from './tradeScoreReasons'
 import { lineupMoves, signedScore } from './tradeScoreFormat'
@@ -54,6 +54,22 @@ function TermRow({ label, value, detail }: { label: string; value: string; detai
       <Table.Td>{value}</Table.Td>
     </Table.Tr>
   )
+}
+
+// G* and C* already have their own rows; any other component (a later scoring version's term)
+// is listed by name so a new term shows up without a page change.
+const COMPONENTS_WITH_ROWS = new Set(['our_weighted_gain', 'counterparty_weighted_benefit'])
+
+function componentLabel(key: string): string {
+  const words = key.replace(/_/g, ' ')
+  return words.charAt(0).toUpperCase() + words.slice(1)
+}
+
+function componentDetail(component: TradeScoreComponent): string {
+  const counted = component.in_final_score ? 'Counted in the final score.' : 'Reported only; not counted in the final score.'
+  if (component.value != null) return counted
+  const reasons = component.unavailable_reasons.map((code) => reasonLabel(code).label).join('; ')
+  return reasons ? `${counted} Not available: ${reasons}.` : counted
 }
 
 export function TradeScoreBreakdown({ score, teamNames, builder = false }: {
@@ -125,6 +141,10 @@ export function TradeScoreBreakdown({ score, teamNames, builder = false }: {
               detail={glossary.theirChange} />
             <TermRow label="Cost of helping them (C*)" value={signedScore(terms.counterparty_weighted_benefit)}
               detail={glossary.costOfHelpingThem} />
+            {Object.entries(terms.components ?? {}).filter(([key]) => !COMPONENTS_WITH_ROWS.has(key)).map(([key, component]) => (
+              <TermRow key={key} label={componentLabel(key)} value={signedScore(component.value)}
+                detail={componentDetail(component)} />
+            ))}
             <TermRow label="Final score" value={signedScore(terms.final_score)}
               detail={glossary.finalScore} />
           </Table.Tbody>

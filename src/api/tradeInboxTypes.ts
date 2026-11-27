@@ -1,11 +1,12 @@
 import type { InboxResponse } from './tradeResponseRetry'
+import type { ScoringVersion } from './tradeScoreTypes'
 export type InboxFilter = 'live' | 'all'
 export type InboxVisibility = 'visible' | 'hidden' | 'all'
 export type InboxAction = 'accept' | 'decline' | 'counter'
 export type TriageState = 'new' | 'seen' | 'snoozed' | 'dismissed'
 export interface InboxScore {
   state: 'scored' | 'incomplete' | 'unavailable' | 'unscorable' | 'stale_ownership'
-  scoring_version: 'trade-score-v1' | null
+  scoring_version: ScoringVersion | null
   as_of_week: number
   final_score: number | null
   complete_horizon: boolean | null

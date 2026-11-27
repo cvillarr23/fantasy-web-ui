@@ -41,7 +41,12 @@ it('accepts only the evaluation envelope and score version it understands', () =
   expect(isProposalEvaluation(proposalEvaluation())).toBe(true)
   expect(isProposalEvaluation(null)).toBe(false)
   expect(isProposalEvaluation({ ...proposalEvaluation(), version: 'proposal-evaluation-v2' })).toBe(false)
-  expect(isProposalEvaluation({ ...proposalEvaluation(), score: { ...completeScore(), scoring_version: 'trade-score-v2' } })).toBe(false)
+  for (const version of ['trade-score-v2', 'trade-score-v6'] as const) {
+    expect(isProposalEvaluation({ ...proposalEvaluation(), score: { ...completeScore(), scoring_version: version } })).toBe(true)
+  }
+  for (const version of ['trade-score-v0', 'trade-score-v2-beta', 'future']) {
+    expect(isProposalEvaluation({ ...proposalEvaluation(), score: { ...completeScore(), scoring_version: version } } as never)).toBe(false)
+  }
   expect(isProposalEvaluation({ ...proposalEvaluation(), score: { scoring_version: 'trade-score-v1' } })).toBe(false)
 })
 
