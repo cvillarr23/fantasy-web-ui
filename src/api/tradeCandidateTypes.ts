@@ -1,9 +1,9 @@
 import type { EspnOwnership } from './types'
-import type { TradeScore, TradeScoreTradedPlayer } from './tradeScoreTypes'
+import type { TradeScore, TradeScoreAcceptance, TradeScoreTradedPlayer } from './tradeScoreTypes'
 
 export type TradeCandidateShape = '1for1' | '2for1' | '1for2'
 export type TradeCandidateStatus = 'proposable' | 'needs_drop' | 'one_sided'
-export type TradeCandidateSort = 'final_score' | 'our_gain' | 'their_benefit' | 'rest_of_season'
+export type TradeCandidateSort = 'final_score' | 'our_gain' | 'their_benefit' | 'rest_of_season' | 'expected_score' | 'acceptance'
 
 export interface TradeCandidatePlayer extends TradeScoreTradedPlayer {
   vorp: number | null
@@ -30,6 +30,10 @@ export interface TradeCandidate {
   costs_playoff_value?: boolean
   rest_of_season_weeks?: number[]
   rest_of_season_scored_weeks?: number[]
+  // Null or absent on rows stored before the acceptance estimate. Ranks only; never hides a row.
+  acceptance_likelihood?: number | null
+  expected_score?: number | null
+  acceptance?: TradeScoreAcceptance | null
   scored_weeks: number[]
   horizon_weeks: number[]
   complete_horizon: boolean

@@ -109,6 +109,21 @@ export interface TradeScoreRestOfSeason {
   costs_playoff_value: boolean
 }
 
+/** How likely the counterparty is to accept (core acceptance-v1). A ranking aid only: never a
+ * score term and never a gate. */
+export interface TradeScoreAcceptance {
+  model_version: string
+  likelihood: number
+  terms: { base_logit: number; activity: number | null; fairness: number | null; market: number | null }
+  inputs: {
+    history: { offers: number; accepted: number; declined: number; expired: number; league_offers: number; league_accepted: number; league_rate: number; rate: number }
+    activity: { trades: number | null; offers_to_us: number; z: number | null }
+    fairness: { our_lineup_gain: number | null; counterparty_lineup_change: number | null; balance: number | null }
+    market: { percent_owned_received: number | null; percent_owned_sent: number | null }
+  }
+  unavailable_inputs: string[]
+}
+
 export interface TradeScore {
   scoring_version: ScoringVersion
   league_id: string
@@ -148,6 +163,8 @@ export interface TradeScore {
   schedule: { weeks: TradeScoreScheduleWeek[] }
   // Absent from evidence scored before the rest-of-season term.
   rest_of_season?: TradeScoreRestOfSeason | null
+  // Absent from evidence scored before the acceptance estimate.
+  acceptance?: TradeScoreAcceptance | null
   score: {
     our_lineup_gain: number | null
     counterparty_lineup_change: number | null

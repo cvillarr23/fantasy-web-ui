@@ -14,6 +14,8 @@ export const tradeGlossary = {
   vorp: 'Value over a replacement-level player at the same position. Raw player VORP totals cover one week and ignore starting lineups and schedules.',
   horizon: 'The requested number of scoring weeks, starting at the selected week and capped at the end of the regular season.',
   restOfSeason: 'R values the trade over every week after the horizon through the last fantasy playoff week, with playoff weeks counting more than regular weeks. It is part of the final score. Unavailable means no such week could be scored yet; it is not zero.',
+  acceptance: 'Our estimate of how likely they are to accept, from their past offer history with us, how active they are, how balanced the trade looks for them, and how widely the players are owned. It ranks trades only; it is not part of the final score and never hides a trade.',
+  expectedScore: 'Final score times the chance they accept: what the trade is worth to us after allowing for it being turned down.',
   costsPlayoffValue: 'Our starting lineup is worse in our fantasy playoff weeks after this trade, even if the near-term weeks improve. Informational; it never hides a trade.',
   scoredWeeks: 'Totals cover only scored weeks. A complete horizon means no horizon weeks were unscored; it does not guarantee complete roster data or known strength. Partial totals are not an estimate for the full horizon.',
 } as const

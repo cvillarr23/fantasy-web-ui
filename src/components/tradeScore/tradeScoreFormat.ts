@@ -21,6 +21,16 @@ export function restOfSeasonText(value: number | null | undefined): string {
   return value == null ? 'Unavailable' : signedScore(value)
 }
 
+/** A probability as a whole percent. Missing means the estimate wasn't stored, not 0%. */
+export function percentText(likelihood: number | null | undefined, missing = '—'): string {
+  return likelihood == null || !Number.isFinite(likelihood) ? missing : `${Math.round(likelihood * 100)}%`
+}
+
+/** core flags a counterparty with no past offers from us; either spelling has been emitted. */
+export function hasNoOfferHistory(unavailableInputs: string[] | undefined): boolean {
+  return !!unavailableInputs?.some((code) => code === 'no_offer_history' || code === 'offer_history')
+}
+
 export function lineupMoves(week: TradeScoreLineupWeek): { entered: TradeScoreStarter[]; left: TradeScoreStarter[] } {
   const before = new Set(week.starters_before.map((s) => s.espn_id))
   const after = new Set(week.starters_after.map((s) => s.espn_id))

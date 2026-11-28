@@ -146,3 +146,21 @@ export function restOfSeasonScore(overrides: Partial<NonNullable<TradeScore['res
   }
   return score
 }
+
+/** A v6 score with an acceptance estimate of 62%. */
+export function acceptanceScore(overrides: Partial<NonNullable<TradeScore['acceptance']>> = {}): TradeScore {
+  const score = restOfSeasonScore()
+  score.acceptance = {
+    model_version: 'acceptance-v1', likelihood: 0.62,
+    terms: { base_logit: 0.25, activity: -0.5, fairness: null, market: 0.75 },
+    inputs: {
+      history: { offers: 4, accepted: 3, declined: 1, expired: 0, league_offers: 40, league_accepted: 20, league_rate: 0.5, rate: 0.7 },
+      activity: { trades: 5, offers_to_us: 4, z: -0.5 },
+      fairness: { our_lineup_gain: 12.6, counterparty_lineup_change: -4.4, balance: null },
+      market: { percent_owned_received: 90, percent_owned_sent: 60 },
+    },
+    unavailable_inputs: [], ...overrides,
+  }
+  score.score.components = { ...score.score.components, acceptance_likelihood: { value: 0.62, in_final_score: false, unavailable_reasons: [] } }
+  return score
+}

@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { queryClient } from '../../api/queryClient'
 import { TradeFinder } from './TradeFinder'
 import { candidates, candidate, finderConfig, finderContext, finderDeficits } from './fixtures'
+import { acceptanceScore } from '../tradeScore/fixtures'
 import { completeScore } from '../tradeScore/fixtures'
 
 let payload = candidates()
@@ -149,4 +150,20 @@ it('shows rest of season per row, unavailable rather than zero, and sorts by it'
   expect(screen.getAllByText('Unavailable')).toHaveLength(1)
   fireEvent.change(screen.getByLabelText('Sort by'), { target: { value: 'rest_of_season' } })
   await waitFor(() => expect(latest().sort).toBe('rest_of_season'))
+})
+
+it('shows acceptance as a percent, a dash on old rows, never hides rows, and offers its sorts', async () => {
+  payload = candidates({ total: 2, items: [
+    candidate({ candidate_key: 'a', acceptance_likelihood: 0.62, expected_score: 5.8, acceptance: acceptanceScore().acceptance }),
+    candidate({ candidate_key: 'b', counterparty: { team_id: '9', name: 'Sunday Crew' } }),
+  ] })
+  render(view())
+  expect(await screen.findByText('62%')).toBeTruthy()
+  expect(screen.getAllByText('Sunday Crew').length).toBeGreaterThan(0)
+  const rows = screen.getAllByRole('row').filter((row) => row.className.includes('finder-candidate'))
+  expect(within(rows[1]).getByText('—')).toBeTruthy()
+  fireEvent.change(screen.getByLabelText('Sort by'), { target: { value: 'expected_score' } })
+  await waitFor(() => expect(latest().sort).toBe('expected_score'))
+  fireEvent.change(screen.getByLabelText('Sort by'), { target: { value: 'acceptance' } })
+  await waitFor(() => expect(latest().sort).toBe('acceptance'))
 })

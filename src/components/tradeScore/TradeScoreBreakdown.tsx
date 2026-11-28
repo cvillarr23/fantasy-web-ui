@@ -8,8 +8,9 @@ import { tradeGlossaryForWeights, type TradeGlossary } from './tradeGlossary'
 import { Badge, Group, List, Stack, Table, Text } from '@mantine/core'
 import type { TradeScore, TradeScoreByeCoverage, TradeScoreRestOfSeason, TradeScoreComponent, TradeScoreLineupWeek, TradeScoreScheduleWeek } from '../../api/types'
 import { TradeContextProvenance } from '../TradeContextProvenance'
+import { AcceptanceTerms } from './AcceptanceTerms'
 import { reasonLabel } from './tradeScoreReasons'
-import { lineupMoves, restOfSeasonText, signedScore } from './tradeScoreFormat'
+import { lineupMoves, percentText, restOfSeasonText, signedScore } from './tradeScoreFormat'
 
 // Presentation only: every number below is a field core returned. Nothing is summed or
 // weighted here, so this page can never disagree with the scorer it explains.
@@ -56,9 +57,17 @@ function TermRow({ label, value, detail }: { label: string; value: string; detai
   )
 }
 
+// A component's own row stands in for it only when its evidence block is present; otherwise the
+// generic row still lists it, formatted for what it is (R is unavailable when null, acceptance is a percent).
+function componentValue(key: string, value: number | null): string {
+  if (key === 'acceptance_likelihood') return percentText(value, 'Not available')
+  if (key === 'rest_of_season') return restOfSeasonText(value)
+  return signedScore(value)
+}
+
 // G* and C* already have their own rows; any other component (a later scoring version's term)
 // is listed by name so a new term shows up without a page change.
-const COMPONENTS_WITH_ROWS = new Set(['our_weighted_gain', 'counterparty_weighted_benefit', 'rest_of_season'])
+const COMPONENTS_WITH_ROWS = new Set(['our_weighted_gain', 'counterparty_weighted_benefit'])
 
 function componentLabel(key: string): string {
   const words = key.replace(/_/g, ' ')
@@ -143,8 +152,11 @@ export function TradeScoreBreakdown({ score, teamNames, builder = false }: {
               detail={glossary.costOfHelpingThem} />
             {score.rest_of_season && <TermRow label="Rest of season / playoffs (R)" value={restOfSeasonText(score.rest_of_season.value)}
               detail={restOfSeasonDetail(score.rest_of_season, glossary.restOfSeason)} />}
-            {Object.entries(terms.components ?? {}).filter(([key]) => !COMPONENTS_WITH_ROWS.has(key)).map(([key, component]) => (
-              <TermRow key={key} label={componentLabel(key)} value={signedScore(component.value)}
+            {score.acceptance && <TermRow label="Acceptance likelihood" value={percentText(score.acceptance.likelihood)}
+              detail={`${glossary.acceptance} Reported only; not counted in the final score.`} />}
+            {Object.entries(terms.components ?? {}).filter(([key]) => !COMPONENTS_WITH_ROWS.has(key)
+              && !(key === 'rest_of_season' && score.rest_of_season) && !(key === 'acceptance_likelihood' && score.acceptance)).map(([key, component]) => (
+              <TermRow key={key} label={componentLabel(key)} value={componentValue(key, component.value)}
                 detail={componentDetail(component)} />
             ))}
             <TermRow label="Final score" value={signedScore(terms.final_score)}
@@ -154,6 +166,10 @@ export function TradeScoreBreakdown({ score, teamNames, builder = false }: {
       </Table.ScrollContainer>}
 
       {score.rest_of_season && <RestOfSeasonTable ros={score.rest_of_season} glossary={glossary} />}
+      {score.acceptance && <Stack gap={4} component="section" aria-label="Acceptance likelihood">
+        <Text fw={600} size="sm">Chance they accept <InfoTip label="acceptance likelihood">{glossary.acceptance}</InfoTip></Text>
+        <AcceptanceTerms acceptance={score.acceptance} />
+      </Stack>}
       {score.bye_coverage && <ByeCoverage coverage={score.bye_coverage} ours={ours} theirs={theirs} glossary={glossary} />}
       {builder ? <WeeklyLineupTable score={score} teamNames={teamNames} /> : <>
         <WeekTable score={score} teamName={teamName} glossary={glossary} />

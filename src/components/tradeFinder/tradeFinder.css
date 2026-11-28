@@ -13,7 +13,7 @@
 .finder-filters > :first-child { flex-basis: 150px; }
 .finder-content { display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
 .finder-list { flex: 999 1 720px; min-width: 0; display: flex; flex-direction: column; gap: 12px; container-type: inline-size; }
-.finder-row { display: grid; grid-template-columns: 132px minmax(0,1fr) minmax(0,1fr) 104px 64px 84px 60px 120px 74px; gap: 12px; align-items: center; }
+.finder-row { display: grid; grid-template-columns: 132px minmax(0,1fr) minmax(0,1fr) 104px 64px 84px 60px 64px 120px 74px; gap: 12px; align-items: center; }
 .finder-head { padding: 0 16px 10px; font-size: 11px; color: var(--text); }
 .finder-head > * { display: flex; align-items: center; gap: 5px; }
 .finder-candidate { padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; }

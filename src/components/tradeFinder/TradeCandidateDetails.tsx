@@ -3,11 +3,12 @@ import { Button, Group, NativeSelect, Stack, Text } from '@mantine/core'
 import { Link } from 'react-router-dom'
 import type { LeagueTradeContext, RosterDeficitsResponse } from '../../api/types'
 import type { TradeScoreLineupWeek } from '../../api/tradeScoreTypes'
+import { AcceptanceTerms } from '../tradeScore/AcceptanceTerms'
 import { StatTile } from '../ui/StatTile'
 import { InfoTip } from '../ui/InfoTip'
 import { StrengthChip } from '../ui/StrengthChip'
 import { ErrorAlert } from '../ui/ErrorAlert'
-import { signedScore } from '../tradeScore/tradeScoreFormat'
+import { percentText, signedScore } from '../tradeScore/tradeScoreFormat'
 import { tradeGlossary, tradeGlossaryForWeights } from '../tradeScore/tradeGlossary'
 import { TradeScoreBreakdown } from '../tradeScore/TradeScoreBreakdown'
 import { headToHeadWeeks, lineupChanges, scoreTone, teamNeeds } from './tradeFinderFormat'
@@ -48,6 +49,10 @@ export function TradeCandidateDetails({ context, deficits, onOpenBuilder, ...pro
       <StatTile label="Final" value={c.final_score} info={tradeGlossaryForWeights(undefined).finalScore} />
     </div>
     {c.costs_playoff_value && <Text size="sm" className="finder-playoff-cost">Costs playoff value <InfoTip label="costs playoff value">{tradeGlossary.costsPlayoffValue}</InfoTip></Text>}
+    <div aria-label="Acceptance estimate">
+      <Text size="sm">Chance they accept: <strong>{percentText(c.acceptance_likelihood)}</strong>{c.expected_score != null && <> · Expected score <strong>{signedScore(c.expected_score)}</strong></>} <InfoTip label="acceptance likelihood">{tradeGlossary.acceptance}</InfoTip></Text>
+      {c.acceptance ? <AcceptanceTerms acceptance={c.acceptance} /> : <Text size="xs" c="dimmed">No acceptance estimate was stored for this trade.</Text>}
+    </div>
     <h4>Starting lineup changes</h4>
     <Text size="xs" c="dimmed">Live score from current rosters; may differ from the computed snapshot.</Text>
     {score.isLoading && <Text size="sm" role="status">Loading lineup changes…</Text>}

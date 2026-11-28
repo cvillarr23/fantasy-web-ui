@@ -2,7 +2,7 @@ import { afterEach, expect, it } from 'vitest'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
 import { TradeScoreBreakdown } from './TradeScoreBreakdown'
-import { completeScore, partialScore, restOfSeasonScore, unscoredScore } from './fixtures'
+import { acceptanceScore, completeScore, partialScore, restOfSeasonScore, unscoredScore } from './fixtures'
 import type { TradeScore } from '../../api/types'
 
 afterEach(cleanup)
@@ -267,4 +267,20 @@ it('shows an unavailable rest of season as unavailable, never as zero, and a rea
 it('leaves older evidence without a rest-of-season row', () => {
   view(completeScore())
   expect(screen.queryByText(/Rest of season/)).toBeNull()
+})
+
+it('shows acceptance as a percent with its terms, not as a signed score', () => {
+  view(acceptanceScore())
+  expect(within(term(/Acceptance likelihood/)).getByText('62%')).toBeTruthy()
+  expect(screen.getAllByRole('row', { name: /Acceptance likelihood/ })).toHaveLength(1)
+  const terms = within(screen.getByLabelText('Acceptance terms'))
+  expect(terms.getByText('History: +0.25')).toBeTruthy()
+  expect(terms.getByText('Activity: -0.50')).toBeTruthy()
+  expect(terms.getByText('Fairness: Not available')).toBeTruthy()
+  expect(terms.getByText(/3 accepted, 1 declined, 0 expired of 4 offers/)).toBeTruthy()
+})
+
+it('says there is no offer history yet when core could not read any', () => {
+  view(acceptanceScore({ unavailable_inputs: ['no_offer_history'] }))
+  expect(screen.getByText(/No offer history yet/)).toBeTruthy()
 })
