@@ -4,7 +4,7 @@ import { Alert, Badge, Group, List, SimpleGrid, Stack, Text } from '@mantine/cor
 import type { ProposalEvaluation, TradeOffer } from '../../api/types'
 import { reasonLabel } from './tradeScoreReasons'
 import { TradeScoreBreakdown } from './TradeScoreBreakdown'
-import { formatEvidenceValue, isProposalEvaluation, resolvePointer, signedScore } from './tradeScoreFormat'
+import { formatEvidenceValue, isProposalEvaluation, hasNoOfferHistory, hasOfferHistoryUnavailable, percentText, resolvePointer, signedScore } from './tradeScoreFormat'
 
 function PitchEvidence({ evaluation, message }: { evaluation: ProposalEvaluation; message: string | null | undefined }) {
   const pitch = evaluation.pitch
@@ -79,12 +79,17 @@ export function ProposalScoreSummary({ offer, teamNames, compact = false }: {
         {/* Kept outside the collapsed breakdown: a proposal ranked by our lineup gain has no
             final score, and our value must stay distinct from what the trade does to them.
             G + adjustment + C* is the final score, so the tiles reconcile with the headline. */}
-        <SimpleGrid cols={3} spacing="xs" aria-label="Score terms summary">
+        <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="xs" aria-label="Score terms summary">
           <StatTile label="Our lineup gain" value={score.score.our_lineup_gain} info={glossary.ourLineupGain} />
           <StatTile label="Schedule boost" value={score.score.our_schedule_adjustment} info={glossary.scheduleBoost} />
           <StatTile label="Cost of helping them" value={score.score.counterparty_weighted_benefit}
             info={glossary.costOfHelpingThem} />
+          {score.rest_of_season && <StatTile label="Rest of season" value={score.rest_of_season.value} info={glossary.restOfSeason} />}
         </SimpleGrid>
+        {score.rest_of_season?.costs_playoff_value && <Group gap="xs"><Badge color="orange" variant="light">Costs playoff value</Badge></Group>}
+        <Text size="sm" aria-label="Acceptance likelihood">Chance they accept: <strong>{percentText(score.acceptance?.likelihood)}</strong>
+          {score.acceptance && hasNoOfferHistory(score.acceptance.unavailable_inputs) && ' · no offer history yet'}
+          {score.acceptance && hasOfferHistoryUnavailable(score.acceptance.unavailable_inputs) && ' · offer history unavailable'}</Text>
         <details role="group" aria-label="Score breakdown">
           <summary>Score breakdown</summary>
           <Stack gap="md" mt="sm">

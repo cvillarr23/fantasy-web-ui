@@ -126,3 +126,41 @@ export function proposalEvaluation(score: TradeScore = completeScore()): Proposa
     },
   }
 }
+
+/** A v6 score with a rest-of-season term: weeks 9 (regular, 0.5) and 10 (playoff, 1). */
+export function restOfSeasonScore(overrides: Partial<NonNullable<TradeScore['rest_of_season']>> = {}): TradeScore {
+  const score = completeScore()
+  score.scoring_version = 'trade-score-v6'
+  score.weights = { ...score.weights, ros_regular_weight: 0.5, playoff_week_weight: 1 }
+  score.rest_of_season = {
+    weeks: [
+      { week: 9, kind: 'regular', weight: 0.5, our_delta: 2.5, counterparty_delta: -1.5 },
+      { week: 10, kind: 'playoff', weight: 1, our_delta: -3.5, counterparty_delta: 0.5 },
+    ],
+    scored_weeks: [9, 10], unscored_weeks: [], complete: true, our_lineup_gain: -1, playoff_lineup_gain: -3.5,
+    counterparty_lineup_change: -1, value: -2.25, unavailable_reasons: [], costs_playoff_value: true, ...overrides,
+  }
+  score.score.rest_of_season_value = score.rest_of_season.value
+  score.score.components = {
+    rest_of_season: { value: score.rest_of_season.value, in_final_score: true, unavailable_reasons: score.rest_of_season.unavailable_reasons },
+  }
+  return score
+}
+
+/** A v6 score with an acceptance estimate of 62%. */
+export function acceptanceScore(overrides: Partial<NonNullable<TradeScore['acceptance']>> = {}): TradeScore {
+  const score = restOfSeasonScore()
+  score.acceptance = {
+    model_version: 'acceptance-v1', likelihood: 0.62,
+    terms: { base_logit: 0.25, activity: -0.5, fairness: null, market: 0.75 },
+    inputs: {
+      history: { offers: 4, accepted: 3, declined: 1, expired: 0, league_offers: 40, league_accepted: 20, league_rate: 0.5, rate: 0.7 },
+      activity: { trades: 5, offers_to_us: 4, z: -0.5 },
+      fairness: { our_lineup_gain: 12.6, counterparty_lineup_change: -4.4, balance: null },
+      market: { percent_owned_received: 90, percent_owned_sent: 60 },
+    },
+    unavailable_inputs: [], ...overrides,
+  }
+  score.score.components = { ...score.score.components, acceptance_likelihood: { value: 0.62, in_final_score: false, unavailable_reasons: [] } }
+  return score
+}

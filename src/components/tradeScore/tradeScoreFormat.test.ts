@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
 import { completeScore, proposalEvaluation } from './fixtures'
-import { formatEvidenceValue, isProposable, isProposalEvaluation, lineupMoves, resolvePointer, scoreInputSignature, scoreTone, signedScore } from './tradeScoreFormat'
+import { formatEvidenceValue, hasNoOfferHistory, hasOfferHistoryUnavailable, isProposable, isProposalEvaluation, lineupMoves, percentText, resolvePointer, scoreInputSignature, scoreTone, signedScore } from './tradeScoreFormat'
 
 it('formats returned values with an explicit sign', () => {
   expect(signedScore(3.14159)).toBe('+3.1')
@@ -84,4 +84,16 @@ it('picks a tone from the displayed value, with a neutral band around zero', () 
   expect(scoreTone(0.06)).toBe('positive')
   expect(scoreTone(-0.06)).toBe('negative')
   expect(scoreTone(null)).toBe('neutral')
+})
+
+it('formats acceptance as a whole percent and leaves a missing estimate as a dash', () => {
+  expect(percentText(0.624)).toBe('62%')
+  expect(percentText(0)).toBe('0%')
+  expect(percentText(null)).toBe('—')
+  expect(percentText(undefined)).toBe('—')
+  expect(hasNoOfferHistory(['offer_history'])).toBe(false)
+  expect(hasOfferHistoryUnavailable(['offer_history'])).toBe(true)
+  expect(hasOfferHistoryUnavailable(['no_offer_history'])).toBe(false)
+  expect(hasNoOfferHistory(['no_offer_history'])).toBe(true)
+  expect(hasNoOfferHistory(['market'])).toBe(false)
 })

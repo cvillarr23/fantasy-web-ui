@@ -15,6 +15,27 @@ export function signedScore(value: number | null | undefined, digits = 1): strin
   return value > 0 ? `+${text}` : text
 }
 
+/** Rest-of-season value R. Null means core could not score any week (unknown, not zero), worded like
+ * StatTile; undefined is a field an older row never stored; a real 0.0 reads as a number. */
+export function restOfSeasonText(value: number | null | undefined): string {
+  return value === undefined ? '—' : signedScore(value)
+}
+
+/** A probability as a whole percent. Missing means the estimate wasn't stored, not 0%. */
+export function percentText(likelihood: number | null | undefined, missing = '—'): string {
+  return likelihood == null || !Number.isFinite(likelihood) ? missing : `${Math.round(likelihood * 100)}%`
+}
+
+/** core's `no_offer_history` means the counterparty has no offers on record with us. */
+export function hasNoOfferHistory(unavailableInputs: string[] | undefined): boolean {
+  return !!unavailableInputs?.includes('no_offer_history')
+}
+
+/** core's `offer_history` means the history evidence could not be loaded. */
+export function hasOfferHistoryUnavailable(unavailableInputs: string[] | undefined): boolean {
+  return !!unavailableInputs?.includes('offer_history')
+}
+
 export function lineupMoves(week: TradeScoreLineupWeek): { entered: TradeScoreStarter[]; left: TradeScoreStarter[] } {
   const before = new Set(week.starters_before.map((s) => s.espn_id))
   const after = new Set(week.starters_after.map((s) => s.espn_id))

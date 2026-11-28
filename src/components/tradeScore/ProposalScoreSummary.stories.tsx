@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import type { TradeOffer } from '../../api/types'
 import { ProposalScoreSummary } from './ProposalScoreSummary'
-import { proposalEvaluation, unscoredScore } from './fixtures'
+import { acceptanceScore, proposalEvaluation, restOfSeasonScore, unscoredScore } from './fixtures'
 
 const offer = (over: Partial<TradeOffer> = {}): TradeOffer => ({
   id: 1,
@@ -76,3 +76,16 @@ export const PartialWeights: Story = {
     await expect(page.getByRole('tooltip')).toHaveTextContent('Extra credit for gains in weeks we face strong opponents')
   },
 }
+
+export const Acceptance: Story = { args: { offer: offer({ evaluation: proposalEvaluation(acceptanceScore()) }) } }
+export const NoOfferHistory: Story = {
+  args: { offer: offer({ evaluation: proposalEvaluation(acceptanceScore({ unavailable_inputs: ['no_offer_history'] })) }) },
+}
+export const OfferHistoryUnavailable: Story = {
+  args: { offer: offer({ evaluation: proposalEvaluation(acceptanceScore({ unavailable_inputs: ['offer_history'] })) }) },
+}
+export const RestOfSeasonUnavailable: Story = {
+  args: { offer: offer({ evaluation: proposalEvaluation(restOfSeasonScore({ value: null, scored_weeks: [], unavailable_reasons: ['no_scored_weeks'], costs_playoff_value: false })) }) },
+}
+/** An older score without the new terms shows neither rest of season nor an acceptance estimate. */
+export const MissingRestOfSeasonAndAcceptance: Story = { args: { offer: offer() } }
