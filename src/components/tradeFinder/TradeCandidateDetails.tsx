@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import type { LeagueTradeContext, RosterDeficitsResponse } from '../../api/types'
 import type { TradeScoreLineupWeek } from '../../api/tradeScoreTypes'
 import { StatTile } from '../ui/StatTile'
+import { InfoTip } from '../ui/InfoTip'
 import { StrengthChip } from '../ui/StrengthChip'
 import { ErrorAlert } from '../ui/ErrorAlert'
 import { signedScore } from '../tradeScore/tradeScoreFormat'
@@ -43,8 +44,10 @@ export function TradeCandidateDetails({ context, deficits, onOpenBuilder, ...pro
     <div className="finder-mini-tiles">
       <StatTile label="Our gain" value={c.our_lineup_gain} info={tradeGlossary.ourLineupGain} />
       <StatTile label="Theirs" value={c.counterparty_lineup_change} info={tradeGlossary.theirChange} />
+      <StatTile label="Rest of season" value={c.rest_of_season_value} info={tradeGlossary.restOfSeason} />
       <StatTile label="Final" value={c.final_score} info={tradeGlossaryForWeights(undefined).finalScore} />
     </div>
+    {c.costs_playoff_value && <Text size="sm" className="finder-playoff-cost">Costs playoff value <InfoTip label="costs playoff value">{tradeGlossary.costsPlayoffValue}</InfoTip></Text>}
     <h4>Starting lineup changes</h4>
     <Text size="xs" c="dimmed">Live score from current rosters; may differ from the computed snapshot.</Text>
     {score.isLoading && <Text size="sm" role="status">Loading lineup changes…</Text>}

@@ -3,7 +3,7 @@ import type { TradeScore, TradeScoreTradedPlayer } from './tradeScoreTypes'
 
 export type TradeCandidateShape = '1for1' | '2for1' | '1for2'
 export type TradeCandidateStatus = 'proposable' | 'needs_drop' | 'one_sided'
-export type TradeCandidateSort = 'final_score' | 'our_gain' | 'their_benefit'
+export type TradeCandidateSort = 'final_score' | 'our_gain' | 'their_benefit' | 'rest_of_season'
 
 export interface TradeCandidatePlayer extends TradeScoreTradedPlayer {
   vorp: number | null
@@ -24,6 +24,12 @@ export interface TradeCandidate {
   counterparty_lineup_change: number | null
   counterparty_weighted_benefit: number | null
   our_schedule_adjustment: number | null
+  // Absent or null on rows stored before the rest-of-season term; null R is unavailable, not 0.
+  rest_of_season_value?: number | null
+  playoff_lineup_gain?: number | null
+  costs_playoff_value?: boolean
+  rest_of_season_weeks?: number[]
+  rest_of_season_scored_weeks?: number[]
   scored_weeks: number[]
   horizon_weeks: number[]
   complete_horizon: boolean

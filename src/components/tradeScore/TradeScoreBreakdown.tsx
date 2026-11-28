@@ -6,10 +6,10 @@ import { InfoTip } from '../ui/InfoTip'
 import { StrengthChip } from '../ui/StrengthChip'
 import { tradeGlossaryForWeights, type TradeGlossary } from './tradeGlossary'
 import { Badge, Group, List, Stack, Table, Text } from '@mantine/core'
-import type { TradeScore, TradeScoreByeCoverage, TradeScoreComponent, TradeScoreLineupWeek, TradeScoreScheduleWeek } from '../../api/types'
+import type { TradeScore, TradeScoreByeCoverage, TradeScoreRestOfSeason, TradeScoreComponent, TradeScoreLineupWeek, TradeScoreScheduleWeek } from '../../api/types'
 import { TradeContextProvenance } from '../TradeContextProvenance'
 import { reasonLabel } from './tradeScoreReasons'
-import { lineupMoves, signedScore } from './tradeScoreFormat'
+import { lineupMoves, restOfSeasonText, signedScore } from './tradeScoreFormat'
 
 // Presentation only: every number below is a field core returned. Nothing is summed or
 // weighted here, so this page can never disagree with the scorer it explains.
@@ -58,7 +58,7 @@ function TermRow({ label, value, detail }: { label: string; value: string; detai
 
 // G* and C* already have their own rows; any other component (a later scoring version's term)
 // is listed by name so a new term shows up without a page change.
-const COMPONENTS_WITH_ROWS = new Set(['our_weighted_gain', 'counterparty_weighted_benefit'])
+const COMPONENTS_WITH_ROWS = new Set(['our_weighted_gain', 'counterparty_weighted_benefit', 'rest_of_season'])
 
 function componentLabel(key: string): string {
   const words = key.replace(/_/g, ' ')
@@ -141,6 +141,8 @@ export function TradeScoreBreakdown({ score, teamNames, builder = false }: {
               detail={glossary.theirChange} />
             <TermRow label="Cost of helping them (C*)" value={signedScore(terms.counterparty_weighted_benefit)}
               detail={glossary.costOfHelpingThem} />
+            {score.rest_of_season && <TermRow label="Rest of season / playoffs (R)" value={restOfSeasonText(score.rest_of_season.value)}
+              detail={restOfSeasonDetail(score.rest_of_season, glossary.restOfSeason)} />}
             {Object.entries(terms.components ?? {}).filter(([key]) => !COMPONENTS_WITH_ROWS.has(key)).map(([key, component]) => (
               <TermRow key={key} label={componentLabel(key)} value={signedScore(component.value)}
                 detail={componentDetail(component)} />
@@ -151,12 +153,53 @@ export function TradeScoreBreakdown({ score, teamNames, builder = false }: {
         </Table>
       </Table.ScrollContainer>}
 
+      {score.rest_of_season && <RestOfSeasonTable ros={score.rest_of_season} glossary={glossary} />}
       {score.bye_coverage && <ByeCoverage coverage={score.bye_coverage} ours={ours} theirs={theirs} glossary={glossary} />}
       {builder ? <WeeklyLineupTable score={score} teamNames={teamNames} /> : <>
         <WeekTable score={score} teamName={teamName} glossary={glossary} />
         <WhyDetails score={score} ours={ours} theirs={theirs} playerName={playerName} />
       </>}
       <Coverage score={score} ours={ours} theirs={theirs} playerName={playerName} />
+    </Stack>
+  )
+}
+
+function restOfSeasonDetail(ros: TradeScoreRestOfSeason, base: string): string {
+  if (ros.value != null) return base
+  const reasons = ros.unavailable_reasons.map((code) => reasonLabel(code).label).join('; ')
+  return reasons ? `${base} Not available: ${reasons}.` : base
+}
+
+/** Per-week evidence behind R: weeks past the horizon, regular or playoff, and how each is weighted. */
+function RestOfSeasonTable({ ros, glossary }: { ros: TradeScoreRestOfSeason; glossary: TradeGlossary }) {
+  const unscored = new Map(ros.unscored_weeks.map((w) => [w.week, w.reasons]))
+  return (
+    <Stack gap={4} component="section" aria-label="Rest of season">
+      <Group gap="xs">
+        <Text fw={600} size="sm">Rest of season / playoffs <InfoTip label="rest of season">{glossary.restOfSeason}</InfoTip></Text>
+        {ros.costs_playoff_value && <Badge color="orange" variant="light">Costs playoff value</Badge>}
+        {!ros.complete && ros.weeks.length > 0 && <Badge color="yellow">Partial rest of season</Badge>}
+      </Group>
+      {ros.weeks.length === 0 ? <Text size="sm">No rest-of-season weeks remain after the horizon.</Text>
+        : ros.value == null && <Text size="sm">Unavailable: {ros.unavailable_reasons.map((code) => reasonLabel(code).label).join('; ') || 'no week could be scored'}.</Text>}
+      {ros.weeks.length > 0 && <Table.ScrollContainer minWidth={480}>
+        <Table aria-label="Rest of season weeks">
+          <Table.Thead>
+            <Table.Tr><Table.Th>Week</Table.Th><Table.Th>Kind</Table.Th><Table.Th>Weight</Table.Th><Table.Th>Our lineup change</Table.Th><Table.Th>Their lineup change</Table.Th></Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {ros.weeks.map((w) => (
+              <Table.Tr key={w.week} aria-label={`Rest of season week ${w.week}`}>
+                <Table.Th scope="row">{w.week}</Table.Th>
+                <Table.Td>{w.kind === 'playoff' ? 'Playoff' : 'Regular'}</Table.Td>
+                <Table.Td>{weight(w.weight)}</Table.Td>
+                <Table.Td>{unscored.has(w.week) ? 'Not scored' : signedScore(w.our_delta)}</Table.Td>
+                <Table.Td>{unscored.has(w.week) ? 'Not scored' : signedScore(w.counterparty_delta)}</Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+      </Table.ScrollContainer>}
     </Stack>
   )
 }

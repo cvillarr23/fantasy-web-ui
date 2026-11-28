@@ -15,6 +15,12 @@ export function signedScore(value: number | null | undefined, digits = 1): strin
   return value > 0 ? `+${text}` : text
 }
 
+/** Rest-of-season value R. Null means no week could be scored, which is unknown, not zero;
+ * a real 0.0 (no rest-of-season weeks left) reads as a number. */
+export function restOfSeasonText(value: number | null | undefined): string {
+  return value == null ? 'Unavailable' : signedScore(value)
+}
+
 export function lineupMoves(week: TradeScoreLineupWeek): { entered: TradeScoreStarter[]; left: TradeScoreStarter[] } {
   const before = new Set(week.starters_before.map((s) => s.espn_id))
   const after = new Set(week.starters_after.map((s) => s.espn_id))

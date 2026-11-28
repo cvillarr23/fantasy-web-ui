@@ -137,3 +137,16 @@ it('keeps a displaced starter visible as benched in the expanded lineup', async 
   fireEvent.click(await within(rail).findByRole('button', { name: 'Show their full lineup' }))
   expect(within(rail).getByText(/Benched Wideout.*to bench/)).toBeTruthy()
 })
+
+it('shows rest of season per row, unavailable rather than zero, and sorts by it', async () => {
+  payload = candidates({ total: 2, items: [
+    candidate({ candidate_key: 'a', rest_of_season_value: -2.3, costs_playoff_value: true }),
+    candidate({ candidate_key: 'b', rest_of_season_value: null, costs_playoff_value: false }),
+  ] })
+  render(view())
+  expect(await screen.findByText('-2.3')).toBeTruthy()
+  expect(screen.getAllByText('Costs playoff value')).toHaveLength(1)
+  expect(screen.getAllByText('Unavailable')).toHaveLength(1)
+  fireEvent.change(screen.getByLabelText('Sort by'), { target: { value: 'rest_of_season' } })
+  await waitFor(() => expect(latest().sort).toBe('rest_of_season'))
+})

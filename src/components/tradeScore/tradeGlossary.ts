@@ -13,6 +13,8 @@ export const tradeGlossary = {
   ourWeightedGain: "G* sums each scored week's lineup gain multiplied by our fantasy opponent's strength multiplier. Schedule adjustment is G* minus G.",
   vorp: 'Value over a replacement-level player at the same position. Raw player VORP totals cover one week and ignore starting lineups and schedules.',
   horizon: 'The requested number of scoring weeks, starting at the selected week and capped at the end of the regular season.',
+  restOfSeason: 'R values the trade over every week after the horizon through the last fantasy playoff week, with playoff weeks counting more than regular weeks. It is part of the final score. Unavailable means no such week could be scored yet; it is not zero.',
+  costsPlayoffValue: 'Our starting lineup is worse in our fantasy playoff weeks after this trade, even if the near-term weeks improve. Informational; it never hides a trade.',
   scoredWeeks: 'Totals cover only scored weeks. A complete horizon means no horizon weeks were unscored; it does not guarantee complete roster data or known strength. Partial totals are not an estimate for the full horizon.',
 } as const
 
@@ -27,7 +29,7 @@ export function tradeGlossaryForWeights(weights: unknown) {
     headToHead: 'When we face the other team, their lineup change counts against us more heavily than in other weeks.',
   }
   if (weights == null || typeof weights !== 'object') return fallback
-  const { strength_weight, z_clamp, indirect_factor } = weights as Partial<TradeScore['weights']>
+  const { strength_weight, z_clamp, indirect_factor, ros_regular_weight, playoff_week_weight } = weights as Partial<TradeScore['weights']>
   if (typeof strength_weight !== 'number' || !Number.isFinite(strength_weight)
     || typeof z_clamp !== 'number' || !Number.isFinite(z_clamp)
     || typeof indirect_factor !== 'number' || !Number.isFinite(indirect_factor)) return fallback
@@ -36,8 +38,11 @@ export function tradeGlossaryForWeights(weights: unknown) {
   const minimum = Number((1 - strength_weight * z_clamp).toFixed(6))
   const maximum = Number((1 + strength_weight * z_clamp).toFixed(6))
   const indirect = indirect_factor === 0.25 ? 'a quarter as much' : `${indirect_factor} times as much`
+  const rosWeights = typeof ros_regular_weight === 'number' && typeof playoff_week_weight === 'number'
+    ? ` Playoff weeks weigh ${playoff_week_weight}; regular weeks past the horizon weigh ${ros_regular_weight}.` : ''
   return {
     ...fallback,
+    restOfSeason: fallback.restOfSeason + rosWeights,
     finalScore: `One number to rank trades: our schedule-weighted lineup gain, minus a penalty for how much the trade also helps them. The penalty counts fully in weeks we play them head-to-head and ${indirect} otherwise. Higher is better for us.`,
     scheduleBoost: `Extra credit for gains in weeks we face strong opponents (and less in weeks we face weak ones). Multiplier = ${multiplier}, ranging ${minimum}–${maximum}.`,
     costOfHelpingThem: `Their lineup gain turned into a penalty on our score. It's weighted heavily in weeks we face them and lightly (×${indirect_factor}) otherwise. Usually a small negative number.`,

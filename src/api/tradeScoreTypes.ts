@@ -86,6 +86,29 @@ export interface TradeScoreComponent {
   unavailable_reasons: string[]
 }
 
+export interface TradeScoreRestOfSeasonWeek {
+  week: number
+  kind: 'regular' | 'playoff'
+  weight: number
+  our_delta: number | null
+  counterparty_delta: number | null
+}
+
+/** The R term: weeks after the horizon through the last fantasy playoff week. A null value is
+ * unavailable (no week could be scored), which is different from a real 0.0. */
+export interface TradeScoreRestOfSeason {
+  weeks: TradeScoreRestOfSeasonWeek[]
+  scored_weeks: number[]
+  unscored_weeks: { week: number; reasons: string[] }[]
+  complete: boolean
+  our_lineup_gain: number | null
+  playoff_lineup_gain: number | null
+  counterparty_lineup_change: number | null
+  value: number | null
+  unavailable_reasons: string[]
+  costs_playoff_value: boolean
+}
+
 export interface TradeScore {
   scoring_version: ScoringVersion
   league_id: string
@@ -110,18 +133,28 @@ export interface TradeScore {
     unscored_weeks: { week: number; reasons: string[] }[]
     complete_horizon: boolean
   }
-  weights: { strength_weight: number; z_clamp: number; indirect_factor: number }
+  weights: {
+    strength_weight: number
+    z_clamp: number
+    indirect_factor: number
+    // Absent from evidence scored before the rest-of-season term.
+    ros_regular_weight?: number | null
+    playoff_week_weight?: number | null
+  }
   roster_impact: { us: TradeScoreTeamImpact; counterparty: TradeScoreTeamImpact }
   // Bye-crunch weeks each side has before and after the trade. Evidence only: the lineup
   // terms already count every bye week.
   bye_coverage?: { us: TradeScoreByeCoverage; counterparty: TradeScoreByeCoverage }
   schedule: { weeks: TradeScoreScheduleWeek[] }
+  // Absent from evidence scored before the rest-of-season term.
+  rest_of_season?: TradeScoreRestOfSeason | null
   score: {
     our_lineup_gain: number | null
     counterparty_lineup_change: number | null
     our_weighted_gain: number | null
     our_schedule_adjustment: number | null
     counterparty_weighted_benefit: number | null
+    rest_of_season_value?: number | null
     final_score: number | null
     final_score_unavailable_reasons: string[]
     // Absent from stored trade-score-v1 evidence.

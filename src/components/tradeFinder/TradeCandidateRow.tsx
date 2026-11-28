@@ -2,7 +2,7 @@ import { Button } from '@mantine/core'
 import type { TradeCandidatePlayer } from '../../api/tradeCandidateTypes'
 import { InfoTip } from '../ui/InfoTip'
 import { tradeGlossary, tradeGlossaryForWeights } from '../tradeScore/tradeGlossary'
-import { signedScore } from '../tradeScore/tradeScoreFormat'
+import { restOfSeasonText, signedScore } from '../tradeScore/tradeScoreFormat'
 import { GainBreakdown } from './GainBreakdown'
 import { scoreTone } from './tradeFinderFormat'
 import type { CandidateEvidenceProps } from './useCandidateScore'
@@ -30,7 +30,7 @@ function PlayerChips({ players, side }: { players: TradeCandidatePlayer[]; side:
 const candidateHeaders = [
   ['Team', tradeGlossary.counterparty], ['You get', tradeGlossary.vorp], ['You give', tradeGlossary.vorp],
   ['Our gain', tradeGlossary.ourLineupGain], ['Theirs', tradeGlossary.theirChange],
-  ['Final', tradeGlossaryForWeights(undefined).finalScore], ['Status', tradeGlossary.statuses], ['Details', tradeGlossary.candidateDetails],
+  ['Rest of season', tradeGlossary.restOfSeason], ['Final', tradeGlossaryForWeights(undefined).finalScore], ['Status', tradeGlossary.statuses], ['Details', tradeGlossary.candidateDetails],
 ]
 export function TradeCandidateHeaders() {
   return <div className="finder-row finder-head" role="row">{candidateHeaders.map(([label, help]) => <div key={label} role="columnheader">{label} <InfoTip label={label.toLowerCase()}>{help}</InfoTip></div>)}</div>
@@ -48,6 +48,10 @@ export function TradeCandidateRow({ selected, onSelect, ...props }: CandidateEvi
       <span className="finder-gain-track" aria-hidden="true"><span style={{ width: `${Math.min(100, Math.max(0, c.our_lineup_gain ?? 0) * 4)}%` }} /></span>
     </div>
     <div role="cell"><span className="finder-mobile-label">Theirs</span><GainBreakdown {...props} side="counterparty" /></div>
+    <div role="cell"><span className="finder-mobile-label">Rest of season</span>
+      <strong className={scoreTone(c.rest_of_season_value ?? null)}>{restOfSeasonText(c.rest_of_season_value)}</strong>
+      {c.costs_playoff_value && <small className="finder-playoff-cost">Costs playoff value</small>}
+    </div>
     <div role="cell"><span className="finder-mobile-label">Final</span><strong className={scoreTone(c.final_score)}>{signedScore(c.final_score)}</strong></div>
     <div role="cell"><span className="finder-mobile-label">Status</span><CandidateStatus candidate={c} /></div>
     <div role="cell" className="finder-row-action"><Button size="xs" variant={selected ? 'filled' : 'default'} aria-pressed={selected} onClick={onSelect}>Details</Button></div>

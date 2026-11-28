@@ -2,7 +2,7 @@ import { afterEach, expect, it } from 'vitest'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { MantineProvider } from '@mantine/core'
 import { TradeScoreBreakdown } from './TradeScoreBreakdown'
-import { completeScore, partialScore, unscoredScore } from './fixtures'
+import { completeScore, partialScore, restOfSeasonScore, unscoredScore } from './fixtures'
 import type { TradeScore } from '../../api/types'
 
 afterEach(cleanup)
@@ -240,4 +240,31 @@ it('uses the returned indirect factor in the final-score explanation', async () 
   const tip = await screen.findByRole('tooltip')
   expect(tip.textContent).toContain('0.1 times as much otherwise')
   expect(tip.textContent).not.toContain('a quarter')
+})
+
+it('shows rest-of-season value with its weeks and a playoff-cost badge, not a generic component row', () => {
+  view(restOfSeasonScore())
+  expect(within(term(/Rest of season/)).getByText('-2.3')).toBeTruthy()
+  expect(screen.getAllByRole('row', { name: /Rest of season/ })).toHaveLength(3)
+  const playoff = screen.getByRole('row', { name: 'Rest of season week 10' })
+  expect(within(playoff).getByText('Playoff')).toBeTruthy()
+  expect(within(playoff).getByText('×1.00')).toBeTruthy()
+  expect(within(playoff).getByText('-3.5')).toBeTruthy()
+  expect(within(screen.getByRole('row', { name: 'Rest of season week 9' })).getByText('Regular')).toBeTruthy()
+  expect(screen.getByText('Costs playoff value')).toBeTruthy()
+})
+
+it('shows an unavailable rest of season as unavailable, never as zero, and a real zero as zero', () => {
+  const unavailable = restOfSeasonScore({ value: null, scored_weeks: [], unavailable_reasons: ['no_scored_weeks'], costs_playoff_value: false })
+  view(unavailable)
+  expect(within(term(/Rest of season/)).getByText('Unavailable')).toBeTruthy()
+  cleanup()
+  view(restOfSeasonScore({ weeks: [], scored_weeks: [], value: 0, costs_playoff_value: false }))
+  expect(within(term(/Rest of season/)).getByText('0.0')).toBeTruthy()
+  expect(screen.getByText('No rest-of-season weeks remain after the horizon.')).toBeTruthy()
+})
+
+it('leaves older evidence without a rest-of-season row', () => {
+  view(completeScore())
+  expect(screen.queryByText(/Rest of season/)).toBeNull()
 })

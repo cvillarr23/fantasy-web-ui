@@ -782,4 +782,4 @@ export interface TradeOfferList {
 }
 
 export type { LeagueTradeContext, TradeContextTeam, TradeContextPlayer, FantasyScheduleWeek, ByeOutlook, ByeOutlookWeek, TeamByeOutlook } from './tradeContextTypes'
-export type { TradeScore, TradeScoreRequest, TradeScoreLineupWeek, TradeScoreScheduleWeek, TradeScoreStarter, TradeScoreTeamImpact, ProposalEvaluation, TradeScoreByeCoverage, ScoringVersion, TradeScoreComponent } from './tradeScoreTypes'
+export type { TradeScore, TradeScoreRequest, TradeScoreLineupWeek, TradeScoreScheduleWeek, TradeScoreStarter, TradeScoreTeamImpact, ProposalEvaluation, TradeScoreByeCoverage, ScoringVersion, TradeScoreComponent, TradeScoreRestOfSeason, TradeScoreRestOfSeasonWeek } from './tradeScoreTypes'
