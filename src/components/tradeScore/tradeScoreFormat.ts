@@ -15,10 +15,10 @@ export function signedScore(value: number | null | undefined, digits = 1): strin
   return value > 0 ? `+${text}` : text
 }
 
-/** Rest-of-season value R. Null means no week could be scored, which is unknown, not zero;
- * a real 0.0 (no rest-of-season weeks left) reads as a number. */
+/** Rest-of-season value R. Null means core could not score any week (unknown, not zero), worded like
+ * StatTile; undefined is a field an older row never stored; a real 0.0 reads as a number. */
 export function restOfSeasonText(value: number | null | undefined): string {
-  return value == null ? 'Unavailable' : signedScore(value)
+  return value === undefined ? 'â€”' : signedScore(value)
 }
 
 /** A probability as a whole percent. Missing means the estimate wasn't stored, not 0%. */
@@ -26,9 +26,14 @@ export function percentText(likelihood: number | null | undefined, missing = 'â€
   return likelihood == null || !Number.isFinite(likelihood) ? missing : `${Math.round(likelihood * 100)}%`
 }
 
-/** core flags a counterparty with no past offers from us; either spelling has been emitted. */
+/** core's `no_offer_history` means the counterparty has no offers on record with us. */
 export function hasNoOfferHistory(unavailableInputs: string[] | undefined): boolean {
-  return !!unavailableInputs?.some((code) => code === 'no_offer_history' || code === 'offer_history')
+  return !!unavailableInputs?.includes('no_offer_history')
+}
+
+/** core's `offer_history` means the history evidence could not be loaded. */
+export function hasOfferHistoryUnavailable(unavailableInputs: string[] | undefined): boolean {
+  return !!unavailableInputs?.includes('offer_history')
 }
 
 export function lineupMoves(week: TradeScoreLineupWeek): { entered: TradeScoreStarter[]; left: TradeScoreStarter[] } {

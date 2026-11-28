@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, userEvent, waitFor, within } from 'storybook/test'
 import { TradeScoreBreakdown } from './TradeScoreBreakdown'
-import { completeScore, partialScore, unscoredScore } from './fixtures'
+import { acceptanceScore, completeScore, partialScore, restOfSeasonScore, unscoredScore } from './fixtures'
 
 const teamNames = { '3': 'Strong Opponent', '5': 'Weak Opponent', '7': 'Our Team', '8': 'Rival Team' }
 
@@ -79,3 +79,13 @@ export const PartialWeights: Story = {
     await expect(canvas.getByRole('button', { name: 'What is cost of helping them (c*)?' })).toBeVisible()
   },
 }
+
+export const RestOfSeason: Story = { args: { score: restOfSeasonScore() } }
+export const RestOfSeasonUnavailable: Story = {
+  args: { score: restOfSeasonScore({ value: null, scored_weeks: [], unavailable_reasons: ['no_scored_weeks'], costs_playoff_value: false }) },
+}
+export const Acceptance: Story = { args: { score: acceptanceScore() } }
+export const NoOfferHistory: Story = { args: { score: acceptanceScore({ unavailable_inputs: ['no_offer_history'] }) } }
+export const OfferHistoryUnavailable: Story = { args: { score: acceptanceScore({ unavailable_inputs: ['offer_history'] }) } }
+/** An older score with no rest-of-season or acceptance term shows neither row. */
+export const MissingRestOfSeasonAndAcceptance: Story = { args: { score: completeScore() } }

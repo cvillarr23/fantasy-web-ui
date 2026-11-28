@@ -140,14 +140,17 @@ it('keeps a displaced starter visible as benched in the expanded lineup', async 
 })
 
 it('shows rest of season per row, unavailable rather than zero, and sorts by it', async () => {
-  payload = candidates({ total: 2, items: [
+  payload = candidates({ total: 3, items: [
+    candidate({ candidate_key: 'old' }),
     candidate({ candidate_key: 'a', rest_of_season_value: -2.3, costs_playoff_value: true }),
     candidate({ candidate_key: 'b', rest_of_season_value: null, costs_playoff_value: false }),
   ] })
   render(view())
   expect(await screen.findByText('-2.3')).toBeTruthy()
   expect(screen.getAllByText('Costs playoff value')).toHaveLength(1)
-  expect(screen.getAllByText('Unavailable')).toHaveLength(1)
+  expect(screen.getAllByText('Not available')).toHaveLength(1)
+  expect(screen.getAllByText('—').length).toBeGreaterThan(0)
+  expect(screen.queryByText('Unavailable')).toBeNull()
   fireEvent.change(screen.getByLabelText('Sort by'), { target: { value: 'rest_of_season' } })
   await waitFor(() => expect(latest().sort).toBe('rest_of_season'))
 })
@@ -161,7 +164,9 @@ it('shows acceptance as a percent, a dash on old rows, never hides rows, and off
   expect(await screen.findByText('62%')).toBeTruthy()
   expect(screen.getAllByText('Sunday Crew').length).toBeGreaterThan(0)
   const rows = screen.getAllByRole('row').filter((row) => row.className.includes('finder-candidate'))
-  expect(within(rows[1]).getByText('—')).toBeTruthy()
+  // rest of season and acceptance are both missing on this old row
+  expect(within(rows[1]).getAllByText('—')).toHaveLength(2)
+  expect(within(rows[1]).queryByText('Not available')).toBeNull()
   fireEvent.change(screen.getByLabelText('Sort by'), { target: { value: 'expected_score' } })
   await waitFor(() => expect(latest().sort).toBe('expected_score'))
   fireEvent.change(screen.getByLabelText('Sort by'), { target: { value: 'acceptance' } })

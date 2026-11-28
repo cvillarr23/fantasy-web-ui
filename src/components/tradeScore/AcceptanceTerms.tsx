@@ -1,6 +1,6 @@
 import { List, Text } from '@mantine/core'
 import type { TradeScoreAcceptance } from '../../api/types'
-import { hasNoOfferHistory, percentText, signedScore } from './tradeScoreFormat'
+import { hasNoOfferHistory, hasOfferHistoryUnavailable, percentText, signedScore } from './tradeScoreFormat'
 
 /** The terms behind an acceptance estimate. Each is an adjustment to the log-odds of acceptance
  * (positive pushes toward yes), so it is signed and not a percent. */
@@ -12,7 +12,9 @@ export function AcceptanceTerms({ acceptance }: { acceptance: TradeScoreAcceptan
     <div aria-label="Acceptance terms">
       {hasNoOfferHistory(acceptance.unavailable_inputs)
         ? <Text size="sm">No offer history yet: this estimate leans on the league-wide acceptance rate ({percentText(history.league_rate)}).</Text>
-        : <Text size="sm">Their history with us: {history.accepted} accepted, {history.declined} declined, {history.expired} expired of {history.offers} offers.</Text>}
+        : hasOfferHistoryUnavailable(acceptance.unavailable_inputs)
+          ? <Text size="sm">Offer history unavailable: this estimate leans on the league-wide acceptance rate ({percentText(history.league_rate)}).</Text>
+          : <Text size="sm">Their history with us: {history.accepted} accepted, {history.declined} declined, {history.expired} expired of {history.offers} offers.</Text>}
       <List size="sm">
         <List.Item>History: {signedScore(terms.base_logit, 2)}</List.Item>
         <List.Item>Activity: {term(terms.activity)}</List.Item>

@@ -257,7 +257,7 @@ it('shows rest-of-season value with its weeks and a playoff-cost badge, not a ge
 it('shows an unavailable rest of season as unavailable, never as zero, and a real zero as zero', () => {
   const unavailable = restOfSeasonScore({ value: null, scored_weeks: [], unavailable_reasons: ['no_scored_weeks'], costs_playoff_value: false })
   view(unavailable)
-  expect(within(term(/Rest of season/)).getByText('Unavailable')).toBeTruthy()
+  expect(within(term(/Rest of season/)).getByText('Not available')).toBeTruthy()
   cleanup()
   view(restOfSeasonScore({ weeks: [], scored_weeks: [], value: 0, costs_playoff_value: false }))
   expect(within(term(/Rest of season/)).getByText('0.0')).toBeTruthy()
@@ -283,4 +283,10 @@ it('shows acceptance as a percent with its terms, not as a signed score', () => 
 it('says there is no offer history yet when core could not read any', () => {
   view(acceptanceScore({ unavailable_inputs: ['no_offer_history'] }))
   expect(screen.getByText(/No offer history yet/)).toBeTruthy()
+})
+
+it('says offer history is unavailable, not empty, when core could not load it', () => {
+  view(acceptanceScore({ unavailable_inputs: ['offer_history'] }))
+  expect(screen.getByText(/Offer history unavailable/)).toBeTruthy()
+  expect(screen.queryByText(/No offer history yet/)).toBeNull()
 })
